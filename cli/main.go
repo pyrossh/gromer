@@ -255,8 +255,9 @@ func createPage(ui app.UI, wasmPath string) *bytes.Buffer {
 }
 
 func serve(wd string) {
-	assetsFileServer := http.FileServer(pkger.Dir("./assets"))
-	buildFileServer := http.FileServer(pkger.Dir("./build"))
+
+	assetsFileServer := http.FileServer(pkger.Dir(filepath.Join(wd, "assets")))
+	buildFileServer := http.FileServer(pkger.Dir(filepath.Join(wd, "build")))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if render, ok := routesMap[r.URL.Path]; ok {
