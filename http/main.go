@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"bytes"
@@ -283,7 +283,7 @@ func serve(wd string) {
 	log.Fatal(http.ListenAndServe(":1234", nil))
 }
 
-func main() {
+func Watch() {
 	wd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("could not get wd")
