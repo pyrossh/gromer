@@ -236,6 +236,7 @@ func load(wd, file, soPath string) {
 func createPage(ui app.UI, wasmPath string) *bytes.Buffer {
 	page := bytes.NewBuffer(nil)
 	page.WriteString("<!DOCTYPE html>\n")
+	elems := app.FilterUIElems(ui)
 	app.Html(
 		app.Head(
 			app.Title("Title"),
@@ -249,7 +250,7 @@ func createPage(ui app.UI, wasmPath string) *bytes.Buffer {
 			app.Link("manifest", "manifest"),
 			app.Script(wasmExecJs(wasmPath)),
 		),
-		app.Body(ui),
+		app.Body(elems[0]),
 	).Html(page)
 	return page
 }
