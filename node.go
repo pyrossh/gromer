@@ -77,6 +77,9 @@ const (
 	// elements within a given list.
 	Selector
 
+	//  Attribute represents css
+	Attribute
+
 	// RawHTML represents an HTML element obtained from a raw HTML code snippet.
 	RawHTML
 
@@ -110,6 +113,15 @@ func FilterUIElems(uis ...UI) []UI {
 		case Selector:
 			elems = append(elems, n.children()...)
 
+		case Attribute:
+			if n.parent() != nil {
+				attr := n.parent().attributes()
+				cc, err := n.(CSSClass)
+				if err {
+					panic("Could not convert attribute css")
+				}
+				attr["class"] = cc.classes
+			}
 		default:
 			panic(errors.New("filtering ui elements failed").
 				Tag("reason", "unexpected element type found").

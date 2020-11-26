@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/pyros2097/wapp/errors"
 )
@@ -115,7 +114,4 @@ func (c condition) update(UI) error {
 	return errors.New("condition cannot be updated").
 		Tag("name", c.name()).
 		Tag("kind", c.Kind())
-}
-
-func (c condition) onNav(*url.URL) {
 }
