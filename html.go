@@ -14,7 +14,7 @@ func Head(elems ...UI) *elem {
 }
 
 func Body(elems ...UI) *elem {
-	return &elem{tag: "head", body: elems}
+	return &elem{tag: "body", body: elems}
 }
 
 func Title(v string) *elem {
@@ -55,6 +55,8 @@ func RemoveAttributes(uis ...UI) ([]UI, string) {
 		if v.Kind() == Attribute {
 			cc, _ := v.(CSSClass)
 			classes = classes + cc.classes
+		} else {
+			elems = append(elems, v)
 		}
 
 	}
@@ -64,6 +66,8 @@ func RemoveAttributes(uis ...UI) ([]UI, string) {
 func Div(uis ...UI) *elem {
 	elems, classes := RemoveAttributes(uis...)
 	e := &elem{tag: "div", body: elems}
-	e.setAttr("class", classes)
+	if classes != "" {
+		e.setAttr("class", classes)
+	}
 	return e
 }
