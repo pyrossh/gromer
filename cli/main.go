@@ -247,6 +247,7 @@ func createPage(ui app.UI, wasmPath string) *bytes.Buffer {
 			app.Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
 			app.Link("icon", "/assets/icon.png"),
 			app.Link("apple-touch-icon", "/assets/icon.png"),
+			app.Link("stylesheet", "/assets/styles.css"),
 			app.Link("manifest", "manifest"),
 			app.Script(wasmExecJs(wasmPath)),
 		),

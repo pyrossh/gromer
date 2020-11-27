@@ -7,10 +7,11 @@ import (
 )
 
 type CSSClass struct {
+	UI
 	classes string
 }
 
-func Css(d string) CSSClass {
+func Css(d string) UI {
 	return CSSClass{classes: d}
 }
 

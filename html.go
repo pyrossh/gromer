@@ -48,18 +48,22 @@ func Script(str string) *elem {
 	}
 }
 
-func Div(elems ...UI) *elem {
-	return &elem{tag: "div", body: elems}
+func RemoveAttributes(uis ...UI) ([]UI, string) {
+	elems := make([]UI, 0, len(uis))
+	classes := ""
+	for _, v := range uis {
+		if v.Kind() == Attribute {
+			cc, _ := v.(CSSClass)
+			classes = classes + cc.classes
+		}
+
+	}
+	return elems, classes
 }
 
-func Row(elems ...UI) *elem {
-	return &elem{tag: "div", body: elems, attrs: map[string]string{
-		"style": "display: flex;flex: 1;flex-direction: row;align-items: center;justify-content: center;",
-	}}
-}
-
-func Col(elems ...UI) *elem {
-	return &elem{tag: "div", body: elems, attrs: map[string]string{
-		"style": "display: flex;flex: 1;flex-direction: column;align-items: center;justify-content: center;",
-	}}
+func Div(uis ...UI) *elem {
+	elems, classes := RemoveAttributes(uis...)
+	e := &elem{tag: "div", body: elems}
+	e.setAttr("class", classes)
+	return e
 }
