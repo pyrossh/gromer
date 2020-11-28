@@ -48,26 +48,65 @@ func Script(str string) *elem {
 	}
 }
 
-func RemoveAttributes(uis ...UI) ([]UI, string) {
+// func (e *elem) OnBlur(h EventHandler) *elem {
+// 	e.setEventHandler("blur", h)
+// 	return e
+// }
+
+// func (e *elem) OnChange(h EventHandler) *elem {
+// 	e.setEventHandler("change", h)
+// 	return e
+// }
+
+// func (e *elem) OnClick(h EventHandler) *elem {
+// 	e.setEventHandler("click", h)
+// 	return e
+// }
+
+// func (e *elem) OnFocus(h EventHandler) *elem {
+// 	e.setEventHandler("focus", h)
+// 	return e
+// }
+
+// func (e *elem) OnInput(h EventHandler) *elem {
+// 	e.setEventHandler("input", h)
+// 	return e
+// }
+
+func mergeAttributes(parent *elem, uis ...UI) {
 	elems := make([]UI, 0, len(uis))
-	classes := ""
 	for _, v := range uis {
 		if v.Kind() == Attribute {
-			cc, _ := v.(CSSClass)
-			classes = classes + cc.classes
+			switch c := v.(type) {
+			case CssAttribute:
+				if vv, ok := parent.attrs["classes"]; ok {
+					parent.setAttr("class", vv+" "+c.classes)
+				} else {
+					parent.setAttr("class", c.classes)
+				}
+			case OnClickAttribute:
+				parent.setEventHandler("click", func(ctx Context, e Event) {
+					c.cb()
+				})
+			}
 		} else {
 			elems = append(elems, v)
 		}
 
 	}
-	return elems, classes
+	parent.setBody(elems...)
 }
 
 func Div(uis ...UI) *elem {
-	elems, classes := RemoveAttributes(uis...)
-	e := &elem{tag: "div", body: elems}
-	if classes != "" {
-		e.setAttr("class", classes)
-	}
+	e := &elem{tag: "div"}
+	mergeAttributes(e, uis...)
 	return e
+}
+
+func Row(uis ...UI) UI {
+	return Div(append([]UI{Css("flex flex-row justify-center align-items-center")}, uis...)...)
+}
+
+func Col(uis ...UI) UI {
+	return Div(append([]UI{Css("flex flex-col justify-center align-items-center")}, uis...)...)
 }

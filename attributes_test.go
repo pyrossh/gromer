@@ -7,20 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Row(uis ...UI) UI {
-	uis = append(uis, Css("flex flex-row justify-center align-items-center"))
-	return Div(uis...)
-}
-
-func Col(uis ...UI) UI {
-	uis = append(uis, Css("flex flex-row justify-center align-items-center"))
-	return Div(uis...)
-}
-
 func Counter(c *RenderContext) UI {
 	count, _ := c.UseInt(0)
 	return Col(
-		Div(Css("yellow"),
+		Row(Css("yellow"),
 			Text("Counter"),
 		),
 		Row(
