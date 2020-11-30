@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pyros2097/wapp/errors"
+	"github.com/pyros2097/wapp/js"
 )
 
 // Raw returns a ui element from the given raw value. HTML raw value must have a
@@ -29,7 +30,7 @@ func Raw(v string) UI {
 }
 
 type raw struct {
-	jsvalue    Value
+	jsvalue    js.Value
 	parentElem UI
 	tag        string
 	value      string
@@ -39,7 +40,7 @@ func (r *raw) Kind() Kind {
 	return RawHTML
 }
 
-func (r *raw) JSValue() Value {
+func (r *raw) JSValue() js.Value {
 	return r.jsvalue
 }
 
@@ -66,7 +67,7 @@ func (r *raw) attributes() map[string]string {
 	return nil
 }
 
-func (r *raw) eventHandlers() map[string]eventHandler {
+func (r *raw) eventHandlers() map[string]js.EventHandler {
 	return nil
 }
 
@@ -90,7 +91,7 @@ func (r *raw) mount() error {
 			Tag("kind", r.Kind())
 	}
 
-	wrapper := Window().Get("document").Call("createElement", "div")
+	wrapper := js.Window.Get("document").Call("createElement", "div")
 	wrapper.Set("innerHTML", r.value)
 
 	value := wrapper.Get("firstChild")

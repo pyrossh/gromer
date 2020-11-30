@@ -1,6 +1,9 @@
-package app
+package js
 
-import "net/url"
+import (
+	"fmt"
+	"net/url"
+)
 
 // Type represents the JavaScript type of a Value.
 type Type int
@@ -221,4 +224,26 @@ func CopyBytesToGo(dst []byte, src Value) int {
 // CopyBytesToJS panics if dst is not an Uint8Array.
 func CopyBytesToJS(dst Value, src []byte) int {
 	return copyBytesToJS(dst, src)
+}
+
+// EventHandler represents a function that can handle HTML events. They are
+// always called on the UI goroutine.
+type EventHandlerFunc func(e Event)
+
+type EventHandler struct {
+	Event   string
+	JSvalue Func
+	Value   EventHandlerFunc
+}
+
+func NewEventHandler(e string, v EventHandlerFunc) EventHandler {
+	return EventHandler{
+		Event: e,
+		Value: v,
+	}
+}
+
+func (h EventHandler) Equal(o EventHandler) bool {
+	return h.Event == o.Event &&
+		fmt.Sprintf("%p", h.Value) == fmt.Sprintf("%p", o.Value)
 }

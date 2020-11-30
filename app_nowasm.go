@@ -7,10 +7,6 @@ import (
 	"os"
 )
 
-var (
-	window *browserWindow
-)
-
 func getenv(k string) string {
 	return os.Getenv(k)
 }

@@ -3,6 +3,8 @@ package app
 import (
 	"io"
 	"unsafe"
+
+	"github.com/pyros2097/wapp/js"
 )
 
 var (
@@ -17,7 +19,7 @@ type Context struct {
 	// The JavaScript value of the element tied to the context. This is a
 	// shorthand for:
 	//  ctx.Src.JSValue()
-	JSSrc Value
+	JSSrc js.Value
 }
 
 // Dispatcher is a function that executes the given function on the goroutine

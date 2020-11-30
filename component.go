@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pyros2097/wapp/errors"
+	"github.com/pyros2097/wapp/js"
 )
 
 var contextMap = map[int]*RenderContext{}
@@ -21,7 +22,7 @@ func (r RenderFunc) Kind() Kind {
 	return FunctionalComponent
 }
 
-func (r RenderFunc) JSValue() Value {
+func (r RenderFunc) JSValue() js.Value {
 	c := getCurrentContext()
 	return c.root.JSValue()
 }
@@ -85,7 +86,7 @@ func (r RenderFunc) attributes() map[string]string {
 	return nil
 }
 
-func (r RenderFunc) eventHandlers() map[string]eventHandler {
+func (r RenderFunc) eventHandlers() map[string]js.EventHandler {
 	return nil
 }
 
@@ -107,18 +108,11 @@ func (r RenderFunc) children() []UI {
 func (r RenderFunc) mount() error {
 	c := getCurrentContext()
 	if r.Mounted() {
-		return errors.New("mounting component failed").
-			Tag("reason", "already mounted").
-			Tag("name", r.name()).
-			Tag("kind", r.Kind())
+		panic("mounting component failed already mounted " + r.name() + r.Kind().String())
 	}
-
 	root := r.Render()
 	if err := mount(root); err != nil {
-		return errors.New("mounting component failed").
-			Tag("name", r.name()).
-			Tag("kind", r.Kind()).
-			Wrap(err)
+		panic("mounting component failed " + r.name() + r.Kind().String())
 	}
 	root.setParent(c.this)
 	c.root = root

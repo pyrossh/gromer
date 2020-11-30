@@ -5,13 +5,14 @@ import (
 	"io"
 
 	"github.com/pyros2097/wapp/errors"
+	"github.com/pyros2097/wapp/js"
 )
 
 type elem struct {
 	attrs       map[string]string
 	body        []UI
-	events      map[string]eventHandler
-	jsvalue     Value
+	events      map[string]js.EventHandler
+	jsvalue     js.Value
 	parentElem  UI
 	selfClosing bool
 	tag         string
@@ -22,7 +23,7 @@ func (e *elem) Kind() Kind {
 	return HTML
 }
 
-func (e *elem) JSValue() Value {
+func (e *elem) JSValue() js.Value {
 	return e.jsvalue
 }
 
@@ -47,7 +48,7 @@ func (e *elem) attributes() map[string]string {
 	return e.attrs
 }
 
-func (e *elem) eventHandlers() map[string]eventHandler {
+func (e *elem) eventHandlers() map[string]js.EventHandler {
 	return e.events
 }
 
@@ -71,7 +72,7 @@ func (e *elem) mount() error {
 			Tag("kind", e.Kind())
 	}
 
-	v := Window().Get("document").Call("createElement", e.tag)
+	v := js.Window.Get("document").Call("createElement", e.tag)
 	if !v.Truthy() {
 		return errors.New("mounting ui element failed").
 			Tag("reason", "create javascript node returned nil").
@@ -307,7 +308,7 @@ func (e *elem) delAttr(k string) {
 	delete(e.attrs, k)
 }
 
-func (e *elem) updateEventHandler(handlers map[string]eventHandler) {
+func (e *elem) updateEventHandler(handlers map[string]js.EventHandler) {
 	for k, current := range e.events {
 		if _, exists := handlers[k]; !exists {
 			e.delJsEventHandler(k, current)
@@ -315,11 +316,11 @@ func (e *elem) updateEventHandler(handlers map[string]eventHandler) {
 	}
 
 	if e.events == nil && len(handlers) != 0 {
-		e.events = make(map[string]eventHandler, len(handlers))
+		e.events = make(map[string]js.EventHandler, len(handlers))
 	}
 
 	for k, new := range handlers {
-		if current, exists := e.events[k]; !current.equal(new) {
+		if current, exists := e.events[k]; !current.Equal(new) {
 			if exists {
 				e.delJsEventHandler(k, current)
 			}
@@ -330,27 +331,24 @@ func (e *elem) updateEventHandler(handlers map[string]eventHandler) {
 	}
 }
 
-func (e *elem) setEventHandler(k string, h EventHandler) {
+func (e *elem) setEventHandler(k string, h js.EventHandlerFunc) {
 	if e.events == nil {
-		e.events = make(map[string]eventHandler)
+		e.events = make(map[string]js.EventHandler)
 	}
 
-	e.events[k] = eventHandler{
-		event: k,
-		value: h,
-	}
+	e.events[k] = js.NewEventHandler(k, h)
 }
 
-func (e *elem) setJsEventHandler(k string, h eventHandler) {
-	jshandler := makeJsEventHandler(e.self(), h.value)
-	h.jsvalue = jshandler
+func (e *elem) setJsEventHandler(k string, h js.EventHandler) {
+	jshandler := makeJsEventHandler(e.self(), h.Value)
+	h.JSvalue = jshandler
 	e.events[k] = h
 	e.JSValue().Call("addEventListener", k, jshandler)
 }
 
-func (e *elem) delJsEventHandler(k string, h eventHandler) {
-	e.JSValue().Call("removeEventListener", k, h.jsvalue)
-	h.jsvalue.Release()
+func (e *elem) delJsEventHandler(k string, h js.EventHandler) {
+	e.JSValue().Call("removeEventListener", k, h.JSvalue)
+	h.JSvalue.Release()
 	delete(e.events, k)
 }
 
@@ -407,7 +405,7 @@ func (e *elem) HtmlWithIndent(w io.Writer, indent int) {
 }
 
 type text struct {
-	jsvalue    Value
+	jsvalue    js.Value
 	parentElem UI
 	value      string
 }
@@ -421,7 +419,7 @@ func (t *text) Kind() Kind {
 	return SimpleText
 }
 
-func (t *text) JSValue() Value {
+func (t *text) JSValue() js.Value {
 	return t.jsvalue
 }
 
@@ -448,7 +446,7 @@ func (t *text) attributes() map[string]string {
 	return nil
 }
 
-func (t *text) eventHandlers() map[string]eventHandler {
+func (t *text) eventHandlers() map[string]js.EventHandler {
 	return nil
 }
 
@@ -473,7 +471,7 @@ func (t *text) mount() error {
 			Tag("value", t.value)
 	}
 
-	t.jsvalue = Window().
+	t.jsvalue = js.Window.
 		Get("document").
 		Call("createTextNode", t.value)
 

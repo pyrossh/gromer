@@ -1,10 +1,12 @@
 // +build !wasm
 
-package app
+package js
 
 import (
 	"net/url"
 )
+
+var Window = &browserWindow{value: value{}}
 
 type value struct{}
 
@@ -116,7 +118,7 @@ func (w browserWindow) CursorPosition() (x, y int) {
 	panic("wasm required")
 }
 
-func (w browserWindow) setCursorPosition(x, y int) {
+func (w browserWindow) SetCursorPosition(x, y int) {
 	panic("wasm required")
 }
 

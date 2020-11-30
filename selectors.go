@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/pyros2097/wapp/errors"
+	"github.com/pyros2097/wapp/js"
 )
 
 // RangeLoop represents a control structure that iterates within a slice, an
@@ -90,7 +91,7 @@ func (r rangeLoop) Kind() Kind {
 	return Selector
 }
 
-func (r rangeLoop) JSValue() Value {
+func (r rangeLoop) JSValue() js.Value {
 	return nil
 }
 
@@ -117,7 +118,7 @@ func (r rangeLoop) attributes() map[string]string {
 	return nil
 }
 
-func (r rangeLoop) eventHandlers() map[string]eventHandler {
+func (r rangeLoop) eventHandlers() map[string]js.EventHandler {
 	return nil
 }
 
@@ -203,7 +204,7 @@ func (c condition) Kind() Kind {
 	return Selector
 }
 
-func (c condition) JSValue() Value {
+func (c condition) JSValue() js.Value {
 	return nil
 }
 
@@ -230,7 +231,7 @@ func (c condition) attributes() map[string]string {
 	return nil
 }
 
-func (c condition) eventHandlers() map[string]eventHandler {
+func (c condition) eventHandlers() map[string]js.EventHandler {
 	return nil
 }
 

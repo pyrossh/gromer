@@ -2,22 +2,19 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/url"
-	"syscall/js"
 )
 
 var (
 	body       *elem
 	content    UI
 	rootPrefix string
-	window     = &browserWindow{value: value{Value: js.Global()}}
 )
 
 func run(render RenderFunc) {
 	defer func() {
 		err := recover()
-		displayLoadError(err)
+		// show alert
 		panic(err)
 	}()
 
@@ -62,16 +59,6 @@ func initContent() {
 	body.body = append(body.body, content)
 }
 
-func displayLoadError(err interface{}) {
-	loadingLabel := Window().
-		Get("document").
-		Call("getElementById", "app-wasm-loader-label")
-	if !loadingLabel.Truthy() {
-		return
-	}
-	loadingLabel.Set("innerText", fmt.Sprint(err))
-}
-
 func onPopState(this Value, args []Value) interface{} {
 	dispatch(func() {
 		// navigate(Window().URL(), false)
@@ -85,8 +72,4 @@ func isExternalNavigation(u *url.URL) bool {
 
 func isFragmentNavigation(u *url.URL) bool {
 	return u.Fragment != ""
-}
-
-func reload() {
-	Window().Get("location").Call("reload")
 }

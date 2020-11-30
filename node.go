@@ -1,11 +1,11 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"reflect"
 
 	"github.com/pyros2097/wapp/errors"
+	"github.com/pyros2097/wapp/js"
 )
 
 // UI is the interface that describes a user interface element such as
@@ -15,7 +15,7 @@ type UI interface {
 	Kind() Kind
 
 	// JSValue returns the javascript value linked to the element.
-	JSValue() Value
+	JSValue() js.Value
 
 	// Reports whether the element is mounted.
 	Mounted() bool
@@ -24,7 +24,7 @@ type UI interface {
 	self() UI
 	setSelf(UI)
 	attributes() map[string]string
-	eventHandlers() map[string]eventHandler
+	eventHandlers() map[string]js.EventHandler
 	parent() UI
 	setParent(UI)
 	children() []UI
@@ -123,28 +123,13 @@ func FilterUIElems(uis ...UI) []UI {
 	return elems
 }
 
-// EventHandler represents a function that can handle HTML events. They are
-// always called on the UI goroutine.
-type EventHandler func(e Event)
-
-type eventHandler struct {
-	event   string
-	jsvalue Func
-	value   EventHandler
-}
-
-func (h eventHandler) equal(o eventHandler) bool {
-	return h.event == o.event &&
-		fmt.Sprintf("%p", h.value) == fmt.Sprintf("%p", o.value)
-}
-
-func makeJsEventHandler(src UI, h EventHandler) Func {
-	return FuncOf(func(this Value, args []Value) interface{} {
+func makeJsEventHandler(src UI, h js.EventHandlerFunc) js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		dispatch(func() {
 			if !src.Mounted() {
 				return
 			}
-			e := Event{
+			e := js.Event{
 				Value: args[0],
 			}
 			trackMousePosition(e)
@@ -155,7 +140,7 @@ func makeJsEventHandler(src UI, h EventHandler) Func {
 	})
 }
 
-func trackMousePosition(e Event) {
+func trackMousePosition(e js.Event) {
 	x := e.Get("clientX")
 	if !x.Truthy() {
 		return
@@ -166,7 +151,7 @@ func trackMousePosition(e Event) {
 		return
 	}
 
-	Window().setCursorPosition(x.Int(), y.Int())
+	js.Window.SetCursorPosition(x.Int(), y.Int())
 }
 
 func isErrReplace(err error) bool {

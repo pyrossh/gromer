@@ -1,4 +1,4 @@
-package app
+package js
 
 import (
 	"net/url"
@@ -7,6 +7,8 @@ import (
 
 	"github.com/pyros2097/wapp/errors"
 )
+
+var Window = &browserWindow{value: value{Value: js.Global()}}
 
 type value struct {
 	js.Value
@@ -149,7 +151,7 @@ func (w *browserWindow) CursorPosition() (x, y int) {
 	return w.cursorX, w.cursorY
 }
 
-func (w *browserWindow) setCursorPosition(x, y int) {
+func (w *browserWindow) SetCursorPosition(x, y int) {
 	w.cursorX = x
 	w.cursorY = y
 }
@@ -172,6 +174,18 @@ func (w *browserWindow) AddEventListener(event string, h EventHandler) func() {
 		w.Call("removeEventListener", event, callback)
 		callback.Release()
 	}
+}
+
+func (w *browserWindow) Location() *Location {
+	return &Location{value: Window.Get("location")}
+}
+
+type Location struct {
+	value js.Value
+}
+
+func (l *Location) Reload() {
+	l.value.Call("reload")
 }
 
 func val(v js.Value) Value {

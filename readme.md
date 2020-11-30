@@ -137,13 +137,13 @@ func main() {
 The directory structure is a lot lke this,
 
 ```sh
-└── assets                  
-|   └── icon.png            
-|   └── styles.css          
+├── assets                  
+│   └── icon.png            
+│   └── styles.css          
 ├── pages                   
-|   └── index               
-|	    └── main.go         
-|   └── about         
-|	    └── main.go         
-|── main.go
+│   └── index               
+│	    └── main.go         
+│   └── about         
+│	    └── main.go         
+└── main.go
 ```

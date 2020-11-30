@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/pyros2097/wapp/js"
 )
 
 type baseAttribute struct {
@@ -12,7 +14,7 @@ func (c baseAttribute) Kind() Kind {
 	return Attribute
 }
 
-func (c baseAttribute) JSValue() Value {
+func (c baseAttribute) JSValue() js.Value {
 	return nil
 }
 
@@ -39,7 +41,7 @@ func (c baseAttribute) attributes() map[string]string {
 	return nil
 }
 
-func (c baseAttribute) eventHandlers() map[string]eventHandler {
+func (c baseAttribute) eventHandlers() map[string]js.EventHandler {
 	return nil
 }
 
@@ -85,19 +87,19 @@ func OnClick(cb func()) UI {
 
 type OnChangeAttribute struct {
 	baseAttribute
-	cb EventHandler
+	cb js.EventHandlerFunc
 }
 
-func OnChange(cb EventHandler) UI {
+func OnChange(cb js.EventHandlerFunc) UI {
 	return OnChangeAttribute{cb: cb}
 }
 
 type OnInputAttribute struct {
 	baseAttribute
-	cb EventHandler
+	cb js.EventHandlerFunc
 }
 
-func OnInput(cb EventHandler) UI {
+func OnInput(cb js.EventHandlerFunc) UI {
 	return OnInputAttribute{cb: cb}
 }
 
@@ -113,7 +115,7 @@ func mergeAttributes(parent *elem, uis ...UI) {
 					parent.setAttr("class", c.classes)
 				}
 			case OnClickAttribute:
-				parent.setEventHandler("click", func(e Event) {
+				parent.setEventHandler("click", func(e js.Event) {
 					c.cb()
 				})
 			case OnChangeAttribute:
