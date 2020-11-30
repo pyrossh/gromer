@@ -25,14 +25,6 @@ func TestKindString(t *testing.T) {
 			kind:           HTML,
 			expectedString: "html",
 		},
-		// {
-		// 	kind:           Component,
-		// 	expectedString: "component",
-		// },
-		{
-			kind:           Selector,
-			expectedString: "selector",
-		},
 	}
 
 	for _, u := range utests {

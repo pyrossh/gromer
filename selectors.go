@@ -69,7 +69,7 @@ func (r RangeLoop) Map(f func(string) UI) RangeLoop {
 
 // If returns a condition that filters the given elements according to the given
 // expression.
-func If(expr bool, elems ...UI) Condition {
+func If(expr bool, elems ...interface{}) Condition {
 	if !expr {
 		elems = nil
 	}
@@ -89,7 +89,7 @@ type Condition struct {
 
 // ElseIf sets the condition with the given nodes if previous expressions
 // were not met and given expression is true.
-func (c Condition) ElseIf(expr bool, elems ...UI) Condition {
+func (c Condition) ElseIf(expr bool, elems ...interface{}) Condition {
 	if c.satisfied {
 		return c
 	}
@@ -104,6 +104,6 @@ func (c Condition) ElseIf(expr bool, elems ...UI) Condition {
 
 // Else sets the condition with the given UI elements if previous
 // expressions were not met.
-func (c Condition) Else(elems ...UI) Condition {
+func (c Condition) Else(elems ...interface{}) Condition {
 	return c.ElseIf(true, elems...)
 }

@@ -44,9 +44,6 @@ func (k Kind) String() string {
 	case HTML:
 		return "html"
 
-	case Selector:
-		return "selector"
-
 	case RawHTML:
 		return "raw"
 
@@ -71,10 +68,6 @@ const (
 	// Component represents a customized, independent and reusable UI element.
 	Component
 
-	// Selector represents an element that is used to select a subset of
-	// elements within a given list.
-	Selector
-
 	// RawHTML represents an HTML element obtained from a raw HTML code snippet.
 	RawHTML
 
@@ -87,7 +80,7 @@ const (
 //
 // It should be used only when implementing components that can accept content
 // with variadic arguments like HTML elements Body method.
-func FilterUIElems(uis ...UI) []UI {
+func FilterUIElems(uis ...interface{}) []UI {
 	if len(uis) == 0 {
 		return nil
 	}
@@ -95,25 +88,17 @@ func FilterUIElems(uis ...UI) []UI {
 	elems := make([]UI, 0, len(uis))
 
 	for _, n := range uis {
-		// Ignore nil elements:
 		if v := reflect.ValueOf(n); n == nil ||
 			v.Kind() == reflect.Ptr && v.IsNil() {
 			continue
 		}
-
-		switch n.Kind() {
-		case SimpleText, HTML, Component, RawHTML:
-			elems = append(elems, n)
-
-		case Selector:
-			elems = append(elems, n.children()...)
-
+		switch c := n.(type) {
+		case RangeLoop:
+			elems = append(elems, c.body...)
+		case Condition:
+			elems = append(elems, c.body...)
 		default:
-			panic(errors.New("filtering ui elements failed").
-				Tag("reason", "unexpected element type found").
-				Tag("kind", n.Kind()).
-				Tag("name", n.name()),
-			)
+			elems = append(elems, c.(UI))
 		}
 	}
 

@@ -37,7 +37,7 @@ func OnInput(cb js.EventHandlerFunc) OnInputAttribute {
 }
 
 func mergeAttributes(parent *elem, uis ...interface{}) {
-	elems := make([]UI, 0, len(uis))
+	elems := []interface{}{}
 	for _, v := range uis {
 		switch c := v.(type) {
 		case CssAttribute:

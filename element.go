@@ -351,7 +351,7 @@ func (e *elem) delJsEventHandler(k string, h js.EventHandler) {
 	delete(e.events, k)
 }
 
-func (e *elem) setBody(body ...UI) {
+func (e *elem) setBody(body ...interface{}) {
 	if e.selfClosing {
 		panic(errors.New("setting html element body failed").
 			Tag("reason", "self closing element can't have children").
