@@ -4,109 +4,100 @@ package app
 
 import (
 	"net/url"
-	"runtime"
-
-	"github.com/pyros2097/wapp/errors"
-)
-
-var (
-	errNoWasm = errors.New("unsupported instruction").
-		Tag("required-architecture", "wasm").
-		Tag("current-architecture", runtime.GOARCH)
 )
 
 type value struct{}
 
 func (v value) Bool() bool {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Call(m string, args ...interface{}) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Float() float64 {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Get(p string) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Index(i int) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) InstanceOf(t Value) bool {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Int() int {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Invoke(args ...interface{}) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) IsNaN() bool {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) IsNull() bool {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) IsUndefined() bool {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) JSValue() Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Length() int {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) New(args ...interface{}) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Set(p string, x interface{}) {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) SetIndex(i int, x interface{}) {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) String() string {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Truthy() bool {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (v value) Type() Type {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func null() Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func undefined() Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func valueOf(x interface{}) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func funcOf(fn func(this Value, args []Value) interface{}) Func {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 type browserWindow struct {
@@ -114,37 +105,37 @@ type browserWindow struct {
 }
 
 func (w browserWindow) URL() *url.URL {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (w browserWindow) Size() (width, height int) {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (w browserWindow) CursorPosition() (x, y int) {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (w browserWindow) setCursorPosition(x, y int) {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (w *browserWindow) GetElementByID(id string) Value {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (w *browserWindow) ScrollToID(id string) {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func (w *browserWindow) AddEventListener(event string, h EventHandler) func() {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func copyBytesToGo(dst []byte, src Value) int {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func copyBytesToJS(dst Value, src []byte) int {
-	panic(errNoWasm)
+	panic("wasm required")
 }

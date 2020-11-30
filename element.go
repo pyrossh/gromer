@@ -278,14 +278,14 @@ func (e *elem) updateAttrs(attrs map[string]string) {
 	}
 }
 
-func (e *elem) setAttr(k string, v interface{}) {
+func (e *elem) setAttr(k string, v string) {
 	if e.attrs == nil {
 		e.attrs = make(map[string]string)
 	}
 
 	switch k {
 	case "style", "allow":
-		s := e.attrs[k] + toString(v) + ";"
+		s := e.attrs[k] + v + ";"
 		e.attrs[k] = s
 		return
 
@@ -294,21 +294,17 @@ func (e *elem) setAttr(k string, v interface{}) {
 		if s != "" {
 			s += " "
 		}
-		s += toString(v)
+		s += v
 		e.attrs[k] = s
 		return
 	}
-
-	switch v := v.(type) {
-	case bool:
-		if !v {
-			delete(e.attrs, k)
-			return
-		}
+	if v == "false" {
+		delete(e.attrs, k)
+		return
+	} else if v == "true" {
 		e.attrs[k] = ""
-
-	default:
-		e.attrs[k] = toString(v)
+	} else {
+		e.attrs[k] = v
 	}
 }
 
@@ -453,4 +449,116 @@ func (e *elem) OnFocus(h EventHandler) *elem {
 func (e *elem) OnInput(h EventHandler) *elem {
 	e.setEventHandler("input", h)
 	return e
+}
+
+type text struct {
+	jsvalue    Value
+	parentElem UI
+	value      string
+}
+
+// Text creates a simple text element.
+func Text(v string) UI {
+	return &text{value: v}
+}
+
+func (t *text) Kind() Kind {
+	return SimpleText
+}
+
+func (t *text) JSValue() Value {
+	return t.jsvalue
+}
+
+func (t *text) Mounted() bool {
+	return t.jsvalue != nil
+}
+
+func (t *text) name() string {
+	return "text"
+}
+
+func (t *text) self() UI {
+	return t
+}
+
+func (t *text) setSelf(n UI) {
+}
+
+func (t *text) context() context.Context {
+	return context.TODO()
+}
+
+func (t *text) attributes() map[string]string {
+	return nil
+}
+
+func (t *text) eventHandlers() map[string]eventHandler {
+	return nil
+}
+
+func (t *text) parent() UI {
+	return t.parentElem
+}
+
+func (t *text) setParent(p UI) {
+	t.parentElem = p
+}
+
+func (t *text) children() []UI {
+	return nil
+}
+
+func (t *text) mount() error {
+	if t.Mounted() {
+		return errors.New("mounting ui element failed").
+			Tag("reason", "already mounted").
+			Tag("kind", t.Kind()).
+			Tag("name", t.name()).
+			Tag("value", t.value)
+	}
+
+	t.jsvalue = Window().
+		Get("document").
+		Call("createTextNode", t.value)
+
+	return nil
+}
+
+func (t *text) dismount() {
+	t.jsvalue = nil
+}
+
+func (t *text) update(n UI) error {
+	if !t.Mounted() {
+		return nil
+	}
+
+	o, isText := n.(*text)
+	if !isText {
+		return errors.New("updating ui element failed").
+			Tag("replace", true).
+			Tag("reason", "different element types").
+			Tag("current-kind", t.Kind()).
+			Tag("current-name", t.name()).
+			Tag("updated-kind", n.Kind()).
+			Tag("updated-name", n.name())
+	}
+
+	if t.value != o.value {
+		t.value = o.value
+		t.jsvalue.Set("nodeValue", o.value)
+	}
+
+	return nil
+}
+
+func (t *text) Html(w io.Writer) {
+	t.HtmlWithIndent(w, 0)
+}
+
+func (t *text) HtmlWithIndent(w io.Writer, indent int) {
+	writeIndent(w, indent)
+	// html.EscapeString(
+	w.Write(stob(t.value))
 }

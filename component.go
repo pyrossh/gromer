@@ -8,31 +8,6 @@ import (
 	"github.com/pyros2097/wapp/errors"
 )
 
-// Composer is the interface that describes a customized, independent and
-// reusable UI element.
-//
-// Satisfying this interface is done by embedding app.Compo into a struct and
-// implementing the Render function.
-//
-// Example:
-//  type Hello struct {
-//      app.Compo
-//  }
-//
-//  func (c *Hello) Render() app.UI {
-//      return app.Text("hello")
-//  }
-type Composer interface {
-	UI
-
-	// Render returns the node tree that define how the component is desplayed.
-	Render() UI
-
-	// Update update the component appearance. It should be called when a field
-	// used to render the component has been modified.
-	Update()
-}
-
 var contextMap = map[int]*RenderContext{}
 var contextIndex = 0
 
@@ -95,7 +70,7 @@ func (r RenderFunc) setSelf(n UI) {
 	if n != nil {
 		println("new context")
 		c := NewRenderContext()
-		c.this = n.(Composer)
+		c.this = n.(RenderFunc)
 		return
 	}
 
@@ -268,7 +243,7 @@ type RenderContext struct {
 	contextMapIndex int
 	parentElem      UI
 	root            UI
-	this            Composer
+	this            RenderFunc
 	index           int
 	values          map[int]interface{}
 	eindex          int

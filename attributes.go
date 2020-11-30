@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-
-	"github.com/pyros2097/wapp/errors"
 )
 
 type baseAttribute struct {
@@ -57,18 +55,14 @@ func (c baseAttribute) children() []UI {
 }
 
 func (c baseAttribute) mount() error {
-	return errors.New("condition is not mountable").
-		Tag("name", c.name()).
-		Tag("kind", c.Kind())
+	panic("cant mount attributes")
 }
 
 func (c baseAttribute) dismount() {
 }
 
 func (c baseAttribute) update(UI) error {
-	return errors.New("condition cannot be updated").
-		Tag("name", c.name()).
-		Tag("kind", c.Kind())
+	panic("cant update attributes")
 }
 
 type CssAttribute struct {

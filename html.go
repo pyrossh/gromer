@@ -58,11 +58,6 @@ func Script(str string) *elem {
 // 	return e
 // }
 
-// func (e *elem) OnClick(h EventHandler) *elem {
-// 	e.setEventHandler("click", h)
-// 	return e
-// }
-
 // func (e *elem) OnFocus(h EventHandler) *elem {
 // 	e.setEventHandler("focus", h)
 // 	return e

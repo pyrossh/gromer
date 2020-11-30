@@ -16,17 +16,17 @@ func getenv(k string) string {
 }
 
 func keepBodyClean() func() {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func navigate(u *url.URL, updateHistory bool) error {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func reload() {
-	panic(errNoWasm)
+	panic("wasm required")
 }
 
 func run(r RenderFunc) {
-	panic(errNoWasm)
+	panic("wasm required")
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ func Counter(c *RenderContext) UI {
 				Text("-"),
 			),
 			Div(
-				Text(count()),
+				Text(strconv.Itoa(count())),
 			),
 			Div(
 				Text("+"),
