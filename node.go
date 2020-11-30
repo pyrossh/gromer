@@ -75,9 +75,6 @@ const (
 	// elements within a given list.
 	Selector
 
-	//  Attribute represents css
-	Attribute
-
 	// RawHTML represents an HTML element obtained from a raw HTML code snippet.
 	RawHTML
 

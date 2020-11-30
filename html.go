@@ -48,16 +48,16 @@ func Script(str string) *elem {
 	}
 }
 
-func Div(uis ...UI) *elem {
+func Div(uis ...interface{}) *elem {
 	e := &elem{tag: "div"}
 	mergeAttributes(e, uis...)
 	return e
 }
 
-func Row(uis ...UI) UI {
-	return Div(append([]UI{Css("flex flex-row justify-center align-items-center")}, uis...)...)
+func Row(uis ...interface{}) UI {
+	return Div(append([]interface{}{Css("flex flex-row justify-center align-items-center")}, uis...)...)
 }
 
-func Col(uis ...UI) UI {
-	return Div(append([]UI{Css("flex flex-col justify-center align-items-center")}, uis...)...)
+func Col(uis ...interface{}) UI {
+	return Div(append([]interface{}{Css("flex flex-col justify-center align-items-center")}, uis...)...)
 }
