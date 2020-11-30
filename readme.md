@@ -4,11 +4,19 @@
 	<a href="https://pkg.go.dev/github.com/pyros2097/wapp"><img src="https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat" alt="pkg.go.dev docs"></a>
 </p>
 
-**wapp** is a package to build [isomorphic web apps](https://developers.google.com/web/progressive-web-apps/) with [Go](https://golang.org) and [WebAssembly](https://webassembly.org).
+**wapp** is a framework to build [isomorphic web apps](https://developers.google.com/web/progressive-web-apps/) with [Go](https://golang.org) and [WebAssembly](https://webassembly.org). Its like nextjs but using golang instead.
 
-It uses a [declarative syntax](#declarative-syntax) that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
+It uses a declarative syntax that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
 
-This originally started out as of fork of this awesome golang PWA framework [go-app](https://github.com/maxence-charriere/go-app). All credits goes to Maxence Charriere for majority of the work.
+This originally started out as of fork of this awesome go-app PWA framework. All credits goes to Maxence Charriere for majority of the work.
+
+Inspired by:
+* [go-app](https://github.com/maxence-charriere/go-app)
+* [react](https://reactjs.org/docs/components-and-props.html)
+* [reacct-hooks](https://reactjs.org/docs/hooks-intro.html)
+* [jotai](https://github.com/pmndrs/jotai)
+* [klyva](https://github.com/merisbahti/klyva)
+
 
 ## Install
 
@@ -21,7 +29,7 @@ go mod init
 go get -u -v github.com/pyros2097/wapp
 ```
 
-## Declarative syntax
+## Example
 
 **wapp** uses a declarative syntax so you can write component-based UI elements just by using the Go programming language. It follows the same ideas of react. It has functional components and hooks.
 
@@ -78,7 +86,7 @@ import (
 	. "github.com/pyros2097/wapp"
 )
 
-func Clock(c *RenderContext, title string) UI {
+func Route(c *RenderContext, title string) UI {
 	timeValue, setTime := c.UseState(time.Now())
 	running, setRunning := c.UseState(false)
 	startTimer := func() {
