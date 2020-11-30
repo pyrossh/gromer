@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"net/url"
 	"reflect"
 	"sort"
@@ -108,10 +107,6 @@ func (r rangeLoop) self() UI {
 }
 
 func (r rangeLoop) setSelf(UI) {
-}
-
-func (r rangeLoop) context() context.Context {
-	return nil
 }
 
 func (r rangeLoop) attributes() map[string]string {
@@ -221,10 +216,6 @@ func (c condition) self() UI {
 }
 
 func (c condition) setSelf(UI) {
-}
-
-func (c condition) context() context.Context {
-	return nil
 }
 
 func (c condition) attributes() map[string]string {

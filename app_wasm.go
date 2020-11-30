@@ -1,8 +1,9 @@
 package app
 
 import (
-	"context"
 	"net/url"
+
+	"github.com/pyros2097/wapp/js"
 )
 
 var (
@@ -11,7 +12,7 @@ var (
 	rootPrefix string
 )
 
-func run(render RenderFunc) {
+func Run(render RenderFunc) {
 	defer func() {
 		err := recover()
 		// show alert
@@ -33,25 +34,24 @@ func run(render RenderFunc) {
 	}
 }
 
+func Reload() {
+	dispatch(func() {
+		js.Window.Location().Reload()
+	})
+}
+
 func initBody() {
-	ctx, cancel := context.WithCancel(context.Background())
 	body = &elem{
-		ctx:       ctx,
-		ctxCancel: cancel,
-		jsvalue:   Window().Get("document").Get("body"),
-		tag:       "body",
+		jsvalue: js.Window.Get("document").Get("body"),
+		tag:     "body",
 	}
 	body.setSelf(body)
 }
 
 func initContent() {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	content := &elem{
-		ctx:       ctx,
-		ctxCancel: cancel,
-		jsvalue:   body.JSValue().Get("firstElementChild"),
-		tag:       "div",
+		jsvalue: body.JSValue().Get("firstElementChild"),
+		tag:     "div",
 	}
 
 	content.setSelf(content)

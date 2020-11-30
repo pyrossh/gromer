@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"reflect"
 	"strings"
 
@@ -69,17 +68,13 @@ func (r RenderFunc) self() UI {
 func (r RenderFunc) setSelf(n UI) {
 	c := getCurrentContext()
 	if n != nil {
-		println("new context")
+		println("xnew render context")
 		c := NewRenderContext()
 		c.this = n.(RenderFunc)
 		return
 	}
 
 	c.this = nil
-}
-
-func (r RenderFunc) context() context.Context {
-	return nil
 }
 
 func (r RenderFunc) attributes() map[string]string {

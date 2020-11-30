@@ -1,8 +1,6 @@
 package app
 
 import (
-	"context"
-
 	"github.com/pyros2097/wapp/js"
 )
 
@@ -31,10 +29,6 @@ func (c baseAttribute) self() UI {
 }
 
 func (c baseAttribute) setSelf(UI) {
-}
-
-func (c baseAttribute) context() context.Context {
-	return nil
 }
 
 func (c baseAttribute) attributes() map[string]string {

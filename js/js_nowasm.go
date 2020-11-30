@@ -134,10 +134,22 @@ func (w *browserWindow) AddEventListener(event string, h EventHandler) func() {
 	panic("wasm required")
 }
 
+func (w *browserWindow) Location() Location {
+	panic("wasm required")
+}
+
 func copyBytesToGo(dst []byte, src Value) int {
 	panic("wasm required")
 }
 
 func copyBytesToJS(dst Value, src []byte) int {
+	panic("wasm required")
+}
+
+type Location struct {
+	value
+}
+
+func (l *Location) Reload() {
 	panic("wasm required")
 }

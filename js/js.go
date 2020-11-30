@@ -195,6 +195,8 @@ type BrowserWindow interface {
 	// returns a function that must be called to unsubscribe the handler and
 	// release allocated resources.
 	AddEventListener(event string, h EventHandler) func()
+
+	Location() Location
 }
 
 // Event is the interface that describes a javascript event.

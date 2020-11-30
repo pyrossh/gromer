@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"io"
 
 	"github.com/pyros2097/wapp/errors"
@@ -436,10 +435,6 @@ func (t *text) self() UI {
 }
 
 func (t *text) setSelf(n UI) {
-}
-
-func (t *text) context() context.Context {
-	return context.TODO()
 }
 
 func (t *text) attributes() map[string]string {

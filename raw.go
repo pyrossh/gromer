@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"io"
 	"strings"
 
@@ -57,10 +56,6 @@ func (r *raw) self() UI {
 }
 
 func (r *raw) setSelf(UI) {
-}
-
-func (r *raw) context() context.Context {
-	return nil
 }
 
 func (r *raw) attributes() map[string]string {
