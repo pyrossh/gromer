@@ -48,50 +48,6 @@ func Script(str string) *elem {
 	}
 }
 
-// func (e *elem) OnBlur(h EventHandler) *elem {
-// 	e.setEventHandler("blur", h)
-// 	return e
-// }
-
-// func (e *elem) OnChange(h EventHandler) *elem {
-// 	e.setEventHandler("change", h)
-// 	return e
-// }
-
-// func (e *elem) OnFocus(h EventHandler) *elem {
-// 	e.setEventHandler("focus", h)
-// 	return e
-// }
-
-// func (e *elem) OnInput(h EventHandler) *elem {
-// 	e.setEventHandler("input", h)
-// 	return e
-// }
-
-func mergeAttributes(parent *elem, uis ...UI) {
-	elems := make([]UI, 0, len(uis))
-	for _, v := range uis {
-		if v.Kind() == Attribute {
-			switch c := v.(type) {
-			case CssAttribute:
-				if vv, ok := parent.attrs["classes"]; ok {
-					parent.setAttr("class", vv+" "+c.classes)
-				} else {
-					parent.setAttr("class", c.classes)
-				}
-			case OnClickAttribute:
-				parent.setEventHandler("click", func(e Event) {
-					c.cb()
-				})
-			}
-		} else {
-			elems = append(elems, v)
-		}
-
-	}
-	parent.setBody(elems...)
-}
-
 func Div(uis ...UI) *elem {
 	e := &elem{tag: "div"}
 	mergeAttributes(e, uis...)

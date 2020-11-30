@@ -82,3 +82,49 @@ type OnClickAttribute struct {
 func OnClick(cb func()) UI {
 	return OnClickAttribute{cb: cb}
 }
+
+type OnChangeAttribute struct {
+	baseAttribute
+	cb EventHandler
+}
+
+func OnChange(cb EventHandler) UI {
+	return OnChangeAttribute{cb: cb}
+}
+
+type OnInputAttribute struct {
+	baseAttribute
+	cb EventHandler
+}
+
+func OnInput(cb EventHandler) UI {
+	return OnInputAttribute{cb: cb}
+}
+
+func mergeAttributes(parent *elem, uis ...UI) {
+	elems := make([]UI, 0, len(uis))
+	for _, v := range uis {
+		if v.Kind() == Attribute {
+			switch c := v.(type) {
+			case CssAttribute:
+				if vv, ok := parent.attrs["classes"]; ok {
+					parent.setAttr("class", vv+" "+c.classes)
+				} else {
+					parent.setAttr("class", c.classes)
+				}
+			case OnClickAttribute:
+				parent.setEventHandler("click", func(e Event) {
+					c.cb()
+				})
+			case OnChangeAttribute:
+				parent.setEventHandler("change", c.cb)
+			case OnInputAttribute:
+				parent.setEventHandler("input", c.cb)
+			}
+		} else {
+			elems = append(elems, v)
+		}
+
+	}
+	parent.setBody(elems...)
+}
