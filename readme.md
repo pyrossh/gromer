@@ -1,14 +1,14 @@
 <p align="center">
     <a href="https://goreportcard.com/report/github.com/pyros2097/wapp"><img src="https://goreportcard.com/badge/github.com/pyros2097/wapp" alt="Go Report Card"></a>
 	<a href="https://GitHub.com/pyros2097/wapp/releases/"><img src="https://img.shields.io/github/release/pyros2097/wapp.svg" alt="GitHub release"></a>
-	<a href="https://pkg.go.dev/github.com/pyros2097/wapp/v7/pkg/app"><img src="https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat" alt="pkg.go.dev docs"></a>
+	<a href="https://pkg.go.dev/github.com/pyros2097/wapp"><img src="https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat" alt="pkg.go.dev docs"></a>
 </p>
 
 **wapp** is a package to build [isomorphic web apps](https://developers.google.com/web/progressive-web-apps/) with [Go](https://golang.org) and [WebAssembly](https://webassembly.org).
 
-It uses a [declarative syntax](#declarative-syntax) that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features.
+It uses a [declarative syntax](#declarative-syntax) that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
 
-This originally started out as of fork of this awesome golang PWA framework [go-app](https://github.com/pyros2097/wapp). All credits goes to Maxence Charriere for majority of the work.
+This originally started out as of fork of this awesome golang PWA framework [go-app](https://github.com/maxence-charriere/go-app). All credits goes to Maxence Charriere for majority of the work.
 
 ## Install
 
@@ -23,42 +23,125 @@ go get -u -v github.com/pyros2097/wapp
 
 ## Declarative syntax
 
-**go-app** uses a declarative syntax so you can write component-based UI elements just by using the Go programming language.
+**wapp** uses a declarative syntax so you can write component-based UI elements just by using the Go programming language. It follows the same ideas of react. It has functional components and hooks.
+
+The example is located here,
+
+[wapp-example](https://github.com/pyros2097/wapp-example)
+
+**Counter**
 
 ```go
-package pages
+package main
 
 import (
-	"github.com/pyros2097/wapp"
+	. "github.com/pyros2097/wapp"
 )
 
-func Index(c *app.RenderContext) app.UI {
+func Counter(c *RenderContext) UI {
 	count, setCount := c.UseInt(0)
-	onclick := func(ctx app.Context, e app.Event) {
-		setCount(count() + 1)
-	}
+	inc := func() { setCount(count() - 1) }
+	dec := func() { setCount(count() + 1) }
+	return Col(
+		Row(
+			Row(Css("text-6xl"),
+				Text("Counter"),
+			),
+		),
+		Row(
+			Row(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(dec),
+				Text("-"),
+			),
+			Row(Css("text-6xl m-20"),
+				Text(count()),
+			),
+			Row(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(inc),
+				Text("+"),
+			),
+		),
+	)
+}
 
-	return app.Div().
-		Body(
-			app.Div().
-				Style("cursor", "pointer").
-				OnClick(onclick).
-				Body(
-					app.Text(count()),
-				),
-			app.Text("id: "+id.(string)),
-		)
+func main() {
+	Run(Counter)
 }
 ```
 
-The directory should look like as the following:
+**Clock**
+
+```go
+package main
+
+import (
+	"time"
+
+	. "github.com/pyros2097/wapp"
+)
+
+func Clock(c *RenderContext, title string) UI {
+	timeValue, setTime := c.UseState(time.Now())
+	running, setRunning := c.UseState(false)
+	startTimer := func() {
+		setRunning(true)
+		go func() {
+			for running().(bool) {
+				setTime(time.Now())
+				time.Sleep(time.Second * 1)
+			}
+		}()
+	}
+	stopTimer := func() {
+		setRunning(false)
+	}
+	c.UseEffect(func() func() {
+		startTimer()
+		return stopTimer
+	})
+
+	return Col(
+		Row(
+			Div(Css("text-6xl"),
+				Text(title),
+			),
+		),
+		Row(
+			Div(Css("mt-10"),
+				Text(timeValue().(time.Time).Format("15:04:05")),
+			),
+		),
+		Row(
+			Div(Css("text-6xl m-20 cursor-pointer select-none"),
+				Text("Start"),
+			).
+				OnClick(func(ctx Context, e Event) {
+					startTimer()
+				}),
+			Div(Css("text-6xl m-20 cursor-pointer select-none"),
+				Text("Stop"),
+			).
+				OnClick(func(ctx Context, e Event) {
+					stopTimer()
+				}),
+		),
+	)
+}
+
+func main() {
+	Run(Clock)
+}
+
+```
+
+The directory structure is a lot lke this,
 
 ```sh
-.                     
-├── pages             
-    └── index.go      
-    └── about.go      
-└── static            
-    └── favicon.png   
-    └── logo.png   
+└── assets                  
+|   └── icon.png            
+|   └── styles.css          
+├── pages                   
+|   └── index               
+|	    └── main.go         
+|   └── about         
+|	    └── main.go         
+|── main.go
 ```
