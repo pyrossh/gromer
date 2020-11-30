@@ -406,41 +406,6 @@ func (e *elem) HtmlWithIndent(w io.Writer, indent int) {
 	w.Write(stob(">"))
 }
 
-func (e *elem) ID(v string) *elem {
-	e.setAttr("id", v)
-	return e
-}
-
-func (e *elem) Style(k, v string) *elem {
-	e.setAttr("style", k+":"+v)
-	return e
-}
-
-func (e *elem) OnBlur(h EventHandler) *elem {
-	e.setEventHandler("blur", h)
-	return e
-}
-
-func (e *elem) OnChange(h EventHandler) *elem {
-	e.setEventHandler("change", h)
-	return e
-}
-
-func (e *elem) OnClick(h EventHandler) *elem {
-	e.setEventHandler("click", h)
-	return e
-}
-
-func (e *elem) OnFocus(h EventHandler) *elem {
-	e.setEventHandler("focus", h)
-	return e
-}
-
-func (e *elem) OnInput(h EventHandler) *elem {
-	e.setEventHandler("input", h)
-	return e
-}
-
 type text struct {
 	jsvalue    Value
 	parentElem UI

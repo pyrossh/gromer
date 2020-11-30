@@ -110,18 +110,12 @@ func Clock(c *RenderContext, title string) UI {
 			),
 		),
 		Row(
-			Div(Css("text-6xl m-20 cursor-pointer select-none"),
+			Div(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(startTimer),
 				Text("Start"),
-			).
-				OnClick(func(ctx Context, e Event) {
-					startTimer()
-				}),
-			Div(Css("text-6xl m-20 cursor-pointer select-none"),
+			),
+			Div(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(stopTimer),
 				Text("Stop"),
-			).
-				OnClick(func(ctx Context, e Event) {
-					stopTimer()
-				}),
+			),
 		),
 	)
 }
