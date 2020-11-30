@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"io"
 	"unsafe"
 )
@@ -11,14 +10,7 @@ var (
 	uiChan              = make(chan func(), 512)
 )
 
-// Context represents a context that is tied to a UI element. It is canceled
-// when the element is dismounted.
-//
-// It implements the context.Context interface.
-//  https://golang.org/pkg/context/#Context
 type Context struct {
-	context.Context
-
 	// The UI element tied to the context.
 	Src UI
 

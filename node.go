@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"reflect"
@@ -24,7 +23,6 @@ type UI interface {
 	name() string
 	self() UI
 	setSelf(UI)
-	context() context.Context
 	attributes() map[string]string
 	eventHandlers() map[string]eventHandler
 	parent() UI
@@ -127,7 +125,7 @@ func FilterUIElems(uis ...UI) []UI {
 
 // EventHandler represents a function that can handle HTML events. They are
 // always called on the UI goroutine.
-type EventHandler func(ctx Context, e Event)
+type EventHandler func(e Event)
 
 type eventHandler struct {
 	event   string
@@ -146,19 +144,11 @@ func makeJsEventHandler(src UI, h EventHandler) Func {
 			if !src.Mounted() {
 				return
 			}
-
-			ctx := Context{
-				Context: src.context(),
-				Src:     src,
-				JSSrc:   src.JSValue(),
-			}
-
-			event := Event{
+			e := Event{
 				Value: args[0],
 			}
-
-			trackMousePosition(event)
-			h(ctx, event)
+			trackMousePosition(e)
+			h(e)
 		})
 
 		return nil

@@ -80,7 +80,7 @@ func mergeAttributes(parent *elem, uis ...UI) {
 					parent.setAttr("class", c.classes)
 				}
 			case OnClickAttribute:
-				parent.setEventHandler("click", func(ctx Context, e Event) {
+				parent.setEventHandler("click", func(e Event) {
 					c.cb()
 				})
 			}

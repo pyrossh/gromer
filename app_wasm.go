@@ -90,11 +90,3 @@ func isFragmentNavigation(u *url.URL) bool {
 func reload() {
 	Window().Get("location").Call("reload")
 }
-
-func keepBodyClean() func() {
-	close := Window().Call("goappKeepBodyClean")
-
-	return func() {
-		close.Invoke()
-	}
-}

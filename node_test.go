@@ -118,7 +118,6 @@ func testMounted(t *testing.T, n UI) {
 
 	switch n.Kind() {
 	case HTML, Component:
-		require.NoError(t, n.context().Err())
 		require.NotNil(t, n.self())
 	}
 
@@ -134,7 +133,6 @@ func testDismounted(t *testing.T, n UI) {
 
 	switch n.Kind() {
 	case HTML, Component:
-		require.Error(t, n.context().Err())
 		require.Nil(t, n.self())
 	}
 

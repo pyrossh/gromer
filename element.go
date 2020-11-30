@@ -10,8 +10,6 @@ import (
 type elem struct {
 	attrs       map[string]string
 	body        []UI
-	ctx         context.Context
-	ctxCancel   func()
 	events      map[string]eventHandler
 	jsvalue     Value
 	parentElem  UI
@@ -29,8 +27,7 @@ func (e *elem) JSValue() Value {
 }
 
 func (e *elem) Mounted() bool {
-	return e.ctx != nil && e.ctx.Err() == nil &&
-		e.self() != nil &&
+	return e.self() != nil &&
 		e.jsvalue != nil
 }
 
@@ -44,10 +41,6 @@ func (e *elem) self() UI {
 
 func (e *elem) setSelf(n UI) {
 	e.this = n
-}
-
-func (e *elem) context() context.Context {
-	return e.ctx
 }
 
 func (e *elem) attributes() map[string]string {
@@ -77,8 +70,6 @@ func (e *elem) mount() error {
 			Tag("name", e.name()).
 			Tag("kind", e.Kind())
 	}
-
-	e.ctx, e.ctxCancel = context.WithCancel(context.Background())
 
 	v := Window().Get("document").Call("createElement", e.tag)
 	if !v.Truthy() {
@@ -118,7 +109,6 @@ func (e *elem) dismount() {
 		e.delJsEventHandler(k, v)
 	}
 
-	e.ctxCancel()
 	e.jsvalue = nil
 }
 

@@ -15,10 +15,6 @@ func getenv(k string) string {
 	return os.Getenv(k)
 }
 
-func keepBodyClean() func() {
-	panic("wasm required")
-}
-
 func navigate(u *url.URL, updateHistory bool) error {
 	panic("wasm required")
 }
