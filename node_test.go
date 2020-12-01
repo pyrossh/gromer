@@ -8,32 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestKindString(t *testing.T) {
-	utests := []struct {
-		kind           Kind
-		expectedString string
-	}{
-		{
-			kind:           UndefinedElem,
-			expectedString: "undefined",
-		},
-		{
-			kind:           SimpleText,
-			expectedString: "text",
-		},
-		{
-			kind:           HTML,
-			expectedString: "html",
-		},
-	}
-
-	for _, u := range utests {
-		t.Run(u.expectedString, func(t *testing.T) {
-			require.Equal(t, u.expectedString, u.kind.String())
-		})
-	}
-}
-
 func TestFilterUIElems(t *testing.T) {
 	var nilText *text
 
@@ -108,10 +82,10 @@ func testMounted(t *testing.T, n UI) {
 	require.NotNil(t, n.JSValue())
 	require.True(t, n.Mounted())
 
-	switch n.Kind() {
-	case HTML, Component:
-		require.NotNil(t, n.self())
-	}
+	// switch n.Kind() {
+	// case HTML, Component:
+	// 	require.NotNil(t, n.self())
+	// }
 
 	for _, c := range n.children() {
 		require.Equal(t, n, c.parent())
@@ -123,10 +97,10 @@ func testDismounted(t *testing.T, n UI) {
 	require.Nil(t, n.JSValue())
 	require.False(t, n.Mounted())
 
-	switch n.Kind() {
-	case HTML, Component:
-		require.Nil(t, n.self())
-	}
+	// switch n.Kind() {
+	// case HTML, Component:
+	// 	require.Nil(t, n.self())
+	// }
 
 	for _, c := range n.children() {
 		testDismounted(t, c)

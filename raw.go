@@ -35,10 +35,6 @@ type raw struct {
 	value      string
 }
 
-func (r *raw) Kind() Kind {
-	return RawHTML
-}
-
 func (r *raw) JSValue() js.Value {
 	return r.jsvalue
 }
@@ -80,10 +76,7 @@ func (r *raw) children() []UI {
 
 func (r *raw) mount() error {
 	if r.Mounted() {
-		return errors.New("mounting raw html element failed").
-			Tag("reason", "already mounted").
-			Tag("name", r.name()).
-			Tag("kind", r.Kind())
+		panic("mounting raw failed already mounted " + r.name())
 	}
 
 	wrapper := js.Window.Get("document").Call("createElement", "div")
@@ -91,11 +84,7 @@ func (r *raw) mount() error {
 
 	value := wrapper.Get("firstChild")
 	if !value.Truthy() {
-		return errors.New("mounting raw html element failed").
-			Tag("reason", "converting raw html to html elements returned nil").
-			Tag("name", r.name()).
-			Tag("kind", r.Kind()).
-			Tag("raw-html", r.value)
+		panic("mounting raw failed converting raw html to html elements returned nil " + r.name() + " " + r.value)
 	}
 
 	wrapper.Call("removeChild", value)
@@ -112,22 +101,12 @@ func (r *raw) update(n UI) error {
 		return nil
 	}
 
-	if n.Kind() != r.Kind() || r.name() != r.name() {
-		return errors.New("updating raw html element failed").
-			Tag("replace", true).
-			Tag("reason", "different element types").
-			Tag("current-kind", r.Kind()).
-			Tag("current-name", r.name()).
-			Tag("updated-kind", n.Kind()).
-			Tag("updated-name", n.name())
+	if r.name() != r.name() {
+		panic("updating raw element failed replace different element type current-name: " + r.name() + " updated-name: " + n.name())
 	}
 
 	if v := n.(*raw).value; r.value != v {
-		return errors.New("updating raw html element failed").
-			Tag("replace", true).
-			Tag("reason", "different raw values").
-			Tag("current-value", r.value).
-			Tag("new-value", v)
+		panic("updating raw element failed replace different raw values current-value: " + r.value + " new-value: " + v)
 	}
 
 	return nil

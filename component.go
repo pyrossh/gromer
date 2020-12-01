@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/pyros2097/wapp/errors"
 	"github.com/pyros2097/wapp/js"
 )
 
@@ -16,10 +15,6 @@ func getCurrentContext() *RenderContext {
 }
 
 type RenderFunc func(ctx *RenderContext) UI
-
-func (r RenderFunc) Kind() Kind {
-	return FunctionalComponent
-}
 
 func (r RenderFunc) JSValue() js.Value {
 	c := getCurrentContext()
@@ -103,11 +98,11 @@ func (r RenderFunc) children() []UI {
 func (r RenderFunc) mount() error {
 	c := getCurrentContext()
 	if r.Mounted() {
-		panic("mounting component failed already mounted " + r.name() + r.Kind().String())
+		panic("mounting component failed already mounted " + r.name())
 	}
 	root := r.Render()
 	if err := mount(root); err != nil {
-		panic("mounting component failed " + r.name() + r.Kind().String())
+		panic("mounting component failed " + r.name())
 	}
 	root.setParent(c.this)
 	c.root = root
@@ -131,14 +126,8 @@ func (r RenderFunc) update(n UI) error {
 		return nil
 	}
 
-	if r.Kind() != r.Kind() || n.name() != n.name() {
-		return errors.New("updating ui element failed").
-			Tag("replace", true).
-			Tag("reason", "different element types").
-			Tag("current-kind", r.Kind()).
-			Tag("current-name", r.name()).
-			Tag("updated-kind", n.Kind()).
-			Tag("updated-name", n.name())
+	if n.name() != n.name() {
+		panic("updating ui element failed replace different element type current-name: " + r.name() + " updated-name: " + n.name())
 	}
 
 	aval := reflect.Indirect(reflect.ValueOf(r.self()))
@@ -177,10 +166,7 @@ func (r RenderFunc) updateRoot() error {
 	}
 
 	if err != nil {
-		return errors.New("updating component failed").
-			Tag("kind", r.Kind()).
-			Tag("name", r.name()).
-			Wrap(err)
+		panic("updating component failed " + r.name())
 	}
 
 	return nil
@@ -192,29 +178,20 @@ func (r RenderFunc) replaceRoot(n UI) error {
 	new := n
 
 	if err := mount(new); err != nil {
-		return errors.New("replacing component root failed").
-			Tag("kind", r.Kind()).
-			Tag("name", r.name()).
-			Tag("root-kind", old.Kind()).
-			Tag("root-name", old.name()).
-			Tag("new-root-kind", new.Kind()).
-			Tag("new-root-name", new.name()).
-			Wrap(err)
+		panic("replacing component root failed name: " + r.name() + " root-name: " + old.name() + "new-root-name: " + new.name())
 	}
 
 	var parent UI
 	for {
 		parent = r.parent()
-		if parent == nil || parent.Kind() == HTML {
+		_, isElem := parent.(*elem)
+		if parent == nil || isElem {
 			break
 		}
 	}
 
 	if parent == nil {
-		return errors.New("replacing component root failed").
-			Tag("kind", r.Kind()).
-			Tag("name", r.name()).
-			Tag("reason", "coponent does not have html element parents")
+		panic("replacing component root failed name: " + r.name() + " component does not have html element parents")
 	}
 
 	c.root = new

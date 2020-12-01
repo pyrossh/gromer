@@ -2,8 +2,8 @@ package app
 
 import (
 	"io"
+	"strconv"
 
-	"github.com/pyros2097/wapp/errors"
 	"github.com/pyros2097/wapp/js"
 )
 
@@ -16,10 +16,6 @@ type elem struct {
 	selfClosing bool
 	tag         string
 	this        UI
-}
-
-func (e *elem) Kind() Kind {
-	return HTML
 }
 
 func (e *elem) JSValue() js.Value {
@@ -65,18 +61,12 @@ func (e *elem) children() []UI {
 
 func (e *elem) mount() error {
 	if e.Mounted() {
-		return errors.New("mounting ui element failed").
-			Tag("reason", "already mounted").
-			Tag("name", e.name()).
-			Tag("kind", e.Kind())
+		panic("mounting elem failed already mounted " + e.name())
 	}
 
 	v := js.Window.Get("document").Call("createElement", e.tag)
 	if !v.Truthy() {
-		return errors.New("mounting ui element failed").
-			Tag("reason", "create javascript node returned nil").
-			Tag("name", e.name()).
-			Tag("kind", e.Kind())
+		panic("mounting component failed create javascript node returned nil " + e.name())
 	}
 	e.jsvalue = v
 
@@ -90,10 +80,7 @@ func (e *elem) mount() error {
 
 	for _, c := range e.children() {
 		if err := e.appendChild(c, true); err != nil {
-			return errors.New("mounting ui element failed").
-				Tag("name", e.name()).
-				Tag("kind", e.Kind()).
-				Wrap(err)
+			panic("mounting component failed appendChild " + e.name())
 		}
 	}
 
@@ -117,14 +104,8 @@ func (e *elem) update(n UI) error {
 		return nil
 	}
 
-	if n.Kind() != e.Kind() || n.name() != e.name() {
-		return errors.New("updating ui element failed").
-			Tag("replace", true).
-			Tag("reason", "different element types").
-			Tag("current-kind", e.Kind()).
-			Tag("current-name", e.name()).
-			Tag("updated-kind", n.Kind()).
-			Tag("updated-name", n.name())
+	if n.name() != e.name() {
+		panic("updating element failed replace different element type current-name: " + e.name() + " updated-name: " + n.name())
 	}
 
 	e.updateAttrs(n.attributes())
@@ -145,10 +126,7 @@ func (e *elem) update(n UI) error {
 		}
 
 		if err != nil {
-			return errors.New("updating ui element failed").
-				Tag("kind", e.Kind()).
-				Tag("name", e.name()).
-				Wrap(err)
+			panic("updating element failed name: " + e.name())
 		}
 
 		achildren = achildren[1:]
@@ -159,10 +137,7 @@ func (e *elem) update(n UI) error {
 	// Remove children:
 	for len(achildren) != 0 {
 		if err := e.removeChildAt(i); err != nil {
-			return errors.New("updating ui element failed").
-				Tag("kind", e.Kind()).
-				Tag("name", e.name()).
-				Wrap(err)
+			panic("updating element failed name: " + e.name())
 		}
 
 		achildren = achildren[1:]
@@ -173,10 +148,7 @@ func (e *elem) update(n UI) error {
 		c := bchildren[0]
 
 		if err := e.appendChild(c, false); err != nil {
-			return errors.New("updating ui element failed").
-				Tag("kind", e.Kind()).
-				Tag("name", e.name()).
-				Wrap(err)
+			panic("updating element failed name: " + e.name())
 		}
 
 		bchildren = bchildren[1:]
@@ -187,12 +159,7 @@ func (e *elem) update(n UI) error {
 
 func (e *elem) appendChild(c UI, onlyJsValue bool) error {
 	if err := mount(c); err != nil {
-		return errors.New("appending child failed").
-			Tag("name", e.name()).
-			Tag("kind", e.Kind()).
-			Tag("child-name", c.name()).
-			Tag("child-kind", c.Kind()).
-			Wrap(err)
+		panic("appending child failed child-name: " + c.name() + " name: " + e.name())
 	}
 
 	if !onlyJsValue {
@@ -208,15 +175,7 @@ func (e *elem) replaceChildAt(idx int, new UI) error {
 	old := e.body[idx]
 
 	if err := mount(new); err != nil {
-		return errors.New("replacing child failed").
-			Tag("name", e.name()).
-			Tag("kind", e.Kind()).
-			Tag("index", idx).
-			Tag("old-name", old.name()).
-			Tag("old-kind", old.Kind()).
-			Tag("new-name", new.name()).
-			Tag("new-kind", new.Kind()).
-			Wrap(err)
+		panic("replacing child failed name: " + e.name() + " old-name: " + old.name() + "  new-name: " + new.name())
 	}
 
 	e.body[idx] = new
@@ -230,11 +189,7 @@ func (e *elem) replaceChildAt(idx int, new UI) error {
 func (e *elem) removeChildAt(idx int) error {
 	body := e.body
 	if idx < 0 || idx >= len(body) {
-		return errors.New("removing child failed").
-			Tag("reason", "index out of range").
-			Tag("index", idx).
-			Tag("name", e.name()).
-			Tag("kind", e.Kind())
+		panic("removing child failed index out of range name: " + e.name() + " index: " + strconv.Itoa(idx))
 	}
 
 	c := body[idx]
@@ -353,10 +308,7 @@ func (e *elem) delJsEventHandler(k string, h js.EventHandler) {
 
 func (e *elem) setBody(body ...interface{}) {
 	if e.selfClosing {
-		panic(errors.New("setting html element body failed").
-			Tag("reason", "self closing element can't have children").
-			Tag("name", e.name()),
-		)
+		panic("setting html element body failed: self closing element can't have children" + e.name())
 	}
 
 	e.body = FilterUIElems(body...)
@@ -414,10 +366,6 @@ func Text(v string) UI {
 	return &text{value: v}
 }
 
-func (t *text) Kind() Kind {
-	return SimpleText
-}
-
 func (t *text) JSValue() js.Value {
 	return t.jsvalue
 }
@@ -459,11 +407,7 @@ func (t *text) children() []UI {
 
 func (t *text) mount() error {
 	if t.Mounted() {
-		return errors.New("mounting ui element failed").
-			Tag("reason", "already mounted").
-			Tag("kind", t.Kind()).
-			Tag("name", t.name()).
-			Tag("value", t.value)
+		panic("mounting text element failed already mounted" + t.name() + " " + t.value)
 	}
 
 	t.jsvalue = js.Window.
@@ -484,13 +428,7 @@ func (t *text) update(n UI) error {
 
 	o, isText := n.(*text)
 	if !isText {
-		return errors.New("updating ui element failed").
-			Tag("replace", true).
-			Tag("reason", "different element types").
-			Tag("current-kind", t.Kind()).
-			Tag("current-name", t.name()).
-			Tag("updated-kind", n.Kind()).
-			Tag("updated-name", n.name())
+		panic("updating ui element failed replace different element type current-name: " + t.name() + " updated-name: " + n.name())
 	}
 
 	if t.value != o.value {

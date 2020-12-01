@@ -11,9 +11,6 @@ import (
 // UI is the interface that describes a user interface element such as
 // components and HTML elements.
 type UI interface {
-	// Kind represents the specific kind of a UI element.
-	Kind() Kind
-
 	// JSValue returns the javascript value linked to the element.
 	JSValue() js.Value
 
@@ -32,47 +29,6 @@ type UI interface {
 	dismount()
 	update(UI) error
 }
-
-// Kind represents the specific kind of a user interface element.
-type Kind uint
-
-func (k Kind) String() string {
-	switch k {
-	case SimpleText:
-		return "text"
-
-	case HTML:
-		return "html"
-
-	case RawHTML:
-		return "raw"
-
-	case FunctionalComponent:
-		return "function"
-
-	default:
-		return "undefined"
-	}
-}
-
-const (
-	// UndefinedElem represents an undefined UI element.
-	UndefinedElem Kind = iota
-
-	// SimpleText represents a simple text element.
-	SimpleText
-
-	// HTML represents an HTML element.
-	HTML
-
-	// Component represents a customized, independent and reusable UI element.
-	Component
-
-	// RawHTML represents an HTML element obtained from a raw HTML code snippet.
-	RawHTML
-
-	FunctionalComponent
-)
 
 // FilterUIElems returns a filtered version of the given UI elements where
 // selector elements such as If and Range are interpreted and removed. It also
