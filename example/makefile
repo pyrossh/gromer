@@ -1,0 +1,1 @@
+npx tailwindcss-cli@latest build -o assets/styles.css
