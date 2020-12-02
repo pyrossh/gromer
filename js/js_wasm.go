@@ -1,11 +1,10 @@
+// +build wasm
 package js
 
 import (
 	"net/url"
 	"reflect"
 	"syscall/js"
-
-	"github.com/pyros2097/wapp/errors"
 )
 
 var Window = &browserWindow{value: value{Value: js.Global()}}
@@ -167,13 +166,14 @@ func (w *browserWindow) ScrollToID(id string) {
 }
 
 func (w *browserWindow) AddEventListener(event string, h EventHandler) func() {
-	callback := makeJsEventHandler(body, h)
-	w.Call("addEventListener", event, callback)
+	panic("not implemented")
+	// callback := MakeJsEventHandler(body, h)
+	// w.Call("addEventListener", event, callback)
 
-	return func() {
-		w.Call("removeEventListener", event, callback)
-		callback.Release()
-	}
+	// return func() {
+	// 	w.Call("removeEventListener", event, callback)
+	// 	callback.Release()
+	// }
 }
 
 func (w *browserWindow) Location() *Location {
@@ -181,7 +181,7 @@ func (w *browserWindow) Location() *Location {
 }
 
 type Location struct {
-	value js.Value
+	value Value
 }
 
 func (l *Location) Reload() {
@@ -207,9 +207,7 @@ func jsval(v Value) js.Value {
 		return jsval(v.Value)
 
 	default:
-		Log("%s", errors.New("syscall/js value conversion failed").
-			Tag("type", reflect.TypeOf(v)),
-		)
+		println("syscall/js value conversion failed type: " + reflect.TypeOf(v).String())
 		return js.Undefined()
 	}
 }

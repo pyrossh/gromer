@@ -294,7 +294,19 @@ func (e *elem) setEventHandler(k string, h js.EventHandlerFunc) {
 }
 
 func (e *elem) setJsEventHandler(k string, h js.EventHandler) {
-	jshandler := makeJsEventHandler(e.self(), h.Value)
+	jshandler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		dispatch(func() {
+			if !e.self().Mounted() {
+				return
+			}
+			e := js.Event{
+				Value: args[0],
+			}
+			trackMousePosition(e)
+			h.Value(e)
+		})
+		return nil
+	})
 	h.JSvalue = jshandler
 	e.events[k] = h
 	e.JSValue().Call("addEventListener", k, jshandler)

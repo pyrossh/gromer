@@ -3,9 +3,8 @@ package app
 import (
 	"encoding/json"
 	"sync"
-	"syscall/js"
 
-	"github.com/pyros2097/wapp/errors"
+	"github.com/pyros2097/wapp/js"
 )
 
 func init() {
@@ -26,10 +25,7 @@ func (s *jsStorage) Set(k string, v interface{}) (err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = errors.New("setting storage value failed").
-				Tag("storage-type", s.name).
-				Tag("key", k).
-				Wrap(r.(js.Error))
+			panic("setting storage value failed storage-type: " + s.name + "key " + k)
 		}
 	}()
 
@@ -41,7 +37,7 @@ func (s *jsStorage) Set(k string, v interface{}) (err error) {
 		return err
 	}
 
-	Window().Get(s.name).Call("setItem", k, btos(b))
+	js.Window.Get(s.name).Call("setItem", k, btos(b))
 	return nil
 }
 
@@ -49,7 +45,7 @@ func (s *jsStorage) Get(k string, v interface{}) error {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	item := Window().Get(s.name).Call("getItem", k)
+	item := js.Window.Get(s.name).Call("getItem", k)
 	if !item.Truthy() {
 		return nil
 	}
@@ -61,12 +57,12 @@ func (s *jsStorage) Del(k string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	Window().Get(s.name).Call("removeItem", k)
+	js.Window.Get(s.name).Call("removeItem", k)
 }
 
 func (s *jsStorage) Clear() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	Window().Get(s.name).Call("clear")
+	js.Window.Get(s.name).Call("clear")
 }

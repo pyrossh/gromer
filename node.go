@@ -61,23 +61,6 @@ func FilterUIElems(uis ...interface{}) []UI {
 	return elems
 }
 
-func makeJsEventHandler(src UI, h js.EventHandlerFunc) js.Func {
-	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		dispatch(func() {
-			if !src.Mounted() {
-				return
-			}
-			e := js.Event{
-				Value: args[0],
-			}
-			trackMousePosition(e)
-			h(e)
-		})
-
-		return nil
-	})
-}
-
 func trackMousePosition(e js.Event) {
 	x := e.Get("clientX")
 	if !x.Truthy() {

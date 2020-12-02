@@ -48,8 +48,8 @@ import (
 
 func Counter(c *RenderContext) UI {
 	count, setCount := c.UseInt(0)
-	inc := func() { setCount(count() - 1) }
-	dec := func() { setCount(count() + 1) }
+	inc := func() { setCount(count() + 1) }
+	dec := func() { setCount(count() - 1) }
 	return Col(
 		Row(
 			Row(Css("text-6xl"),

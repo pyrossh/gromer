@@ -1,8 +1,7 @@
+// +build wasm
 package app
 
 import (
-	"net/url"
-
 	"github.com/pyros2097/wapp/js"
 )
 
@@ -59,17 +58,15 @@ func initContent() {
 	body.body = append(body.body, content)
 }
 
-func onPopState(this Value, args []Value) interface{} {
-	dispatch(func() {
-		// navigate(Window().URL(), false)
-	})
-	return nil
-}
-
-func isExternalNavigation(u *url.URL) bool {
-	return u.Host != "" && u.Host != Window().URL().Host
-}
-
-func isFragmentNavigation(u *url.URL) bool {
-	return u.Fragment != ""
-}
+// func onPopState(this js.Value, args []js.Value) interface{} {
+// 	dispatch(func() {
+// 		// navigate(Window().URL(), false)
+// 	})
+// 	return nil
+// }
+// func isExternalNavigation(u *url.URL) bool {
+// 	return u.Host != "" && u.Host != js.Window().URL().Host
+// }
+// func isFragmentNavigation(u *url.URL) bool {
+// 	return u.Fragment != ""
+// }
