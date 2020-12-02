@@ -35,7 +35,7 @@ go get -u -v github.com/pyros2097/wapp
 
 The example is located here,
 
-[wapp-example](https://github.com/pyros2097/wapp-example)
+[example](https://github.com/pyros2097/wapp/tree/master/example)
 
 **Counter**
 
