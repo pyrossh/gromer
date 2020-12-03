@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"bytes"
@@ -335,7 +335,7 @@ func buildAll(basePath string) {
 	loadRoutes(p, basePath, false)
 }
 
-func watch() {
+func Watch() {
 	wd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("could not get wd")
@@ -350,8 +350,4 @@ func watch() {
 		println("changed: " + file)
 		buildAll(basePath)
 	}
-}
-
-func main() {
-	watch()
 }

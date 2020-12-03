@@ -1,1 +1,2 @@
-npx tailwindcss-cli@latest build -o assets/styles.css
+build-css:
+	npx tailwindcss-cli@latest build config.css -o assets/styles.css
