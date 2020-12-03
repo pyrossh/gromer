@@ -7,7 +7,7 @@ import (
 	. "github.com/pyros2097/wapp/example/atoms"
 )
 
-func Counter(c *RenderContext, no string) UI {
+func AtomCounter(c *RenderContext, no string) UI {
 	count := c.UseAtom(CountAtom)
 	return Col(
 		Row(
@@ -29,14 +29,10 @@ func Counter(c *RenderContext, no string) UI {
 	)
 }
 
-func Route(c *RenderContext) UI {
+func Container(c *RenderContext) UI {
 	return Col(
-		Counter(c, "1"),
-		Counter(c, "2"),
-		Counter(c, "3"),
+		AtomCounter(c, "1"),
+		AtomCounter(c, "2"),
+		AtomCounter(c, "3"),
 	)
-}
-
-func main() {
-	Run(Route)
 }

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"plugin"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/markbates/pkger"
@@ -149,7 +151,13 @@ func (w *Watcher) addFolder(name string) {
 	}
 }
 
-var routesMap = map[string]func(*app.RenderContext) app.UI{}
+type RouteInfo struct {
+	Path       string
+	FuncName   string
+	RenderFunc func(*app.RenderContext) app.UI
+}
+
+var routesMap = map[string]RouteInfo{}
 
 func getSOPath(p string) string {
 	return "build/" + filepath.Base(filepath.Dir(p)) + ".so"
@@ -159,7 +167,7 @@ func getWasmPath(p string) string {
 	return "build/" + filepath.Base(filepath.Dir(p)) + ".wasm"
 }
 
-func build(path string) (string, error) {
+func buildSo(path string) (string, error) {
 	soPath := getSOPath(path)
 	out, err := exec.Command("go", "build", "-buildmode=plugin", "-o", soPath, path).CombinedOutput()
 	if err != nil {
@@ -186,51 +194,79 @@ func buildWasm(path string) (string, error) {
 	return wasmPath, nil
 }
 
-func getRoute(wd, p string) string {
-	basePath := filepath.Join(wd, "pages")
-	routePath := strings.Replace(p, basePath, "", 1)
-	routePath = strings.Replace(routePath, "/main.go", "", -1)
-	routePath = strings.Replace(routePath, "index", "", -1)
-	return routePath
+func getRoute(basePath, p string) (string, string) {
+	clean := strings.Replace(strings.Replace(p, basePath, "", 1), ".go", "", -1)
+	return strings.Replace(clean, "index", "", -1), strings.Title(strings.Replace(clean, "/", "", -1))
 }
 
-func buildAll(wd string) {
-	basePath := filepath.Join(wd, "pages")
+func writeMainFile(basePath string) {
+	tpl, err := template.New("writeMain").Parse(`// GENERATED FILE DO NOT EDIT
+package main
+
+import (
+	. "github.com/pyros2097/wapp"
+	"github.com/pyros2097/wapp/js"
+)
+
+func main() {
+	{{range $key, $element := .}}
+		if js.Window.URL().Path == "{{.Path}}" {
+			Run({{.FuncName}})
+		}
+	{{end}}
+}
+`)
+	if err != nil {
+		panic(err)
+	}
+	buf := bytes.NewBuffer(nil)
+	err = tpl.Execute(buf, routesMap)
+	if err != nil {
+		panic(err)
+	}
+	err = ioutil.WriteFile("pages/main.go", buf.Bytes(), 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func loadRoutes(p *plugin.Plugin, basePath string, dry bool) {
 	err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
 			return err
 		}
 		if !info.IsDir() {
-			fmt.Printf("route: %s\n", getRoute(wd, path))
-			soPath, err := build(path)
-			load(wd, path, soPath)
-			buildWasm(path)
+			routePath, routeFunc := getRoute(basePath, path)
+			if routePath == "/main" {
+				return nil
+			}
+			routesMap[routePath] = RouteInfo{
+				Path:     routePath,
+				FuncName: routeFunc,
+			}
+			if dry {
+				// println("Dry")
+				return nil
+			}
+			fmt.Printf("route: %s routeFunc: %s\n", routePath, routeFunc)
+			renderFn, err := p.Lookup(routeFunc)
 			if err != nil {
-				println("could not build")
 				return err
 			}
+			routesMap[routePath] = RouteInfo{
+				Path:       routePath,
+				FuncName:   routeFunc,
+				RenderFunc: renderFn.(func(*app.RenderContext) app.UI),
+			}
+			// println(createPage(routesMap[routePath](app.NewRenderContext())).String())
 		}
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("error walking the path %q: %v\n", wd, err)
-		return
-	}
-}
-
-func load(wd, file, soPath string) {
-	routePath := getRoute(wd, file)
-	p, err := plugin.Open(soPath)
-	if err != nil {
+		fmt.Printf("error walking the path %q: %v\n", basePath, err)
 		panic(err)
 	}
-	renderFn, err := p.Lookup("Route")
-	if err != nil {
-		panic(err)
-	}
-	routesMap[routePath] = renderFn.(func(*app.RenderContext) app.UI)
-	// println(createPage(routesMap[routePath](app.NewRenderContext())).String())
 }
 
 func createPage(ui app.UI, wasmPath string) *bytes.Buffer {
@@ -262,14 +298,9 @@ func serve(wd string) {
 	buildFileServer := http.FileServer(pkger.Dir(filepath.Join(wd, "build")))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if render, ok := routesMap[r.URL.Path]; ok {
-			wasmPath := "/build/"
-			if r.URL.Path == "/" {
-				wasmPath += "index.wasm"
-			} else {
-				wasmPath += strings.ReplaceAll(r.URL.Path, "/", "") + ".wasm"
-			}
-			page := createPage(render(app.NewRenderContext()), wasmPath)
+		if routeInfo, ok := routesMap[r.URL.Path]; ok {
+			wasmPath := "/build/" + filepath.Base(wd) + ".wasm"
+			page := createPage(routeInfo.RenderFunc(app.NewRenderContext()), wasmPath)
 			w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusOK)
@@ -286,28 +317,41 @@ func serve(wd string) {
 	log.Fatal(http.ListenAndServe(":1234", nil))
 }
 
+func buildAll(basePath string) {
+	loadRoutes(nil, basePath, true)
+	writeMainFile(basePath)
+	buildWasm(basePath)
+	soPath, err := buildSo(basePath)
+	if err != nil {
+		println("could not build")
+		panic(err)
+	}
+	p, err := plugin.Open(soPath)
+	if err != nil {
+		println("could not load so plugin")
+		panic(err)
+	}
+	// fmt.Printf("%+v\n", p)
+	loadRoutes(p, basePath, false)
+}
+
 func Watch() {
 	wd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("could not get wd")
 		return
 	}
-	buildAll(wd)
+	basePath := filepath.Join(wd, "pages")
+	buildAll(basePath)
 	watcher := MustRegisterWatcher()
 	go watcher.Watch()
 	go serve(wd)
 	for file := range watcher.update {
 		println("changed: " + file)
-		soPath, err := build(file)
-		if err != nil {
-			println("go build error: " + soPath)
-			continue
-		}
-		load(wd, file, soPath)
-		wasmPath, err := buildWasm(file)
-		if err != nil {
-			println("wasm build error: " + wasmPath)
-			continue
-		}
+		buildAll(basePath)
 	}
+}
+
+func main() {
+	Watch()
 }

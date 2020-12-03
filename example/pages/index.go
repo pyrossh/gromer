@@ -6,7 +6,7 @@ import (
 	. "github.com/pyros2097/wapp"
 )
 
-func Route(c *RenderContext) UI {
+func Index(c *RenderContext) UI {
 	count, setCount := c.UseInt(0)
 	inc := func() { setCount(count() + 1) }
 	dec := func() { setCount(count() - 1) }
@@ -28,8 +28,4 @@ func Route(c *RenderContext) UI {
 			),
 		),
 	)
-}
-
-func main() {
-	Run(Route)
 }

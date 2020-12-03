@@ -6,7 +6,7 @@ import (
 	. "github.com/pyros2097/wapp"
 )
 
-func Route(c *RenderContext) UI {
+func Clock(c *RenderContext) UI {
 	timeValue, setTime := c.UseState(time.Now())
 	running, setRunning := c.UseState(false)
 	startTimer := func() {
@@ -46,8 +46,4 @@ func Route(c *RenderContext) UI {
 			),
 		),
 	)
-}
-
-func main() {
-	Run(Route)
 }
