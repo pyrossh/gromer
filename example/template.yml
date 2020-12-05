@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: 2010-09-09
+Outputs:
+  ApiUrl:
+    Export:
+      Name: ApiUrl
+    Value:
+      Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/
+Resources:
+  HttpApi:
+    Properties:
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+            - HttpApiAccessLogs
+            - Arn
+        Format:
+          '{"requestId":"$context.requestId", "ip": "$context.identity.sourceIp",
+          "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime","routeKey":"$context.routeKey",
+          "status":"$context.status", "error": "$context.integrationErrorMessage"}'
+      StageName: Prod
+    Type: AWS::Serverless::HttpApi
+  HttpApiAccessLogs:
+    Properties:
+      LogGroupName: /aws/http/py-app
+      RetentionInDays: 365
+    Type: AWS::Logs::LogGroup
+  RouteIndex:
+    Properties:
+      Handler: ./example
+      Events:
+        ApiEvent:
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Method: GET
+            Path: $default
+            PayloadFormatVersion: '1.0'
+          Type: HttpApi
+      MemorySize: 128
+      Runtime: go1.x
+      Timeout: 30
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

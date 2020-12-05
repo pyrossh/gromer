@@ -2,6 +2,10 @@
 
 An example to demostrate the wapp framework
 
-Just run,
+1. Compile wasm frontend,
+`GOOS=js GOARCH=wasm go build -o assets/main.wasm`
 
-`go run main.go`
+2. Run the server,
+`go run *.go`
+
+These commands are also available in the makefile for convenience

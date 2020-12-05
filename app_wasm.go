@@ -11,7 +11,8 @@ var (
 	rootPrefix string
 )
 
-func Run(render RenderFunc) {
+func Run(isAwsLambda bool, routes map[string]RenderFunc) {
+	renderFunc := MatchRoute(routes, js.Window.URL().Path)
 	defer func() {
 		err := recover()
 		// show alert
@@ -20,10 +21,10 @@ func Run(render RenderFunc) {
 
 	initBody()
 	initContent()
-	if err := body.replaceChildAt(0, render); err != nil {
+	if err := body.replaceChildAt(0, renderFunc); err != nil {
 		panic("replacing content failed")
 	}
-	content = render
+	content = renderFunc
 
 	for {
 		select {

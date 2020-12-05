@@ -1,0 +1,9 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "go-app"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-grb3hle00qk9"
+s3_prefix = "go-app"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"

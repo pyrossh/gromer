@@ -1,9 +1,16 @@
 package main
 
 import (
-	"github.com/pyros2097/wapp/cli"
+	app "github.com/pyros2097/wapp"
 )
 
+var routes = map[string]app.RenderFunc{
+	"/about":     About,
+	"/clock":     Clock,
+	"/container": Container,
+	"/":          Index,
+}
+
 func main() {
-	cli.Watch()
+	app.Run(false, routes)
 }
