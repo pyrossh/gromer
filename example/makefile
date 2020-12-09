@@ -1,11 +1,14 @@
 run:
 	go run *.go
 
-build:
+go:
 	go build
 
-build-wasm:
+wasm:
 	GOOS=js GOARCH=wasm go build -o assets/main.wasm
 
-build-css:
+css:
 	npx tailwindcss-cli@latest build assets/config.css -o assets/styles.css
+
+lambda:
+	sam local start-api

@@ -9,39 +9,39 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/akrylysov/algnhsa"
 	"github.com/markbates/pkger"
+	"github.com/shurcooL/httpgzip"
 )
 
-func Run(isAwsLambda bool, routes map[string]RenderFunc) {
+func Run(routes map[string]RenderFunc) {
 	wd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("could not get wd")
 		return
 	}
-	assetsFileServer := http.FileServer(pkger.Dir(filepath.Join(wd, "assets")))
+	http.Handle("/assets/", http.StripPrefix("/assets", httpgzip.FileServer(
+		pkger.Dir(filepath.Join(wd, "assets")),
+		httpgzip.FileServerOptions{},
+	)))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		println("route: " + r.URL.Path)
 		renderFunc := MatchRoute(routes, r.URL.Path)
-		if strings.Contains(r.URL.Path, "/assets") {
-			r.URL.Path = strings.Replace(r.URL.Path, "/assets", "", 1)
-			assetsFileServer.ServeHTTP(w, r)
-			return
-		}
 		page := createPage("wapp-example", renderFunc(NewRenderContext()))
 		w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
 		w.Write(page.Bytes())
 	})
-	if !isAwsLambda {
+	if os.Getenv("_LAMBDA_SERVER_PORT") != "" {
+		println("running in lambda mode")
+		algnhsa.ListenAndServe(http.DefaultServeMux, &algnhsa.Options{
+			BinaryContentTypes: []string{"application/wasm", "image/png"},
+		})
+	} else {
 		println("Serving on HTTP port: 1234")
 		http.ListenAndServe(":1234", nil)
-	} else {
-		println("algnhsa serving default mux")
-		algnhsa.ListenAndServe(http.DefaultServeMux, nil)
 	}
 }
 

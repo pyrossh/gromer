@@ -11,7 +11,7 @@ var (
 	rootPrefix string
 )
 
-func Run(isAwsLambda bool, routes map[string]RenderFunc) {
+func Run(routes map[string]RenderFunc) {
 	renderFunc := MatchRoute(routes, js.Window.URL().Path)
 	defer func() {
 		err := recover()

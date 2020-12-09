@@ -1,10 +1,10 @@
 package main
 
 import (
-	app "github.com/pyros2097/wapp"
+	. "github.com/pyros2097/wapp"
 )
 
-var routes = map[string]app.RenderFunc{
+var routes = map[string]RenderFunc{
 	"/about":     About,
 	"/clock":     Clock,
 	"/container": Container,
@@ -12,5 +12,5 @@ var routes = map[string]app.RenderFunc{
 }
 
 func main() {
-	app.Run(false, routes)
+	Run(routes)
 }
