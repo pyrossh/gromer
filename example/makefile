@@ -12,3 +12,6 @@ css:
 
 lambda:
 	sam local start-api
+
+sync:
+	aws s3 sync ./assets --delete public --dryrun s3://go-app-bucket-111

@@ -1,11 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
 Outputs:
   ApiUrl:
-    Export:
-      Name: ApiUrl
     Value:
       Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/
 Resources:
+  GoAppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: go-app-bucket-111
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
   HttpApi:
     Properties:
       AccessLogSettings:
