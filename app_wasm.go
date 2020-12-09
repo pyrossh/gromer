@@ -2,6 +2,8 @@
 package app
 
 import (
+	"bytes"
+
 	"github.com/pyros2097/wapp/js"
 )
 
@@ -9,10 +11,20 @@ var (
 	body       *elem
 	content    UI
 	rootPrefix string
+	renderFunc RenderFunc
 )
 
-func Run(routes map[string]RenderFunc) {
-	renderFunc := MatchRoute(routes, js.Window.URL().Path)
+func Run() {
+	handle, _, _ := router.Lookup("GET", js.Window.URL().Path)
+	if handle == nil {
+		if router.NotFound != nil {
+			renderFunc = router.NotFound
+		} else {
+			renderFunc = DefaultNotFound
+		}
+	} else {
+		renderFunc, _ = handle.(RenderFunc)
+	}
 	defer func() {
 		err := recover()
 		// show alert
@@ -38,6 +50,10 @@ func Reload() {
 	dispatch(func() {
 		js.Window.Location().Reload()
 	})
+}
+
+func Route(path string, render RenderFunc, info RouteInfo) {
+	router.GET(path, render)
 }
 
 func initBody() {
@@ -71,3 +87,7 @@ func initContent() {
 // func isFragmentNavigation(u *url.URL) bool {
 // 	return u.Fragment != ""
 // }
+
+func createPage(info RouteInfo, ui UI) *bytes.Buffer {
+	return &bytes.Buffer{}
+}

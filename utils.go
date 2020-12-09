@@ -2,7 +2,6 @@ package app
 
 import (
 	"io"
-	"regexp"
 	"unsafe"
 
 	"github.com/pyros2097/wapp/js"
@@ -50,32 +49,9 @@ func stob(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&s))
 }
 
-func matchPath(k, p string) bool {
-	validRoute := regexp.MustCompile(k)
-	if validRoute.MatchString(p) {
-		return true
-	}
-	return false
-}
-
-func MatchRoute(routes map[string]RenderFunc, path string) RenderFunc {
-	for key, renderFn := range routes {
-		if matchPath(key, path) {
-			return renderFn
-		}
-	}
-	notFound, ok := routes["/notfound"]
-	if ok {
-		return notFound
-	}
-	return func(c *RenderContext) UI {
-		return Col(
-			Row(
-				"This is the default 404 - Not Found Route handler",
-			),
-			Row(
-				"Create a notfound.go file and add a  func NotFound(c *RenderContext) UI {} to override it",
-			),
-		)
-	}
+type RouteInfo struct {
+	Title       string
+	Description string
+	Author      string
+	Keywords    string
 }

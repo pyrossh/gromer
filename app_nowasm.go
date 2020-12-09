@@ -8,46 +8,57 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
 
 	"github.com/akrylysov/algnhsa"
 	"github.com/markbates/pkger"
 )
 
-type AppInfo struct {
-	Title       string
-	Description string
-	Author      string
-	Keywords    string
-}
+// ServeFiles serves files from the given file system root.
+// The path must end with "/*filepath", files are then served from the local
+// path /defined/root/dir/*filepath.
+// For example if root is "/etc" and *filepath is "passwd", the local file
+// "/etc/passwd" would be served.
+// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// of the Router's NotFound handler.
+// To use the operating system's file system implementation,
+// use http.Dir:
+//     router.ServeFiles("/src/*filepath", http.Dir("/var/www"))
+// func (r *Router) ServeFiles(path string, root http.FileSystem) {
+// 	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
+// 		panic("path must end with /*filepath in path '" + path + "'")
+// 	}
 
-func Run(info AppInfo, routes map[string]RenderFunc) {
+// 	fileServer := http.FileServer(root)
+
+// 	r.GET(path, func(w http.ResponseWriter, req *http.Request, ps Params) {
+// 		req.URL.Path = ps.ByName("filepath")
+// 		fileServer.ServeHTTP(w, req)
+// 	})
+// }
+
+func Run() {
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
-	wd, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("could not get wd")
-		return
-	}
 	if !isLambda {
-		http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(pkger.Dir(filepath.Join(wd, "assets")))))
+		wd, err := os.Getwd()
+		if err != nil {
+			fmt.Printf("could not get wd")
+			return
+		}
+		assetsFS := http.FileServer(pkger.Dir(filepath.Join(wd, "assets")))
+		router.GET("/assets/*filepath", func(w http.ResponseWriter, r *http.Request) {
+			r.URL.Path = strings.Replace(r.URL.Path, "/assets", "", 1)
+			assetsFS.ServeHTTP(w, r)
+		})
 	}
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		println("route: " + r.URL.Path)
-		renderFunc := MatchRoute(routes, r.URL.Path)
-		page := createPage(info, renderFunc(NewRenderContext()))
-		w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write(page.Bytes())
-	})
 	if isLambda {
 		println("running in lambda mode")
-		algnhsa.ListenAndServe(http.DefaultServeMux, &algnhsa.Options{
+		algnhsa.ListenAndServe(router, &algnhsa.Options{
 			BinaryContentTypes: []string{"application/wasm", "image/png"},
 		})
 	} else {
 		println("Serving on HTTP port: 1234")
-		http.ListenAndServe(":1234", nil)
+		http.ListenAndServe(":1234", router)
 	}
 }
 
@@ -55,7 +66,12 @@ func Reload() {
 	panic("wasm required")
 }
 
-func createPage(info AppInfo, ui UI) *bytes.Buffer {
+func Route(path string, render RenderFunc, info RouteInfo) {
+	println("registering route: " + path)
+	router.GET(path, render)
+}
+
+func createPage(info RouteInfo, ui UI) *bytes.Buffer {
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	page := bytes.NewBuffer(nil)
 	page.WriteString("<!DOCTYPE html>\n")
