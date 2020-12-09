@@ -12,5 +12,10 @@ var routes = map[string]RenderFunc{
 }
 
 func main() {
-	Run(routes)
+	Run(AppInfo{
+		Title:       "wapp-example",
+		Description: "wapp is a framework",
+		Author:      "pyros2097",
+		Keywords:    "wapp,wapp-example,golang,framework,frontend,ui,wasm,isomorphic",
+	}, routes)
 }
