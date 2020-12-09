@@ -1272,10 +1272,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func DefaultNotFound(c *RenderContext) UI {
 	return Col(
 		Row(
-			"This is the default 404 - Not Found Route handler",
+			Text("This is the default 404 - Not Found Route handler"),
 		),
 		Row(
-			"Create a notfound.go file and add a  func NotFound(c *RenderContext) UI {} to override it",
+			Text("Create a notfound.go file and add a  func NotFound(c *RenderContext) UI {} to override it"),
 		),
 	)
 }
