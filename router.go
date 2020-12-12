@@ -740,7 +740,17 @@ var AppRouter = &Router{
 				Text("This is the default 404 - Not Found Route handler"),
 			),
 			Row(
-				Text("Create a notfound.go file and add a  func NotFound(c *RenderContext) UI {} to override it"),
+				Text("use AppRouter.NotFound = func(c *RenderContext) UI {} to override it"),
+			),
+		)
+	},
+	Error: func(c *RenderContext) UI {
+		return Col(
+			Row(
+				Text("This is the default 500 - Internal Server Error Route handler"),
+			),
+			Row(
+				Text("use AppRouter.Error = func(c *RenderContext) UI {} to override it"),
 			),
 		)
 	},
@@ -854,9 +864,9 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Handle errors
 	defer func() {
 		if rcv := recover(); rcv != nil {
-			writePage(r.Error(NewRenderContext()), w)
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusInternalServerError)
+			writePage(r.Error(NewRenderContext()), w)
 		}
 	}()
 
@@ -867,9 +877,9 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if handle, _, tsr := root.getValue(path, r.getParams); handle != nil {
 			println("route: " + req.URL.Path)
 			if render, ok := handle.(RenderFunc); ok {
-				writePage(render(NewRenderContext()), w)
 				w.Header().Set("Content-Type", "text/html")
 				w.WriteHeader(http.StatusOK)
+				writePage(render(NewRenderContext()), w)
 				return
 			} else {
 				handle.(func(w http.ResponseWriter, r *http.Request))(w, req)
@@ -897,7 +907,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Handle 404
-	writePage(r.NotFound(NewRenderContext()), w)
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusNotFound)
+	writePage(r.NotFound(NewRenderContext()), w)
 }
