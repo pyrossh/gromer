@@ -4,9 +4,9 @@
 	<a href="https://pkg.go.dev/github.com/pyros2097/wapp"><img src="https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat" alt="pkg.go.dev docs"></a>
 </p>
 
-**wapp** is a framework to build [isomorphic web apps](https://developers.google.com/web/progressive-web-apps/) with [Go](https://golang.org) and [WebAssembly](https://webassembly.org). Its like nextjs but using golang instead.
+**wapp** is a framework to build isomorphic web apps in golang.
 
-It uses a declarative syntax that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
+It uses a declarative syntax using funcs that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
 
 This originally started out as of fork of this awesome go-app PWA framework. All credits goes to Maxence Charriere for majority of the work.
 
@@ -71,6 +71,7 @@ func Counter(c *RenderContext) UI {
 }
 
 func main() {
+	Route("/", Counter)
 	Run(Counter)
 }
 ```
@@ -129,21 +130,8 @@ func Route(c *RenderContext, title string) UI {
 }
 
 func main() {
+	Route("/", Clock)
 	Run(Clock)
 }
 
-```
-
-The directory structure is a lot lke this,
-
-```sh
-├── assets                  
-│   └── icon.png            
-│   └── styles.css          
-├── pages                   
-│   └── index               
-│	    └── main.go         
-│   └── about         
-│	    └── main.go         
-└── main.go
 ```
