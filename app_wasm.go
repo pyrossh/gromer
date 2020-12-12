@@ -7,13 +7,6 @@ import (
 	"github.com/pyros2097/wapp/js"
 )
 
-var (
-	body       *elem
-	content    UI
-	rootPrefix string
-	renderFunc RenderFunc
-)
-
 func Run() {
 	handle, _, _ := router.Lookup("GET", js.Window.URL().Path)
 	if handle == nil {
@@ -52,7 +45,7 @@ func Reload() {
 	})
 }
 
-func Route(path string, render RenderFunc, info RouteInfo) {
+func Route(path string, render RenderFunc) {
 	router.GET(path, render)
 }
 
@@ -88,6 +81,6 @@ func initContent() {
 // 	return u.Fragment != ""
 // }
 
-func createPage(info RouteInfo, ui UI) *bytes.Buffer {
+func createPage(ui UI) *bytes.Buffer {
 	return &bytes.Buffer{}
 }

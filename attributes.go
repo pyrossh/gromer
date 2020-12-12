@@ -36,6 +36,11 @@ func OnInput(cb js.EventHandlerFunc) OnInputAttribute {
 	return OnInputAttribute{cb: cb}
 }
 
+type HelmetTitle string
+type HelmetDescription string
+type HelmetAuthor string
+type HelmetKeywords string
+
 func mergeAttributes(parent *elem, uis ...interface{}) {
 	elems := []interface{}{}
 	for _, v := range uis {
@@ -54,8 +59,18 @@ func mergeAttributes(parent *elem, uis ...interface{}) {
 			parent.setEventHandler("change", c.cb)
 		case OnInputAttribute:
 			parent.setEventHandler("input", c.cb)
+		case HelmetTitle:
+			helmet.Title = string(c)
+		case HelmetDescription:
+			helmet.Description = string(c)
+		case HelmetAuthor:
+			helmet.Author = string(c)
+		case HelmetKeywords:
+			helmet.Keywords = string(c)
 		case UI:
 			elems = append(elems, c)
+		default:
+			panic("unknown type in render")
 		}
 	}
 	parent.setBody(elems...)

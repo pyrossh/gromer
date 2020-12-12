@@ -66,12 +66,12 @@ func Reload() {
 	panic("wasm required")
 }
 
-func Route(path string, render RenderFunc, info RouteInfo) {
+func Route(path string, render RenderFunc) {
 	println("registering route: " + path)
 	router.GET(path, render)
 }
 
-func createPage(info RouteInfo, ui UI) *bytes.Buffer {
+func createPage(ui UI) *bytes.Buffer {
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	page := bytes.NewBuffer(nil)
 	page.WriteString("<!DOCTYPE html>\n")
@@ -82,10 +82,10 @@ func createPage(info RouteInfo, ui UI) *bytes.Buffer {
 	}
 	Html(
 		Head(
-			Title(info.Title),
-			Meta("description", info.Description),
-			Meta("author", info.Author),
-			Meta("keywords", info.Keywords),
+			Title(helmet.Title),
+			Meta("description", helmet.Description),
+			Meta("author", helmet.Author),
+			Meta("keywords", helmet.Keywords),
 			Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
 			Link("icon", basePath+"icon.png"),
 			Link("apple-touch-icon", basePath+"icon.png"),

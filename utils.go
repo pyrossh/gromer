@@ -48,10 +48,3 @@ func btos(b []byte) string {
 func stob(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&s))
 }
-
-type RouteInfo struct {
-	Title       string
-	Description string
-	Author      string
-	Keywords    string
-}
