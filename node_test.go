@@ -8,19 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilterUIElems(t *testing.T) {
-	var nilText *text
-
-	simpleText := Text("hello")
-
-	expectedResult := []UI{
-		simpleText,
-	}
-
-	res := FilterUIElems(nil, nilText, simpleText)
-	require.Equal(t, expectedResult, res)
-}
-
 func TestIsErrReplace(t *testing.T) {
 	utests := []struct {
 		scenario     string

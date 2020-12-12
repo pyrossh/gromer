@@ -32,8 +32,7 @@ func (r RenderFunc) Render() UI {
 	c.index = 0
 	c.eindex = 0
 	println("render")
-	elems := FilterUIElems(r(c))
-	return elems[0]
+	return r(c)
 }
 
 func (r RenderFunc) Update() {
@@ -42,7 +41,6 @@ func (r RenderFunc) Update() {
 			return
 		}
 		println("update")
-
 		if err := r.updateRoot(); err != nil {
 			panic(err)
 		}

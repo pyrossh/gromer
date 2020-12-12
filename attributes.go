@@ -42,7 +42,7 @@ type HelmetAuthor string
 type HelmetKeywords string
 
 func mergeAttributes(parent *elem, uis ...interface{}) {
-	elems := []interface{}{}
+	elems := []UI{}
 	for _, v := range uis {
 		switch c := v.(type) {
 		case CssAttribute:
@@ -73,5 +73,5 @@ func mergeAttributes(parent *elem, uis ...interface{}) {
 			panic("unknown type in render")
 		}
 	}
-	parent.setBody(elems...)
+	parent.setBody(elems)
 }

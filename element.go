@@ -318,12 +318,11 @@ func (e *elem) delJsEventHandler(k string, h js.EventHandler) {
 	delete(e.events, k)
 }
 
-func (e *elem) setBody(body ...interface{}) {
+func (e *elem) setBody(body []UI) {
 	if e.selfClosing {
 		panic("setting html element body failed: self closing element can't have children" + e.name())
 	}
-
-	e.body = FilterUIElems(body...)
+	e.body = body
 }
 
 func (e *elem) Html(w io.Writer) {
