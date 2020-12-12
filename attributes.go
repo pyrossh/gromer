@@ -67,6 +67,8 @@ func mergeAttributes(parent *elem, uis ...interface{}) {
 			helmet.Author = string(c)
 		case HelmetKeywords:
 			helmet.Keywords = string(c)
+		case nil:
+			// don't add nil to elems
 		case UI:
 			elems = append(elems, c)
 		default:

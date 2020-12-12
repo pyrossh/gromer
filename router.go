@@ -7,6 +7,8 @@ import (
 	"sync"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/pyros2097/wapp/errors"
 )
 
 func min(a, b int) int {
@@ -729,7 +731,7 @@ type Router struct {
 	NotFound RenderFunc
 
 	// Configurable handler which is called when an error occurs.
-	Error RenderFunc
+	Error func(*RenderContext, error) UI
 }
 
 var AppRouter = &Router{
@@ -744,10 +746,13 @@ var AppRouter = &Router{
 			),
 		)
 	},
-	Error: func(c *RenderContext) UI {
+	Error: func(c *RenderContext, err error) UI {
 		return Col(
 			Row(
 				Text("This is the default 500 - Internal Server Error Route handler"),
+			),
+			Row(
+				Text("Error: "+err.Error()),
 			),
 			Row(
 				Text("use AppRouter.Error = func(c *RenderContext) UI {} to override it"),
@@ -864,9 +869,18 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Handle errors
 	defer func() {
 		if rcv := recover(); rcv != nil {
+			var err error
+			switch x := rcv.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusInternalServerError)
-			writePage(r.Error(NewRenderContext()), w)
+			writePage(r.Error(NewRenderContext(), err), w)
 		}
 	}()
 
