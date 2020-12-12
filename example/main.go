@@ -5,6 +5,7 @@ import (
 )
 
 func main() {
+	Route("/panic", Panic)
 	Route("/about", About)
 	Route("/clock", Clock)
 	Route("/container", Container)

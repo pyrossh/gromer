@@ -2,19 +2,15 @@
 package app
 
 import (
-	"bytes"
+	"io"
 
 	"github.com/pyros2097/wapp/js"
 )
 
 func Run() {
-	handle, _, _ := router.Lookup("GET", js.Window.URL().Path)
+	handle, _, _ := AppRouter.Lookup("GET", js.Window.URL().Path)
 	if handle == nil {
-		if router.NotFound != nil {
-			renderFunc = router.NotFound
-		} else {
-			renderFunc = DefaultNotFound
-		}
+		renderFunc = AppRouter.NotFound
 	} else {
 		renderFunc, _ = handle.(RenderFunc)
 	}
@@ -46,7 +42,7 @@ func Reload() {
 }
 
 func Route(path string, render RenderFunc) {
-	router.GET(path, render)
+	AppRouter.GET(path, render)
 }
 
 func initBody() {
@@ -81,6 +77,5 @@ func initContent() {
 // 	return u.Fragment != ""
 // }
 
-func createPage(ui UI) *bytes.Buffer {
-	return &bytes.Buffer{}
+func writePage(ui UI, w io.Writer) {
 }

@@ -3,156 +3,11 @@ package app
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
 )
-
-// CleanPath is the URL version of path.Clean, it returns a canonical URL path
-// for p, eliminating . and .. elements.
-//
-// The following rules are applied iteratively until no further processing can
-// be done:
-//	1. Replace multiple slashes with a single slash.
-//	2. Eliminate each . path name element (the current directory).
-//	3. Eliminate each inner .. path name element (the parent directory)
-//	   along with the non-.. element that precedes it.
-//	4. Eliminate .. elements that begin a rooted path:
-//	   that is, replace "/.." by "/" at the beginning of a path.
-//
-// If the result of this process is an empty string, "/" is returned
-func CleanPath(p string) string {
-	const stackBufSize = 128
-
-	// Turn empty string into "/"
-	if p == "" {
-		return "/"
-	}
-
-	// Reasonably sized buffer on stack to avoid allocations in the common case.
-	// If a larger buffer is required, it gets allocated dynamically.
-	buf := make([]byte, 0, stackBufSize)
-
-	n := len(p)
-
-	// Invariants:
-	//      reading from path; r is index of next byte to process.
-	//      writing to buf; w is index of next byte to write.
-
-	// path must start with '/'
-	r := 1
-	w := 1
-
-	if p[0] != '/' {
-		r = 0
-
-		if n+1 > stackBufSize {
-			buf = make([]byte, n+1)
-		} else {
-			buf = buf[:n+1]
-		}
-		buf[0] = '/'
-	}
-
-	trailing := n > 1 && p[n-1] == '/'
-
-	// A bit more clunky without a 'lazybuf' like the path package, but the loop
-	// gets completely inlined (bufApp calls).
-	// So in contrast to the path package this loop has no expensive function
-	// calls (except make, if needed).
-
-	for r < n {
-		switch {
-		case p[r] == '/':
-			// empty path element, trailing slash is added after the end
-			r++
-
-		case p[r] == '.' && r+1 == n:
-			trailing = true
-			r++
-
-		case p[r] == '.' && p[r+1] == '/':
-			// . element
-			r += 2
-
-		case p[r] == '.' && p[r+1] == '.' && (r+2 == n || p[r+2] == '/'):
-			// .. element: remove to last /
-			r += 3
-
-			if w > 1 {
-				// can backtrack
-				w--
-
-				if len(buf) == 0 {
-					for w > 1 && p[w] != '/' {
-						w--
-					}
-				} else {
-					for w > 1 && buf[w] != '/' {
-						w--
-					}
-				}
-			}
-
-		default:
-			// Real path element.
-			// Add slash if needed
-			if w > 1 {
-				bufApp(&buf, p, w, '/')
-				w++
-			}
-
-			// Copy element
-			for r < n && p[r] != '/' {
-				bufApp(&buf, p, w, p[r])
-				w++
-				r++
-			}
-		}
-	}
-
-	// Re-append trailing slash
-	if trailing && w > 1 {
-		bufApp(&buf, p, w, '/')
-		w++
-	}
-
-	// If the original string was not modified (or only shortened at the end),
-	// return the respective substring of the original string.
-	// Otherwise return a new string from the buffer.
-	if len(buf) == 0 {
-		return p[:w]
-	}
-	return string(buf[:w])
-}
-
-// Internal helper to lazily create a buffer if necessary.
-// Calls to this function get inlined.
-func bufApp(buf *[]byte, s string, w int, c byte) {
-	b := *buf
-	if len(b) == 0 {
-		// No modification of the original string so far.
-		// If the next character is the same as in the original string, we do
-		// not yet have to allocate a buffer.
-		if s[w] == c {
-			return
-		}
-
-		// Otherwise use either the stack buffer, if it is large enough, or
-		// allocate a new buffer on the heap, and copy all previous characters.
-		if l := len(s); l > cap(b) {
-			*buf = make([]byte, len(s))
-		} else {
-			*buf = (*buf)[:l]
-		}
-		b = *buf
-
-		copy(b, s[:w])
-	}
-	b[w] = c
-}
 
 func min(a, b int) int {
 	if a <= b {
@@ -857,31 +712,12 @@ func ParamsFromContext(ctx context.Context) Params {
 	return p
 }
 
-// MatchedRoutePathParam is the Param name under which the path of the matched
-// route is stored, if Router.SaveMatchedRoutePath is set.
-var MatchedRoutePathParam = "$matchedRoutePath"
-
-// MatchedRoutePath retrieves the path of the matched route.
-// Router.SaveMatchedRoutePath must have been enabled when the respective
-// handler was added, otherwise this function always returns an empty string.
-func (ps Params) MatchedRoutePath() string {
-	return ps.ByName(MatchedRoutePathParam)
-}
-
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
-	trees map[string]*node
-
+	trees      map[string]*node
 	paramsPool sync.Pool
 	maxParams  uint16
-
-	// If enabled, adds the matched route path onto the http.Request context
-	// before invoking the handler.
-	// The matched route path is only added to handlers of routes that were
-	// registered when this option was enabled.
-	SaveMatchedRoutePath bool
-
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
@@ -889,66 +725,25 @@ type Router struct {
 	// and 308 for all other request methods.
 	RedirectTrailingSlash bool
 
-	// If enabled, the router tries to fix the current request path, if no
-	// handle is registered for it.
-	// First superfluous path elements like ../ or // are removed.
-	// Afterwards the router does a case-insensitive lookup of the cleaned path.
-	// If a handle can be found for this route, the router makes a redirection
-	// to the corrected path with status code 301 for GET requests and 308 for
-	// all other request methods.
-	// For example /FOO and /..//Foo could be redirected to /foo.
-	// RedirectTrailingSlash is independent of this option.
-	RedirectFixedPath bool
-
-	// If enabled, the router checks if another method is allowed for the
-	// current route, if the current request can not be routed.
-	// If this is the case, the request is answered with 'Method Not Allowed'
-	// and HTTP status code 405.
-	// If no other Method is allowed, the request is delegated to the NotFound
-	// handler.
-	HandleMethodNotAllowed bool
-
-	// If enabled, the router automatically replies to OPTIONS requests.
-	// Custom OPTIONS handlers take priority over automatic replies.
-	HandleOPTIONS bool
-
-	// An optional http.Handler that is called on automatic OPTIONS requests.
-	// The handler is only called if HandleOPTIONS is true and no OPTIONS
-	// handler for the specific path was set.
-	// The "Allowed" header is set before calling the handler.
-	GlobalOPTIONS http.Handler
-
-	// Cached value of global (*) allowed methods
-	globalAllowed string
-
-	// Configurable http.Handler which is called when no matching route is
-	// found. If it is not set, http.NotFound is used.
+	// Configurable handler which is called when no matching route is found.
 	NotFound RenderFunc
 
-	// Configurable http.Handler which is called when a request
-	// cannot be routed and HandleMethodNotAllowed is true.
-	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
-	// The "Allow" header with allowed request methods is set before the handler
-	// is called.
-	MethodNotAllowed http.Handler
-
-	// Function to handle panics recovered from http handlers.
-	// It should be used to generate a error page and return the http error code
-	// 500 (Internal Server Error).
-	// The handler can be used to keep your server from crashing because of
-	// unrecovered panics.
-	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
+	// Configurable handler which is called when an error occurs.
+	Error RenderFunc
 }
 
-// func(http.ResponseWriter, *http.Request, Params)
-// Make sure the Router conforms with the http.Handler interface
-// var _ http.Handler = New()
-
-var router = &Router{
-	RedirectTrailingSlash:  true,
-	RedirectFixedPath:      true,
-	HandleMethodNotAllowed: true,
-	HandleOPTIONS:          true,
+var AppRouter = &Router{
+	RedirectTrailingSlash: true,
+	NotFound: func(c *RenderContext) UI {
+		return Col(
+			Row(
+				Text("This is the default 404 - Not Found Route handler"),
+			),
+			Row(
+				Text("Create a notfound.go file and add a  func NotFound(c *RenderContext) UI {} to override it"),
+			),
+		)
+	},
 }
 
 func (r *Router) getParams() *Params {
@@ -963,43 +758,11 @@ func (r *Router) putParams(ps *Params) {
 	}
 }
 
-// func (r *Router) saveMatchedRoutePath(path string, handle interface{}) interface{} {
-// 	return func(w http.ResponseWriter, req *http.Request, ps Params) {
-// 		if ps == nil {
-// 			psp := r.getParams()
-// 			ps = (*psp)[0:1]
-// 			ps[0] = Param{Key: MatchedRoutePathParam, Value: path}
-// 			println("route: " + r.URL.Path)
-// 			page := createPage(info, render(NewRenderContext()))
-// 			w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
-// 			w.Header().Set("Content-Type", "text/html")
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(page.Bytes())
-// 			handle(w, req, ps)
-// 			r.putParams(psp)
-// 		} else {
-// 			ps = append(ps, Param{Key: MatchedRoutePathParam, Value: path})
-// 			handle(w, req, ps)
-// 		}
-// 	}
-// }
-
 // GET is a shortcut for router.Handle(http.MethodGet, path, handle)
 func (r *Router) GET(path string, handle interface{}) {
 	r.Handle(http.MethodGet, path, handle)
 }
 
-// HEAD is a shortcut for router.Handle(http.MethodHead, path, handle)
-func (r *Router) HEAD(path string, handle interface{}) {
-	r.Handle(http.MethodHead, path, handle)
-}
-
-// OPTIONS is a shortcut for router.Handle(http.MethodOptions, path, handle)
-func (r *Router) OPTIONS(path string, handle interface{}) {
-	r.Handle(http.MethodOptions, path, handle)
-}
-
-// POST is a shortcut for router.Handle(http.MethodPost, path, handle)
 func (r *Router) POST(path string, handle interface{}) {
 	r.Handle(http.MethodPost, path, handle)
 }
@@ -1007,11 +770,6 @@ func (r *Router) POST(path string, handle interface{}) {
 // PUT is a shortcut for router.Handle(http.MethodPut, path, handle)
 func (r *Router) PUT(path string, handle interface{}) {
 	r.Handle(http.MethodPut, path, handle)
-}
-
-// PATCH is a shortcut for router.Handle(http.MethodPatch, path, handle)
-func (r *Router) PATCH(path string, handle interface{}) {
-	r.Handle(http.MethodPatch, path, handle)
 }
 
 // DELETE is a shortcut for router.Handle(http.MethodDelete, path, handle)
@@ -1053,8 +811,6 @@ func (r *Router) Handle(method, path string, handle interface{}) {
 	if root == nil {
 		root = new(node)
 		r.trees[method] = root
-
-		r.globalAllowed = r.allowed("*", "")
 	}
 
 	root.addRoute(path, handle)
@@ -1070,34 +826,6 @@ func (r *Router) Handle(method, path string, handle interface{}) {
 			ps := make(Params, 0, r.maxParams)
 			return &ps
 		}
-	}
-}
-
-// Handler is an adapter which allows the usage of an http.Handler as a
-// request handle.
-// The Params are available in the request context under ParamsKey.
-// func (r *Router) Handler(method, path string, handler http.Handler) {
-// 	r.Handle(method, path,
-// 		func(w http.ResponseWriter, req *http.Request, p Params) {
-// 			if len(p) > 0 {
-// 				ctx := req.Context()
-// 				ctx = context.WithValue(ctx, ParamsKey, p)
-// 				req = req.WithContext(ctx)
-// 			}
-// 			handler.ServeHTTP(w, req)
-// 		},
-// 	)
-// }
-
-// HandlerFunc is an adapter which allows the usage of an http.HandlerFunc as a
-// request handle.
-// func (r *Router) HandlerFunc(method, path string, handler http.HandlerFunc) {
-// 	r.Handler(method, path, handler)
-// }
-
-func (r *Router) recv(w http.ResponseWriter, req *http.Request) {
-	if rcv := recover(); rcv != nil {
-		r.PanicHandler(w, req, rcv)
 	}
 }
 
@@ -1121,62 +849,16 @@ func (r *Router) Lookup(method, path string) (interface{}, Params, bool) {
 	return nil, nil, false
 }
 
-func (r *Router) allowed(path, reqMethod string) (allow string) {
-	allowed := make([]string, 0, 9)
-
-	if path == "*" { // server-wide
-		// empty method is used for internal calls to refresh the cache
-		if reqMethod == "" {
-			for method := range r.trees {
-				if method == http.MethodOptions {
-					continue
-				}
-				// Add request method to list of allowed methods
-				allowed = append(allowed, method)
-			}
-		} else {
-			return r.globalAllowed
-		}
-	} else { // specific path
-		for method := range r.trees {
-			// Skip the requested method - we already tried this one
-			if method == reqMethod || method == http.MethodOptions {
-				continue
-			}
-
-			handle, _, _ := r.trees[method].getValue(path, nil)
-			if handle != nil {
-				// Add request method to list of allowed methods
-				allowed = append(allowed, method)
-			}
-		}
-	}
-
-	if len(allowed) > 0 {
-		// Add request method to list of allowed methods
-		allowed = append(allowed, http.MethodOptions)
-
-		// Sort allowed methods.
-		// sort.Strings(allowed) unfortunately causes unnecessary allocations
-		// due to allowed being moved to the heap and interface conversion
-		for i, l := 1, len(allowed); i < l; i++ {
-			for j := i; j > 0 && allowed[j] < allowed[j-1]; j-- {
-				allowed[j], allowed[j-1] = allowed[j-1], allowed[j]
-			}
-		}
-
-		// return as comma separated list
-		return strings.Join(allowed, ", ")
-	}
-
-	return allow
-}
-
 // ServeHTTP makes the router implement the http.Handler interface.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if r.PanicHandler != nil {
-		defer r.recv(w, req)
-	}
+	// Handle errors
+	defer func() {
+		if rcv := recover(); rcv != nil {
+			writePage(r.Error(NewRenderContext()), w)
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}()
 
 	path := req.URL.Path
 
@@ -1185,11 +867,9 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if handle, _, tsr := root.getValue(path, r.getParams); handle != nil {
 			println("route: " + req.URL.Path)
 			if render, ok := handle.(RenderFunc); ok {
-				page := createPage(render(NewRenderContext()))
-				w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
+				writePage(render(NewRenderContext()), w)
 				w.Header().Set("Content-Type", "text/html")
 				w.WriteHeader(http.StatusOK)
-				w.Write(page.Bytes())
 				return
 			} else {
 				handle.(func(w http.ResponseWriter, r *http.Request))(w, req)
@@ -1213,69 +893,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				http.Redirect(w, req, req.URL.String(), code)
 				return
 			}
-
-			// Try to fix the request path
-			if r.RedirectFixedPath {
-				fixedPath, found := root.findCaseInsensitivePath(
-					CleanPath(path),
-					r.RedirectTrailingSlash,
-				)
-				if found {
-					req.URL.Path = fixedPath
-					http.Redirect(w, req, req.URL.String(), code)
-					return
-				}
-			}
-		}
-	}
-
-	if req.Method == http.MethodOptions && r.HandleOPTIONS {
-		// Handle OPTIONS requests
-		if allow := r.allowed(path, http.MethodOptions); allow != "" {
-			w.Header().Set("Allow", allow)
-			if r.GlobalOPTIONS != nil {
-				r.GlobalOPTIONS.ServeHTTP(w, req)
-			}
-			return
-		}
-	} else if r.HandleMethodNotAllowed { // Handle 405
-		if allow := r.allowed(path, req.Method); allow != "" {
-			w.Header().Set("Allow", allow)
-			if r.MethodNotAllowed != nil {
-				r.MethodNotAllowed.ServeHTTP(w, req)
-			} else {
-				http.Error(w,
-					http.StatusText(http.StatusMethodNotAllowed),
-					http.StatusMethodNotAllowed,
-				)
-			}
-			return
 		}
 	}
 
 	// Handle 404
-	if r.NotFound != nil {
-		page := createPage(r.NotFound(NewRenderContext()))
-		w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write(page.Bytes())
-	} else {
-		page := createPage(DefaultNotFound(NewRenderContext()))
-		w.Header().Set("Content-Length", strconv.Itoa(page.Len()))
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		w.Write(page.Bytes())
-	}
-}
-
-func DefaultNotFound(c *RenderContext) UI {
-	return Col(
-		Row(
-			Text("This is the default 404 - Not Found Route handler"),
-		),
-		Row(
-			Text("Create a notfound.go file and add a  func NotFound(c *RenderContext) UI {} to override it"),
-		),
-	)
+	writePage(r.NotFound(NewRenderContext()), w)
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusNotFound)
 }
