@@ -300,6 +300,7 @@ func (e *elem) setJsEventHandler(k string, h js.EventHandler) {
 				return
 			}
 			e := js.Event{
+				Src:   this,
 				Value: args[0],
 			}
 			trackMousePosition(e)

@@ -1,8 +1,59 @@
 package app
 
 import (
+	"strconv"
+
 	"github.com/pyros2097/wapp/js"
 )
+
+type Attribute struct {
+	Key   string
+	Value string
+}
+
+func ID(v string) Attribute {
+	return Attribute{"id", v}
+}
+
+func Style(v string) Attribute {
+	return Attribute{"style", v}
+}
+
+func Accept(v string) Attribute {
+	return Attribute{"accept", v}
+}
+
+func AutoComplete(v bool) Attribute {
+	return Attribute{"autocomplete", strconv.FormatBool(v)}
+}
+
+func Checked(v bool) Attribute {
+	return Attribute{"checked", strconv.FormatBool(v)}
+}
+
+func Disabled(v bool) Attribute {
+	return Attribute{"disabled", strconv.FormatBool(v)}
+}
+
+func Name(v string) Attribute {
+	return Attribute{"name", v}
+}
+
+func Type(v string) Attribute {
+	return Attribute{"type", v}
+}
+
+func Value(v string) Attribute {
+	return Attribute{"value", v}
+}
+
+func Placeholder(v string) Attribute {
+	return Attribute{"placeholder", v}
+}
+
+func Src(v string) Attribute {
+	return Attribute{"src", v}
+}
 
 type CssAttribute struct {
 	classes string
@@ -10,6 +61,13 @@ type CssAttribute struct {
 
 func Css(d string) CssAttribute {
 	return CssAttribute{classes: d}
+}
+
+func CssIf(v bool, d string) CssAttribute {
+	if v {
+		return CssAttribute{classes: d}
+	}
+	return CssAttribute{}
 }
 
 type OnClickAttribute struct {
@@ -45,6 +103,8 @@ func mergeAttributes(parent *elem, uis ...interface{}) {
 	elems := []UI{}
 	for _, v := range uis {
 		switch c := v.(type) {
+		case Attribute:
+			parent.setAttr(c.Key, c.Value)
 		case CssAttribute:
 			if vv, ok := parent.attrs["classes"]; ok {
 				parent.setAttr("class", vv+" "+c.classes)
@@ -67,10 +127,10 @@ func mergeAttributes(parent *elem, uis ...interface{}) {
 			helmet.Author = string(c)
 		case HelmetKeywords:
 			helmet.Keywords = string(c)
-		case nil:
-			// don't add nil to elems
 		case UI:
 			elems = append(elems, c)
+		case nil:
+			// dont need to add nil items
 		default:
 			panic("unknown type in render")
 		}

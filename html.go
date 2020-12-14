@@ -56,6 +56,18 @@ func Div(uis ...interface{}) *elem {
 	return e
 }
 
+func Input(uis ...interface{}) *elem {
+	e := &elem{tag: "input"}
+	mergeAttributes(e, uis...)
+	return e
+}
+
+func Image(uis ...interface{}) *elem {
+	e := &elem{tag: "image"}
+	mergeAttributes(e, uis...)
+	return e
+}
+
 func Row(uis ...interface{}) UI {
 	return Div(append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
 }
@@ -64,7 +76,7 @@ func Col(uis ...interface{}) UI {
 	return Div(append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
 }
 
-func If(expr bool, a UI, b UI) UI {
+func If(expr bool, a UI) UI {
 	if expr {
 		return a
 	}

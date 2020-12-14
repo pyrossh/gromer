@@ -201,6 +201,7 @@ type BrowserWindow interface {
 
 // Event is the interface that describes a javascript event.
 type Event struct {
+	Src Value
 	Value
 }
 
