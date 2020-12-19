@@ -887,11 +887,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	path := req.URL.Path
+	println("route: " + req.URL.Path)
 
 	if root := r.trees[req.Method]; root != nil {
 		// TODO: use _ ps save it to context for useParam()
 		if handle, _, tsr := root.getValue(path, r.getParams); handle != nil {
-			println("route: " + req.URL.Path)
 			if render, ok := handle.(RenderFunc); ok {
 				w.Header().Set("Content-Type", "text/html")
 				w.WriteHeader(http.StatusOK)
@@ -928,21 +928,13 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	writePage(r.NotFound(NewRenderContext()), w)
 }
 
-type lambdaResponse struct {
-	StatusCode        int                 `json:"statusCode"`
-	Headers           map[string]string   `json:"headers"`
-	MultiValueHeaders map[string][]string `json:"multiValueHeaders"`
-	Body              string              `json:"body"`
-	IsBase64Encoded   bool                `json:"isBase64Encoded,omitempty"`
-}
-
 func (r *Router) getPage(ui UI) string {
 	b := bytes.NewBuffer(nil)
 	writePage(ui, b)
 	return b.String()
 }
 
-func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (res lambdaResponse, err error) {
+func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (res events.APIGatewayV2HTTPResponse, err error) {
 	res.StatusCode = 200
 	res.Headers = map[string]string{
 		"Content-Type": "text/html",
@@ -962,10 +954,9 @@ func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (
 		}
 	}()
 
-	println("raw path: " + e.RawPath)
-	path := strings.Replace(e.RawPath, "/Prod", "/", 1)
+	println("route: " + e.RawPath)
+	path := strings.Replace(e.RawPath, "/Prod/", "/", 1)
 	if root := r.trees[e.RequestContext.HTTP.Method]; root != nil {
-		// TODO: use _ ps save it to context for useParam()
 		if handle, _, _ := root.getValue(path, r.getParams); handle != nil {
 			res.Body = r.getPage(handle.(RenderFunc)(NewRenderContext()))
 			return
