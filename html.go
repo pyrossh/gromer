@@ -68,6 +68,12 @@ func Image(uis ...interface{}) *elem {
 	return e
 }
 
+func Button(uis ...interface{}) *elem {
+	e := &elem{tag: "button"}
+	mergeAttributes(e, uis...)
+	return e
+}
+
 func Row(uis ...interface{}) UI {
 	return Div(append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
 }
