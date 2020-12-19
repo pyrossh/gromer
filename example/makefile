@@ -4,7 +4,7 @@ run:
 wasm: export GOOS=js
 wasm: export GOARCH=wasm
 wasm:
-	go build -o assets/main.wasm
+	go build -ldflags='-s -w' -o assets/main.wasm
 
 css:
 	npx tailwindcss-cli@latest build assets/config.css -o assets/styles.css
