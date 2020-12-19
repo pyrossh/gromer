@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/pyros2097/wapp/errors"
 )
 
@@ -924,4 +926,55 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusNotFound)
 	writePage(r.NotFound(NewRenderContext()), w)
+}
+
+type lambdaResponse struct {
+	StatusCode        int                 `json:"statusCode"`
+	Headers           map[string]string   `json:"headers"`
+	MultiValueHeaders map[string][]string `json:"multiValueHeaders"`
+	Body              string              `json:"body"`
+	IsBase64Encoded   bool                `json:"isBase64Encoded,omitempty"`
+}
+
+func (r *Router) getPage(ui UI) string {
+	b := bytes.NewBuffer(nil)
+	writePage(ui, b)
+	return b.String()
+}
+
+func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (res lambdaResponse) {
+	res.StatusCode = 200
+	res.Headers = map[string]string{
+		"Content-Type": "text/html",
+	}
+	// Handle errors
+	defer func() {
+		if rcv := recover(); rcv != nil {
+			var err error
+			switch x := rcv.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+			res.Body = r.getPage(r.Error(NewRenderContext(), err))
+		}
+	}()
+
+	println("raw path: " + e.RawPath)
+	path := strings.Replace(e.RawPath, "/Prod", "/", 1)
+	if root := r.trees[e.RequestContext.HTTP.Method]; root != nil {
+		// TODO: use _ ps save it to context for useParam()
+		if handle, _, _ := root.getValue(path, r.getParams); handle != nil {
+			res.Body = r.getPage(handle.(RenderFunc)(NewRenderContext()))
+			return
+		}
+	}
+
+	// Handle 404
+	res.StatusCode = http.StatusNotFound
+	res.Body = r.getPage(r.NotFound(NewRenderContext()))
+	return
 }
