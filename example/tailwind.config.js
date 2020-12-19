@@ -4,7 +4,7 @@ module.exports = {
             './*.go',
         ],
         options: {
-            safelist: ['flex', 'flex-row', 'justify-center', 'items-center'],
+            safelist: ['flex', 'flex-col', 'flex-row', 'justify-center', 'items-center'],
         }
     },
     theme: {},
