@@ -4,6 +4,8 @@
 	<a href="https://pkg.go.dev/github.com/pyros2097/wapp"><img src="https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat" alt="pkg.go.dev docs"></a>
 </p>
 
+# wapp
+
 **wapp** is a framework to build isomorphic web apps in golang.
 
 It uses a declarative syntax using funcs that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
@@ -18,7 +20,7 @@ Inspired by:
 * [klyva](https://github.com/merisbahti/klyva)
 
 
-## Install
+# Install
 
 **wapp** requirements:
 
@@ -29,13 +31,17 @@ go mod init
 go get -u -v github.com/pyros2097/wapp
 ```
 
-## Example
+# Demos
 
-**wapp** uses a declarative syntax so you can write component-based UI elements just by using the Go programming language. It follows the same ideas of react. It has functional components and hooks.
+[Demo 1](https://wapp.pyros2097.dev/)
 
-The example is located here,
+[Demo 2](https://timer.pyros2097.dev/)
 
-[example](https://github.com/pyros2097/wapp/tree/master/example)
+# Examples
+
+[Example 1](https://github.com/pyros2097/wapp/tree/master/example)
+
+[Example 2](https://github.com/pyros2097/wapp-timer)
 
 **Counter**
 
@@ -72,7 +78,7 @@ func Counter(c *RenderContext) UI {
 
 func main() {
 	Route("/", Counter)
-	Run(Counter)
+	Run()
 }
 ```
 
@@ -131,7 +137,7 @@ func Route(c *RenderContext, title string) UI {
 
 func main() {
 	Route("/", Clock)
-	Run(Clock)
+	Run()
 }
 
 ```
