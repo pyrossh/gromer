@@ -5,7 +5,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -719,9 +718,8 @@ func ParamsFromContext(ctx context.Context) Params {
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
-	trees      map[string]*node
-	paramsPool sync.Pool
-	maxParams  uint16
+	trees     map[string]*node
+	maxParams uint16
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
@@ -761,18 +759,6 @@ var AppRouter = &Router{
 			),
 		)
 	},
-}
-
-func (r *Router) getParams() *Params {
-	ps, _ := r.paramsPool.Get().(*Params)
-	*ps = (*ps)[0:0] // reset slice
-	return ps
-}
-
-func (r *Router) putParams(ps *Params) {
-	if ps != nil {
-		r.paramsPool.Put(ps)
-	}
 }
 
 // GET is a shortcut for router.Handle(http.MethodGet, path, handle)
@@ -836,14 +822,6 @@ func (r *Router) Handle(method, path string, handle interface{}) {
 	if paramsCount := countParams(path); paramsCount+varsCount > r.maxParams {
 		r.maxParams = paramsCount + varsCount
 	}
-
-	// Lazy-init paramsPool alloc func
-	if r.paramsPool.New == nil && r.maxParams > 0 {
-		r.paramsPool.New = func() interface{} {
-			ps := make(Params, 0, r.maxParams)
-			return &ps
-		}
-	}
 }
 
 // Lookup allows the manual lookup of a method + path combo.
@@ -853,9 +831,8 @@ func (r *Router) Handle(method, path string, handle interface{}) {
 // the same path with an extra / without the trailing slash should be performed.
 func (r *Router) Lookup(method, path string) (interface{}, Params, bool) {
 	if root := r.trees[method]; root != nil {
-		handle, ps, tsr := root.getValue(path, r.getParams)
+		handle, ps, tsr := root.getValue(path, nil)
 		if handle == nil {
-			r.putParams(ps)
 			return nil, nil, tsr
 		}
 		if ps == nil {
@@ -891,7 +868,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if root := r.trees[req.Method]; root != nil {
 		// TODO: use _ ps save it to context for useParam()
-		if handle, _, tsr := root.getValue(path, r.getParams); handle != nil {
+		if handle, _, tsr := root.getValue(path, nil); handle != nil {
 			if render, ok := handle.(RenderFunc); ok {
 				w.Header().Set("Content-Type", "text/html")
 				w.WriteHeader(http.StatusOK)
@@ -957,7 +934,7 @@ func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (
 	println("route: " + e.RawPath)
 	path := strings.Replace(e.RawPath, "/Prod/", "/", 1)
 	if root := r.trees[e.RequestContext.HTTP.Method]; root != nil {
-		if handle, _, _ := root.getValue(path, r.getParams); handle != nil {
+		if handle, _, _ := root.getValue(path, nil); handle != nil {
 			res.Body = r.getPage(handle.(RenderFunc)(NewRenderContext()))
 			return
 		}

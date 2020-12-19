@@ -2,10 +2,6 @@
 
 package js
 
-import (
-	"net/url"
-)
-
 var Window = &browserWindow{value: value{}}
 
 type value struct{}
@@ -106,10 +102,6 @@ type browserWindow struct {
 	value
 }
 
-func (w browserWindow) URL() *url.URL {
-	panic("wasm required")
-}
-
 func (w browserWindow) Size() (width, height int) {
 	panic("wasm required")
 }
@@ -144,10 +136,6 @@ func copyBytesToGo(dst []byte, src Value) int {
 
 func copyBytesToJS(dst Value, src []byte) int {
 	panic("wasm required")
-}
-
-type Location struct {
-	value
 }
 
 func (l *Location) Reload() {

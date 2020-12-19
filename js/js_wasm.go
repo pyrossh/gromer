@@ -2,8 +2,6 @@
 package js
 
 import (
-	"net/url"
-	"reflect"
 	"syscall/js"
 )
 
@@ -112,16 +110,6 @@ type browserWindow struct {
 	cursorY int
 }
 
-func (w *browserWindow) URL() *url.URL {
-	rawurl := w.
-		Get("location").
-		Get("href").
-		String()
-
-	u, _ := url.Parse(rawurl)
-	return u
-}
-
 func (w *browserWindow) Size() (width int, height int) {
 	getSize := func(axis string) int {
 		size := w.Get("inner" + axis)
@@ -177,11 +165,17 @@ func (w *browserWindow) AddEventListener(event string, h EventHandler) func() {
 }
 
 func (w *browserWindow) Location() *Location {
-	return &Location{value: Window.Get("location")}
-}
-
-type Location struct {
-	value Value
+	return &Location{
+		value: w.Get("location"),
+		Href: w.
+			Get("location").
+			Get("href").
+			String(),
+		Pathname: w.
+			Get("location").
+			Get("pathname").
+			String(),
+	}
 }
 
 func (l *Location) Reload() {
@@ -207,7 +201,8 @@ func jsval(v Value) js.Value {
 		return jsval(v.Value)
 
 	default:
-		println("syscall/js value conversion failed type: " + reflect.TypeOf(v).String())
+		// + reflect.TypeOf(v).String()
+		println("syscall/js value conversion failed type: ", v)
 		return js.Undefined()
 	}
 }

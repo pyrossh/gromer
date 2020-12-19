@@ -48,3 +48,19 @@ func btos(b []byte) string {
 func stob(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&s))
 }
+
+var (
+	defaultColor = "\033[00m"
+	errorColor   = "\033[91m"
+	infoColor    = "\033[94m"
+)
+
+// Log logs according to a format specifier using the default logger.
+func Log(format string, v ...interface{}) {
+	errorLevel := false
+	if errorLevel {
+		println(errorColor+"ERROR ‣ "+defaultColor+format+"\n", v)
+		return
+	}
+	println(infoColor+"INFO ‣ "+defaultColor+format+"\n", v)
+}

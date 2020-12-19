@@ -3,7 +3,6 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -19,7 +18,7 @@ func Run() {
 	if !isLambda {
 		wd, err := os.Getwd()
 		if err != nil {
-			fmt.Printf("could not get wd")
+			println("could not get wd")
 			return
 		}
 		assetsFS := http.FileServer(pkger.Dir(filepath.Join(wd, "assets")))

@@ -2,7 +2,6 @@ package js
 
 import (
 	"fmt"
-	"net/url"
 )
 
 // Type represents the JavaScript type of a Value.
@@ -175,7 +174,7 @@ type BrowserWindow interface {
 	Value
 
 	// The window current url (window.location.href).
-	URL() *url.URL
+	URL() string
 
 	// The window size.
 	Size() (w, h int)
@@ -249,4 +248,10 @@ func NewEventHandler(e string, v EventHandlerFunc) EventHandler {
 func (h EventHandler) Equal(o EventHandler) bool {
 	return h.Event == o.Event &&
 		fmt.Sprintf("%p", h.Value) == fmt.Sprintf("%p", o.Value)
+}
+
+type Location struct {
+	value    Value
+	Href     string
+	Pathname string
 }

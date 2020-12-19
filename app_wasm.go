@@ -8,7 +8,7 @@ import (
 )
 
 func Run() {
-	handle, _, _ := AppRouter.Lookup("GET", js.Window.URL().Path)
+	handle, _, _ := AppRouter.Lookup("GET", js.Window.Location().Pathname)
 	if handle == nil {
 		renderFunc = AppRouter.NotFound
 	} else {
