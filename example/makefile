@@ -1,17 +1,22 @@
 run:
 	go run *.go
 
-go:
-	go build
-
+wasm: export GOOS=js
+wasm: export GOARCH=wasm
 wasm:
-	GOOS=js GOARCH=wasm go build -o assets/main.wasm
+	go build -o assets/main.wasm
 
 css:
 	npx tailwindcss-cli@latest build assets/config.css -o assets/styles.css
 
-lambda:
-	sam local start-api
+deploy: export NODE_ENV=production
+deploy:
+	npx tailwindcss-cli@latest build assets/config.css -o assets/styles.css
+	go build -o main
+	make wasm
+	sam deploy
+	aws s3 sync ./assets s3://wapp.pyros2097.dev/assets --delete
+	aws cloudfront create-invalidation --distribution-id E17XVZYYZ1JXEU --paths "/*"
 
-sync:
-	aws s3 sync ./assets --delete public --dryrun s3://go-app-bucket-111
+local:
+	sam local start-api

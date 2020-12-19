@@ -1,51 +1,135 @@
-AWSTemplateFormatVersion: 2010-09-09
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  DomainName:
+    Type: String
+    Default: wapp.pyros2097.dev
+  HostedZoneId:
+    Type: String
+    Default: Z0469276792OXT6RNZF5
+  AcmCertificateArn:
+    Type: String
+    Default: arn:aws:acm:us-east-1:719747015987:certificate/16acd03e-b59a-459c-8a3f-5caa50df7079
+
 Outputs:
+  DistributionId:
+    Value: !Ref CloudFrontDistribution
+  DistributionDomain:
+    Value: !GetAtt CloudFrontDistribution.DomainName
   ApiUrl:
-    Value:
-      Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/
+
 Resources:
-  GoAppBucket:
+  WebBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: go-app-bucket-111
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
+      BucketName: !Ref DomainName
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "CloudFront OAI"
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            Action: s3:GetObject
+            Resource: !Join ["/", [!GetAtt WebBucket.Arn, "*"]]
+          - Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            Action: s3:ListBucket
+            Resource: !GetAtt WebBucket.Arn
+
   HttpApi:
-    Properties:
-      AccessLogSettings:
-        DestinationArn:
-          Fn::GetAtt:
-            - HttpApiAccessLogs
-            - Arn
-        Format:
-          '{"requestId":"$context.requestId", "ip": "$context.identity.sourceIp",
-          "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime","routeKey":"$context.routeKey",
-          "status":"$context.status", "error": "$context.integrationErrorMessage"}'
-      StageName: Prod
     Type: AWS::Serverless::HttpApi
-  HttpApiAccessLogs:
     Properties:
-      LogGroupName: /aws/http/py-app
-      RetentionInDays: 365
-    Type: AWS::Logs::LogGroup
-  RouteIndex:
+      StageName: Prod
+    
+  HttpApiLambda:
+    Type: AWS::Serverless::Function
     Properties:
-      Handler: ./example
+      Runtime: go1.x
+      MemorySize: 128
+      Timeout: 30
+      Handler: ./main
       Events:
         ApiEvent:
+          Type: HttpApi
           Properties:
             ApiId:
               Ref: HttpApi
-            Method: GET
-            Path: $default
-            PayloadFormatVersion: '1.0'
-          Type: HttpApi
-      MemorySize: 128
-      Runtime: go1.x
-      Timeout: 30
-    Type: AWS::Serverless::Function
-Transform: AWS::Serverless-2016-10-31
+            Method: ANY
+            Path: '$default'
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref DomainName
+        HttpVersion: http2
+        Enabled: true
+        IPV6Enabled: true
+        PriceClass: PriceClass_All
+        Origins:
+          - Id: s3
+            DomainName: !GetAtt WebBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+          - Id: app
+            DomainName: !Sub ${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+            OriginPath: /Prod
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: app
+          AllowedMethods: [HEAD, GET]
+          CachedMethods: [HEAD, GET]
+          ViewerProtocolPolicy: https-only
+          Compress: true
+          ForwardedValues:
+            QueryString:  true
+        CacheBehaviors:
+          - TargetOriginId: s3
+            PathPattern: /assets/*
+            AllowedMethods: [HEAD, GET]
+            CachedMethods: [HEAD, GET]
+            ViewerProtocolPolicy: https-only
+            Compress: true
+            ForwardedValues:
+              QueryString:  false
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmCertificateArn
+          MinimumProtocolVersion: TLSv1.2_2018
+          SslSupportMethod: sni-only
+
+  DNSRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        EvaluateTargetHealth: false
+        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront hosted zone ID
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+
+  DNSIPV6RecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        EvaluateTargetHealth: false
+        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront hosted zone ID
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: AAAA

@@ -19,5 +19,3 @@ test
 *.gcloudignore
 *.wasm
 main
-build
-vendor
