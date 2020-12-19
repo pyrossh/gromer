@@ -942,7 +942,7 @@ func (r *Router) getPage(ui UI) string {
 	return b.String()
 }
 
-func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (res lambdaResponse) {
+func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (res lambdaResponse, err error) {
 	res.StatusCode = 200
 	res.Headers = map[string]string{
 		"Content-Type": "text/html",
@@ -950,7 +950,6 @@ func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (
 	// Handle errors
 	defer func() {
 		if rcv := recover(); rcv != nil {
-			var err error
 			switch x := rcv.(type) {
 			case string:
 				err = errors.New(x)
