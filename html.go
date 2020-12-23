@@ -2,29 +2,29 @@ package app
 
 import "reflect"
 
-func Html(elems ...UI) *elem {
-	return &elem{tag: "html", body: elems}
+func Html(elems ...UI) *Element {
+	return &Element{tag: "html", body: elems}
 }
 
-func Head(elems ...UI) *elem {
+func Head(elems ...UI) *Element {
 	basic := []UI{
-		&elem{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
-		&elem{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
-		&elem{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
+		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
+		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
+		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
 	}
-	return &elem{tag: "head", body: append(basic, elems...)}
+	return &Element{tag: "head", body: append(basic, elems...)}
 }
 
-func Body(elems ...UI) *elem {
-	return &elem{tag: "body", body: elems}
+func Body(elems ...UI) *Element {
+	return &Element{tag: "body", body: elems}
 }
 
-func Title(v string) *elem {
-	return &elem{tag: "title", body: []UI{Text(v)}}
+func Title(v string) *Element {
+	return &Element{tag: "title", body: []UI{Text(v)}}
 }
 
-func Meta(name, content string) *elem {
-	e := &elem{
+func Meta(name, content string) *Element {
+	e := &Element{
 		tag:         "meta",
 		selfClosing: true,
 	}
@@ -33,8 +33,8 @@ func Meta(name, content string) *elem {
 	return e
 }
 
-func Link(rel, href string) *elem {
-	e := &elem{
+func Link(rel, href string) *Element {
+	e := &Element{
 		tag:         "link",
 		selfClosing: true,
 	}
@@ -43,34 +43,46 @@ func Link(rel, href string) *elem {
 	return e
 }
 
-func Script(str string) *elem {
-	return &elem{
+func Script(str string) *Element {
+	return &Element{
 		tag:  "script",
 		body: []UI{Text(str)},
 	}
 }
 
-func Div(uis ...interface{}) *elem {
-	e := &elem{tag: "div"}
+func Div(uis ...interface{}) *Element {
+	e := &Element{tag: "div"}
 	mergeAttributes(e, uis...)
 	return e
 }
 
-func Input(uis ...interface{}) *elem {
-	e := &elem{tag: "input"}
+func Input(uis ...interface{}) *Element {
+	e := &Element{tag: "input"}
 	mergeAttributes(e, uis...)
 	return e
 }
 
-func Image(uis ...interface{}) *elem {
-	e := &elem{tag: "image"}
+func Image(uis ...interface{}) *Element {
+	e := &Element{tag: "image"}
 	mergeAttributes(e, uis...)
 	return e
 }
 
-func Button(uis ...interface{}) *elem {
-	e := &elem{tag: "button"}
+func Button(uis ...interface{}) *Element {
+	e := &Element{tag: "button"}
 	mergeAttributes(e, uis...)
+	return e
+}
+
+func Svg(elems ...interface{}) *Element {
+	e := &Element{tag: "svg"}
+	mergeAttributes(e, elems...)
+	return e
+}
+
+func SvgText(elems ...interface{}) *Element {
+	e := &Element{tag: "text"}
+	mergeAttributes(e, elems...)
 	return e
 }
 

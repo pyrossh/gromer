@@ -55,6 +55,18 @@ func Src(v string) Attribute {
 	return Attribute{"src", v}
 }
 
+func ViewBox(v string) Attribute {
+	return Attribute{"viewBox", v}
+}
+
+func X(v string) Attribute {
+	return Attribute{"x", v}
+}
+
+func Y(v string) Attribute {
+	return Attribute{"y", v}
+}
+
 type CssAttribute struct {
 	classes string
 }
@@ -99,7 +111,7 @@ type HelmetDescription string
 type HelmetAuthor string
 type HelmetKeywords string
 
-func mergeAttributes(parent *elem, uis ...interface{}) {
+func mergeAttributes(parent *Element, uis ...interface{}) {
 	elems := []UI{}
 	for _, v := range uis {
 		switch c := v.(type) {

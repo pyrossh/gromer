@@ -182,7 +182,7 @@ func (r RenderFunc) replaceRoot(n UI) error {
 	var parent UI
 	for {
 		parent = r.parent()
-		_, isElem := parent.(*elem)
+		_, isElem := parent.(*Element)
 		if parent == nil || isElem {
 			break
 		}

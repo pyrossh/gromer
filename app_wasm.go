@@ -47,7 +47,7 @@ func Route(path string, render RenderFunc) {
 }
 
 func initBody() {
-	body = &elem{
+	body = &Element{
 		jsvalue: js.Window.Get("document").Get("body"),
 		tag:     "body",
 	}
@@ -55,7 +55,7 @@ func initBody() {
 }
 
 func initContent() {
-	content := &elem{
+	content := &Element{
 		jsvalue: body.JSValue().Get("firstElementChild"),
 		tag:     "div",
 	}

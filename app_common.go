@@ -1,7 +1,7 @@
 package app
 
 var (
-	body       *elem
+	body       *Element
 	content    UI
 	renderFunc RenderFunc
 	helmet     = &Helmet{}

@@ -7,7 +7,7 @@ import (
 	"github.com/pyros2097/wapp/js"
 )
 
-type elem struct {
+type Element struct {
 	attrs       map[string]string
 	body        []UI
 	events      map[string]js.EventHandler
@@ -18,48 +18,48 @@ type elem struct {
 	this        UI
 }
 
-func (e *elem) JSValue() js.Value {
+func (e *Element) JSValue() js.Value {
 	return e.jsvalue
 }
 
-func (e *elem) Mounted() bool {
+func (e *Element) Mounted() bool {
 	return e.self() != nil &&
 		e.jsvalue != nil
 }
 
-func (e *elem) name() string {
+func (e *Element) name() string {
 	return e.tag
 }
 
-func (e *elem) self() UI {
+func (e *Element) self() UI {
 	return e.this
 }
 
-func (e *elem) setSelf(n UI) {
+func (e *Element) setSelf(n UI) {
 	e.this = n
 }
 
-func (e *elem) attributes() map[string]string {
+func (e *Element) attributes() map[string]string {
 	return e.attrs
 }
 
-func (e *elem) eventHandlers() map[string]js.EventHandler {
+func (e *Element) eventHandlers() map[string]js.EventHandler {
 	return e.events
 }
 
-func (e *elem) parent() UI {
+func (e *Element) parent() UI {
 	return e.parentElem
 }
 
-func (e *elem) setParent(p UI) {
+func (e *Element) setParent(p UI) {
 	e.parentElem = p
 }
 
-func (e *elem) children() []UI {
+func (e *Element) children() []UI {
 	return e.body
 }
 
-func (e *elem) mount() error {
+func (e *Element) mount() error {
 	if e.Mounted() {
 		panic("mounting elem failed already mounted " + e.name())
 	}
@@ -87,7 +87,7 @@ func (e *elem) mount() error {
 	return nil
 }
 
-func (e *elem) dismount() {
+func (e *Element) dismount() {
 	for _, c := range e.children() {
 		dismount(c)
 	}
@@ -99,7 +99,7 @@ func (e *elem) dismount() {
 	e.jsvalue = nil
 }
 
-func (e *elem) update(n UI) error {
+func (e *Element) update(n UI) error {
 	if !e.Mounted() {
 		return nil
 	}
@@ -157,7 +157,7 @@ func (e *elem) update(n UI) error {
 	return nil
 }
 
-func (e *elem) appendChild(c UI, onlyJsValue bool) error {
+func (e *Element) appendChild(c UI, onlyJsValue bool) error {
 	if err := mount(c); err != nil {
 		panic("appending child failed child-name: " + c.name() + " name: " + e.name())
 	}
@@ -171,7 +171,7 @@ func (e *elem) appendChild(c UI, onlyJsValue bool) error {
 	return nil
 }
 
-func (e *elem) replaceChildAt(idx int, new UI) error {
+func (e *Element) replaceChildAt(idx int, new UI) error {
 	old := e.body[idx]
 
 	if err := mount(new); err != nil {
@@ -186,7 +186,7 @@ func (e *elem) replaceChildAt(idx int, new UI) error {
 	return nil
 }
 
-func (e *elem) removeChildAt(idx int) error {
+func (e *Element) removeChildAt(idx int) error {
 	body := e.body
 	if idx < 0 || idx >= len(body) {
 		panic("removing child failed index out of range name: " + e.name() + " index: " + strconv.Itoa(idx))
@@ -204,7 +204,7 @@ func (e *elem) removeChildAt(idx int) error {
 	return nil
 }
 
-func (e *elem) updateAttrs(attrs map[string]string) {
+func (e *Element) updateAttrs(attrs map[string]string) {
 	for k := range e.attrs {
 		if _, exists := attrs[k]; !exists {
 			e.delAttr(k)
@@ -223,7 +223,7 @@ func (e *elem) updateAttrs(attrs map[string]string) {
 	}
 }
 
-func (e *elem) setAttr(k string, v string) {
+func (e *Element) setAttr(k string, v string) {
 	if e.attrs == nil {
 		e.attrs = make(map[string]string)
 	}
@@ -253,16 +253,16 @@ func (e *elem) setAttr(k string, v string) {
 	}
 }
 
-func (e *elem) setJsAttr(k, v string) {
+func (e *Element) setJsAttr(k, v string) {
 	e.JSValue().Call("setAttribute", k, v)
 }
 
-func (e *elem) delAttr(k string) {
+func (e *Element) delAttr(k string) {
 	e.JSValue().Call("removeAttribute", k)
 	delete(e.attrs, k)
 }
 
-func (e *elem) updateEventHandler(handlers map[string]js.EventHandler) {
+func (e *Element) updateEventHandler(handlers map[string]js.EventHandler) {
 	for k, current := range e.events {
 		if _, exists := handlers[k]; !exists {
 			e.delJsEventHandler(k, current)
@@ -285,7 +285,7 @@ func (e *elem) updateEventHandler(handlers map[string]js.EventHandler) {
 	}
 }
 
-func (e *elem) setEventHandler(k string, h js.EventHandlerFunc) {
+func (e *Element) setEventHandler(k string, h js.EventHandlerFunc) {
 	if e.events == nil {
 		e.events = make(map[string]js.EventHandler)
 	}
@@ -293,7 +293,7 @@ func (e *elem) setEventHandler(k string, h js.EventHandlerFunc) {
 	e.events[k] = js.NewEventHandler(k, h)
 }
 
-func (e *elem) setJsEventHandler(k string, h js.EventHandler) {
+func (e *Element) setJsEventHandler(k string, h js.EventHandler) {
 	jshandler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		dispatch(func() {
 			if !e.self().Mounted() {
@@ -313,24 +313,24 @@ func (e *elem) setJsEventHandler(k string, h js.EventHandler) {
 	e.JSValue().Call("addEventListener", k, jshandler)
 }
 
-func (e *elem) delJsEventHandler(k string, h js.EventHandler) {
+func (e *Element) delJsEventHandler(k string, h js.EventHandler) {
 	e.JSValue().Call("removeEventListener", k, h.JSvalue)
 	h.JSvalue.Release()
 	delete(e.events, k)
 }
 
-func (e *elem) setBody(body []UI) {
+func (e *Element) setBody(body []UI) {
 	if e.selfClosing {
 		panic("setting html element body failed: self closing element can't have children" + e.name())
 	}
 	e.body = body
 }
 
-func (e *elem) Html(w io.Writer) {
+func (e *Element) Html(w io.Writer) {
 	e.HtmlWithIndent(w, 0)
 }
 
-func (e *elem) HtmlWithIndent(w io.Writer, indent int) {
+func (e *Element) HtmlWithIndent(w io.Writer, indent int) {
 	writeIndent(w, indent)
 	w.Write(stob("<"))
 	w.Write(stob(e.tag))
