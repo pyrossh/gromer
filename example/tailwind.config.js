@@ -1,7 +1,7 @@
 module.exports = {
     purge: {
         content: [
-            './*.go',
+            './**/*.go',
         ],
         options: {
             safelist: ['flex', 'flex-col', 'flex-row', 'justify-center', 'items-center'],
