@@ -5,24 +5,25 @@ import (
 
 	. "github.com/pyros2097/wapp"
 	. "github.com/pyros2097/wapp/example/atoms"
+	. "github.com/pyros2097/wapp/example/components"
 )
 
 func AtomCounter(c *RenderContext, no string) UI {
 	count := c.UseAtom(CountAtom)
-	return Col(
+	return Col(Css("text-3xl text-gray-700"),
 		Row(
-			Row(Css("text-2xl"),
+			Row(Css("underline"),
 				Text("Counter - "+no),
 			),
 		),
 		Row(
-			Row(Css("text-2xl m-20 cursor-pointer select-none"), OnClick(DecCount),
+			Button(Css("btn m-20"), OnClick(DecCount),
 				Text("-"),
 			),
-			Row(Css("text-2xl m-20"),
+			Row(Css("m-20"),
 				Text(strconv.Itoa(count.(int))),
 			),
-			Row(Css("text-2xl m-20 cursor-pointer select-none"), OnClick(IncCount),
+			Button(Css("btn m-20"), OnClick(IncCount),
 				Text("+"),
 			),
 		),
@@ -31,6 +32,7 @@ func AtomCounter(c *RenderContext, no string) UI {
 
 func Container(c *RenderContext) UI {
 	return Col(
+		Header(c),
 		AtomCounter(c, "1"),
 		AtomCounter(c, "2"),
 		AtomCounter(c, "3"),

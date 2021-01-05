@@ -4,6 +4,7 @@ import (
 	"time"
 
 	. "github.com/pyros2097/wapp"
+	. "github.com/pyros2097/wapp/example/components"
 )
 
 func Clock(c *RenderContext) UI {
@@ -26,9 +27,10 @@ func Clock(c *RenderContext) UI {
 		return stopTimer
 	})
 
-	return Col(
+	return Col(Css("text-3xl text-gray-700"),
+		Header(c),
 		Row(
-			Div(Css("text-6xl"),
+			Div(Css("underline"),
 				Text("Clock"),
 			),
 		),
@@ -38,10 +40,10 @@ func Clock(c *RenderContext) UI {
 			),
 		),
 		Row(
-			Div(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(startTimer),
+			Button(Css("btn m-20"), OnClick(startTimer),
 				Text("Start"),
 			),
-			Div(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(stopTimer),
+			Button(Css("btn m-20"), OnClick(stopTimer),
 				Text("Stop"),
 			),
 		),

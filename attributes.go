@@ -67,6 +67,18 @@ func Y(v string) Attribute {
 	return Attribute{"y", v}
 }
 
+func Href(v string) Attribute {
+	return Attribute{"href", v}
+}
+
+func Target(v string) Attribute {
+	return Attribute{"target", v}
+}
+
+func Rel(v string) Attribute {
+	return Attribute{"rel", v}
+}
+
 type CssAttribute struct {
 	classes string
 }

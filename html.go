@@ -56,6 +56,12 @@ func Div(uis ...interface{}) *Element {
 	return e
 }
 
+func A(uis ...interface{}) *Element {
+	e := &Element{tag: "a"}
+	mergeAttributes(e, uis...)
+	return e
+}
+
 func Input(uis ...interface{}) *Element {
 	e := &Element{tag: "input"}
 	mergeAttributes(e, uis...)
