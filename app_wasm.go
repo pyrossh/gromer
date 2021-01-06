@@ -9,9 +9,9 @@ import (
 )
 
 func Run() {
-	handle, _, _ := AppRouter.Lookup("GET", js.Window.Location().Pathname)
+	handle, _, _ := globalRouter.Lookup("GET", js.Window.Location().Pathname)
 	if handle == nil {
-		renderFunc = AppRouter.NotFound
+		renderFunc = globalRouter.NotFound
 	} else {
 		renderFunc, _ = handle.(RenderFunc)
 	}
@@ -43,7 +43,7 @@ func Reload() {
 }
 
 func Route(path string, render RenderFunc) {
-	AppRouter.GET(path, render)
+	globalRouter.GET(path, render)
 }
 
 func initBody() {

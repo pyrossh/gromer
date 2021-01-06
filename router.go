@@ -729,7 +729,7 @@ type Router struct {
 	Error func(*RenderContext, error) UI
 }
 
-var AppRouter = &Router{
+var globalRouter = &Router{
 	RedirectTrailingSlash: true,
 	NotFound: func(c *RenderContext) UI {
 		return Col(
@@ -737,7 +737,7 @@ var AppRouter = &Router{
 				Text("This is the default 404 - Not Found Route handler"),
 			),
 			Row(
-				Text("use AppRouter.NotFound = func(c *RenderContext) UI {} to override it"),
+				Text("SetNotFoundHandler(func(c *RenderContext) UI {}) to override it"),
 			),
 		)
 	},
@@ -750,10 +750,18 @@ var AppRouter = &Router{
 				Text("Error: "+err.Error()),
 			),
 			Row(
-				Text("use AppRouter.Error = func(c *RenderContext) UI {} to override it"),
+				Text("SetErrorHandler(func(c *RenderContext, err error) UI {}) to override it"),
 			),
 		)
 	},
+}
+
+func SetNotFoundHandler(b func(c *RenderContext) UI) {
+	globalRouter.NotFound = b
+}
+
+func SetErrorHandler(b func(c *RenderContext, err error) UI) {
+	globalRouter.Error = b
 }
 
 // GET route

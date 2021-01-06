@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	AppRouter.Error = func(c *RenderContext, err error) UI {
+	SetErrorHandler(func(c *RenderContext, err error) UI {
 		return Col(Css("text-4xl text-gray-700"),
 			Header(c),
 			Row(
@@ -16,7 +16,7 @@ func main() {
 				Text("Please check back again"),
 			),
 		)
-	}
+	})
 	Route("/panic", Panic)
 	Route("/about", About)
 	Route("/clock", Clock)
