@@ -71,7 +71,7 @@ func Input(uis ...interface{}) *Element {
 }
 
 func Image(uis ...interface{}) *Element {
-	return NewElement("image", false, uis...)
+	return NewElement("image", true, uis...)
 }
 
 func Button(uis ...interface{}) *Element {
@@ -84,6 +84,14 @@ func Svg(uis ...interface{}) *Element {
 
 func SvgText(uis ...interface{}) *Element {
 	return NewElement("text", false, uis...)
+}
+
+func Ul(uis ...interface{}) *Element {
+	return NewElement("ul", false, uis...)
+}
+
+func Li(uis ...interface{}) *Element {
+	return NewElement("li", false, uis...)
 }
 
 func Row(uis ...interface{}) UI {

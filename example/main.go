@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+	// os.Setenv("HAS_WASM", "false")
 	SetErrorHandler(func(c *RenderContext, err error) UI {
 		return Col(Css("text-4xl text-gray-700"),
 			Header(c),

@@ -160,6 +160,8 @@ func MergeAttributes(parent *Element, uis ...interface{}) *Element {
 			panic("unknown type in render")
 		}
 	}
-	parent.setBody(elems)
+	if !parent.selfClosing {
+		parent.setBody(elems)
+	}
 	return parent
 }

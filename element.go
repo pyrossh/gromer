@@ -336,6 +336,9 @@ func (e *Element) Html(w io.Writer) {
 
 func (e *Element) HtmlWithIndent(w io.Writer, indent int) {
 	writeIndent(w, indent)
+	if e.tag == "html" {
+		w.Write(stob("<!DOCTYPE html>\n"))
+	}
 	w.Write(stob("<"))
 	w.Write(stob(e.tag))
 
@@ -358,7 +361,9 @@ func (e *Element) HtmlWithIndent(w io.Writer, indent int) {
 
 	for _, c := range e.body {
 		w.Write(ln())
-		c.(WritableNode).HtmlWithIndent(w, indent+1)
+		if c != nil {
+			c.(WritableNode).HtmlWithIndent(w, indent+1)
+		}
 	}
 
 	if len(e.body) != 0 {
