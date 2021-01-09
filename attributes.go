@@ -156,6 +156,7 @@ func MergeAttributes(parent *Element, uis ...interface{}) *Element {
 		case nil:
 			// dont need to add nil items
 		default:
+			// fmt.Printf("%v\n", v)
 			panic("unknown type in render")
 		}
 	}

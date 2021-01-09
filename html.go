@@ -51,39 +51,39 @@ func Script(str string) *Element {
 }
 
 func Div(uis ...interface{}) *Element {
-	return NewElement("div", false, uis)
+	return NewElement("div", false, uis...)
 }
 
 func A(uis ...interface{}) *Element {
-	return NewElement("a", false, uis)
+	return NewElement("a", false, uis...)
 }
 
 func P(uis ...interface{}) *Element {
-	return NewElement("p", false, uis)
+	return NewElement("p", false, uis...)
 }
 
 func Span(uis ...interface{}) *Element {
-	return NewElement("span", false, uis)
+	return NewElement("span", false, uis...)
 }
 
 func Input(uis ...interface{}) *Element {
-	return NewElement("input", false, uis)
+	return NewElement("input", false, uis...)
 }
 
 func Image(uis ...interface{}) *Element {
-	return NewElement("image", false, uis)
+	return NewElement("image", false, uis...)
 }
 
 func Button(uis ...interface{}) *Element {
-	return NewElement("button", false, uis)
+	return NewElement("button", false, uis...)
 }
 
 func Svg(uis ...interface{}) *Element {
-	return NewElement("svg", false, uis)
+	return NewElement("svg", false, uis...)
 }
 
 func SvgText(uis ...interface{}) *Element {
-	return NewElement("text", false, uis)
+	return NewElement("text", false, uis...)
 }
 
 func Row(uis ...interface{}) UI {
