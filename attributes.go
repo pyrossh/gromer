@@ -123,7 +123,7 @@ type HelmetDescription string
 type HelmetAuthor string
 type HelmetKeywords string
 
-func mergeAttributes(parent *Element, uis ...interface{}) {
+func MergeAttributes(parent *Element, uis ...interface{}) *Element {
 	elems := []UI{}
 	for _, v := range uis {
 		switch c := v.(type) {
@@ -160,4 +160,5 @@ func mergeAttributes(parent *Element, uis ...interface{}) {
 		}
 	}
 	parent.setBody(elems)
+	return parent
 }

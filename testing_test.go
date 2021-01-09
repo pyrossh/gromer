@@ -1,5 +1,10 @@
 package app
 
+import (
+	"runtime"
+	"testing"
+)
+
 // import (
 // 	"io/ioutil"
 // 	"os"
@@ -9,16 +14,11 @@ package app
 // 	"github.com/stretchr/testify/require"
 // )
 
-// func testSkipNonWasm(t *testing.T) {
-// 	if goarch := runtime.GOARCH; goarch != "wasm" {
-// 		t.Skip("skipping test")
-// 		// t.Skip(logs.New("skipping test").
-// 		// 	Tag("reason", "unsupported architecture").
-// 		// 	Tag("required-architecture", "wasm").
-// 		// 	Tag("current-architecture", goarch),
-// 		// )
-// 	}
-// }
+func testSkipNonWasm(t *testing.T) {
+	if goarch := runtime.GOARCH; goarch != "wasm" {
+		t.Skip("skipping test")
+	}
+}
 
 // func testSkipWasm(t *testing.T) {
 // 	if goarch := runtime.GOARCH; goarch == "wasm" {

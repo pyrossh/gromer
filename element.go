@@ -18,6 +18,10 @@ type Element struct {
 	this        UI
 }
 
+func NewElement(tag string, selfClosing bool, uis ...interface{}) *Element {
+	return MergeAttributes(&Element{tag: tag, selfClosing: selfClosing}, uis...)
+}
+
 func (e *Element) JSValue() js.Value {
 	return e.jsvalue
 }

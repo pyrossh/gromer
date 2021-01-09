@@ -1,146 +1,152 @@
 package app
 
+import (
+	"fmt"
+
+	"github.com/pyros2097/wapp/errors"
+)
+
 // import (
 // 	"fmt"
 
 // 	"github.com/pyros2097/wapp/errors"
 // )
 
-// // TestUIDescriptor represents a descriptor that describes a UI element and its
-// // location from its parents.
-// type TestUIDescriptor struct {
-// 	// The location of the node. It is used by the TestMatch to find the
-// 	// element to test.
-// 	//
-// 	// If empty, the expected UI element is compared with the root of the tree.
-// 	//
-// 	// Otherwise, each integer represents the index of the element to traverse,
-// 	// from the root's children to the element to compare
-// 	Path []int
+// TestUIDescriptor represents a descriptor that describes a UI element and its
+// location from its parents.
+type TestUIDescriptor struct {
+	// The location of the node. It is used by the TestMatch to find the
+	// element to test.
+	//
+	// If empty, the expected UI element is compared with the root of the tree.
+	//
+	// Otherwise, each integer represents the index of the element to traverse,
+	// from the root's children to the element to compare
+	Path []int
 
-// 	// The element to compare with the element targeted by Path. Compare
-// 	// behavior varies depending on the element kind.
-// 	//
-// 	// Simple text elements only have their text value compared.
-// 	//
-// 	// HTML elements have their attribute compared and check if their event
-// 	// handlers are set.
-// 	//
-// 	// Components have their exported field values compared.
-// 	Expected UI
-// }
+	// The element to compare with the element targeted by Path. Compare
+	// behavior varies depending on the element kind.
+	//
+	// Simple text elements only have their text value compared.
+	//
+	// HTML elements have their attribute compared and check if their event
+	// handlers are set.
+	//
+	// Components have their exported field values compared.
+	Expected UI
+}
 
-// // TestPath is a helper function that returns a path to use in a
-// // TestUIDescriptor.
-// func TestPath(p ...int) []int {
-// 	return p
-// }
+// TestPath is a helper function that returns a path to use in a
+// TestUIDescriptor.
+func TestPath(p ...int) []int {
+	return p
+}
 
-// // TestMatch looks for the element targeted by the descriptor in the given tree
-// // and reports whether it matches with the expected element.
-// //
-// // Eg:
-// //  tree := app.Div().Body(
-// //      app.H2().Body(
-// //          app.Text("foo"),
-// //      ),
-// //      app.P().Body(
-// //          app.Text("bar"),
-// //      ),
-// //  )
-// //
-// //  // Testing root:
-// //  err := app.TestMatch(tree, app.TestUIDescriptor{
-// //      Path:     TestPath(),
-// //      Expected: app.Div(),
-// //  })
-// //  // OK => err == nil
-// //
-// //  // Testing h2:
-// //  err := app.TestMatch(tree, app.TestUIDescriptor{
-// //      Path:     TestPath(0),
-// //      Expected: app.H3(),
-// //  })
-// //  // KO => err != nil because we ask h2 to match with h3
-// //
-// //  // Testing text from p:
-// //  err = app.TestMatch(tree, app.TestUIDescriptor{
-// //      Path:     TestPath(1, 0),
-// //      Expected: app.Text("bar"),
-// //  })
-// //  // OK => err == nil
-// func TestMatch(tree UI, d TestUIDescriptor) error {
-// 	if !tree.Mounted() {
-// 		if err := mount(tree); err != nil {
-// 			return err
-// 		}
-// 	}
+// TestMatch looks for the element targeted by the descriptor in the given tree
+// and reports whether it matches with the expected element.
+//
+// Eg:
+//  tree := app.Div().Body(
+//      app.H2().Body(
+//          app.Text("foo"),
+//      ),
+//      app.P().Body(
+//          app.Text("bar"),
+//      ),
+//  )
+//
+//  // Testing root:
+//  err := app.TestMatch(tree, app.TestUIDescriptor{
+//      Path:     TestPath(),
+//      Expected: app.Div(),
+//  })
+//  // OK => err == nil
+//
+//  // Testing h2:
+//  err := app.TestMatch(tree, app.TestUIDescriptor{
+//      Path:     TestPath(0),
+//      Expected: app.H3(),
+//  })
+//  // KO => err != nil because we ask h2 to match with h3
+//
+//  // Testing text from p:
+//  err = app.TestMatch(tree, app.TestUIDescriptor{
+//      Path:     TestPath(1, 0),
+//      Expected: app.Text("bar"),
+//  })
+//  // OK => err == nil
+func TestMatch(tree UI, d TestUIDescriptor) error {
+	if !tree.Mounted() {
+		if err := mount(tree); err != nil {
+			return err
+		}
+	}
 
-// 	if d.Expected != nil {
-// 		d.Expected.setSelf(d.Expected)
-// 	}
+	if d.Expected != nil {
+		d.Expected.setSelf(d.Expected)
+	}
 
-// 	if len(d.Path) != 0 {
-// 		idx := d.Path[0]
+	if len(d.Path) != 0 {
+		idx := d.Path[0]
 
-// 		if idx < 0 || idx >= len(tree.children()) {
-// 			// Check that the element does not exists.
-// 			if d.Expected == nil {
-// 				return nil
-// 			}
+		if idx < 0 || idx >= len(tree.children()) {
+			// Check that the element does not exists.
+			if d.Expected == nil {
+				return nil
+			}
 
-// 			return errors.New("ui element to match is out of range").
-// 				Tag("name", d.Expected.name()).
-// 				Tag("parent-name", tree.name()).
-// 				Tag("parent-children-count", len(tree.children())).
-// 				Tag("index", idx)
-// 		}
+			return errors.New("ui element to match is out of range").
+				Tag("name", d.Expected.name()).
+				Tag("parent-name", tree.name()).
+				Tag("parent-children-count", len(tree.children())).
+				Tag("index", idx)
+		}
 
-// 		c := tree.children()[idx]
-// 		p := c.parent()
+		c := tree.children()[idx]
+		p := c.parent()
 
-// 		if p != tree {
-// 			return errors.New("unexpected ui element parent").
-// 				Tag("name", d.Expected.name()).
-// 				Tag("parent-name", p.name()).
-// 				Tag("parent-addr", fmt.Sprintf("%p", p)).
-// 				Tag("expected-parent-name", tree.name()).
-// 				Tag("expected-parent-addr", fmt.Sprintf("%p", tree))
-// 		}
+		if p != tree {
+			return errors.New("unexpected ui element parent").
+				Tag("name", d.Expected.name()).
+				Tag("parent-name", p.name()).
+				Tag("parent-addr", fmt.Sprintf("%p", p)).
+				Tag("expected-parent-name", tree.name()).
+				Tag("expected-parent-addr", fmt.Sprintf("%p", tree))
+		}
 
-// 		d.Path = d.Path[1:]
-// 		return TestMatch(c, d)
-// 	}
+		d.Path = d.Path[1:]
+		return TestMatch(c, d)
+	}
 
-// 	if d.Expected.name() != tree.name() {
-// 		return errors.New("the UI element is not matching the descriptor").
-// 			Tag("expected-name", d.Expected.name()).
-// 			Tag("current-name", tree.name())
-// 	}
+	if d.Expected.name() != tree.name() {
+		return errors.New("the UI element is not matching the descriptor").
+			Tag("expected-name", d.Expected.name()).
+			Tag("current-name", tree.name())
+	}
 
-// 	// switch d.Expected.Kind() {
-// 	// case SimpleText:
-// 	// 	return matchText(tree, d)
+	// switch d.Expected.Kind() {
+	// case SimpleText:
+	// 	return matchText(tree, d)
 
-// 	// case HTML:
-// 	// 	if err := matchHTMLElemAttrs(tree, d); err != nil {
-// 	// 		return err
-// 	// 	}
-// 	// 	return matchHTMLElemEventHandlers(tree, d)
+	// case HTML:
+	// 	if err := matchHTMLElemAttrs(tree, d); err != nil {
+	// 		return err
+	// 	}
+	// 	return matchHTMLElemEventHandlers(tree, d)
 
-// 	// // case Component:
-// 	// // 	return matchComponent(tree, d)
+	// // case Component:
+	// // 	return matchComponent(tree, d)
 
-// 	// case RawHTML:
-// 	// 	return matchRaw(tree, d)
+	// case RawHTML:
+	// 	return matchRaw(tree, d)
 
-// 	// default:
-// 	// 	return errors.New("the UI element is not matching the descriptor").
-// 	// 		Tag("reason", "unavailable matching for the kind").
-// 	// 		Tag("kind", d.Expected.Kind())
-// 	// }
-// 	return nil
-// }
+	// default:
+	// 	return errors.New("the UI element is not matching the descriptor").
+	// 		Tag("reason", "unavailable matching for the kind").
+	// 		Tag("kind", d.Expected.Kind())
+	// }
+	return nil
+}
 
 // func matchText(n UI, d TestUIDescriptor) error {
 // 	a := n.(*text)

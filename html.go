@@ -51,45 +51,39 @@ func Script(str string) *Element {
 }
 
 func Div(uis ...interface{}) *Element {
-	e := &Element{tag: "div"}
-	mergeAttributes(e, uis...)
-	return e
+	return NewElement("div", false, uis)
 }
 
 func A(uis ...interface{}) *Element {
-	e := &Element{tag: "a"}
-	mergeAttributes(e, uis...)
-	return e
+	return NewElement("a", false, uis)
+}
+
+func P(uis ...interface{}) *Element {
+	return NewElement("p", false, uis)
+}
+
+func Span(uis ...interface{}) *Element {
+	return NewElement("span", false, uis)
 }
 
 func Input(uis ...interface{}) *Element {
-	e := &Element{tag: "input"}
-	mergeAttributes(e, uis...)
-	return e
+	return NewElement("input", false, uis)
 }
 
 func Image(uis ...interface{}) *Element {
-	e := &Element{tag: "image"}
-	mergeAttributes(e, uis...)
-	return e
+	return NewElement("image", false, uis)
 }
 
 func Button(uis ...interface{}) *Element {
-	e := &Element{tag: "button"}
-	mergeAttributes(e, uis...)
-	return e
+	return NewElement("button", false, uis)
 }
 
-func Svg(elems ...interface{}) *Element {
-	e := &Element{tag: "svg"}
-	mergeAttributes(e, elems...)
-	return e
+func Svg(uis ...interface{}) *Element {
+	return NewElement("svg", false, uis)
 }
 
-func SvgText(elems ...interface{}) *Element {
-	e := &Element{tag: "text"}
-	mergeAttributes(e, elems...)
-	return e
+func SvgText(uis ...interface{}) *Element {
+	return NewElement("text", false, uis)
 }
 
 func Row(uis ...interface{}) UI {
