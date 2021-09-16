@@ -1,36 +1,26 @@
 ---
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Parameters:
-  DomainName:
-    Type: String
-    Default: wapp.pyros2097.dev
-  HostedZoneId:
-    Type: String
-    Default: Z0469276792OXT6RNZF5
-  AcmCertificateArn:
-    Type: String
-    Default: arn:aws:acm:us-east-1:719747015987:certificate/16acd03e-b59a-459c-8a3f-5caa50df7079
 
 Outputs:
   DistributionId:
     Value: !Ref CloudFrontDistribution
-  DistributionDomain:
+  AppUrl:
     Value: !GetAtt CloudFrontDistribution.DomainName
   ApiUrl:
-    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/
+    Value: !Sub https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/
 
 Resources:
   WebBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref DomainName
+      BucketName: wapp-example
 
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: "CloudFront OAI"
+        Comment: 'CloudFront OAI'
 
   WebBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -42,18 +32,13 @@ Resources:
             Principal:
               CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
             Action: s3:GetObject
-            Resource: !Join ["/", [!GetAtt WebBucket.Arn, "*"]]
+            Resource: !Join ['/', [!GetAtt WebBucket.Arn, '*']]
           - Effect: Allow
             Principal:
               CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
             Action: s3:ListBucket
             Resource: !GetAtt WebBucket.Arn
 
-  HttpApi:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      StageName: Prod
-    
   HttpApiLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -65,8 +50,6 @@ Resources:
         ApiEvent:
           Type: HttpApi
           Properties:
-            ApiId:
-              Ref: HttpApi
             Method: ANY
             Path: '$default'
 
@@ -74,8 +57,6 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Aliases:
-          - !Ref DomainName
         HttpVersion: http2
         Enabled: true
         IPV6Enabled: true
@@ -84,20 +65,18 @@ Resources:
           - Id: s3
             DomainName: !GetAtt WebBucket.DomainName
             S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
           - Id: app
-            DomainName: !Sub ${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
-            OriginPath: /Prod
+            DomainName: !Sub ${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
             CustomOriginConfig:
               OriginProtocolPolicy: https-only
         DefaultCacheBehavior:
           TargetOriginId: app
-          AllowedMethods: [HEAD, GET]
-          CachedMethods: [HEAD, GET]
+          AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
           ViewerProtocolPolicy: https-only
           Compress: true
           ForwardedValues:
-            QueryString:  true
+            QueryString: true
         CacheBehaviors:
           - TargetOriginId: s3
             PathPattern: /assets/*
@@ -106,30 +85,4 @@ Resources:
             ViewerProtocolPolicy: https-only
             Compress: true
             ForwardedValues:
-              QueryString:  false
-        ViewerCertificate:
-          AcmCertificateArn: !Ref AcmCertificateArn
-          MinimumProtocolVersion: TLSv1.2_2018
-          SslSupportMethod: sni-only
-
-  DNSRecordSet:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt CloudFrontDistribution.DomainName
-        EvaluateTargetHealth: false
-        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront hosted zone ID
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref DomainName
-      Type: A
-
-  DNSIPV6RecordSet:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt CloudFrontDistribution.DomainName
-        EvaluateTargetHealth: false
-        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront hosted zone ID
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref DomainName
-      Type: AAAA
+              QueryString: false

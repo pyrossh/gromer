@@ -6,44 +6,23 @@
 
 # wapp
 
-**wapp** is a framework to build isomorphic web apps in golang.
-
-It uses a declarative syntax using funcs that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup. The syntax is inspired by react and its awesome hooks and functional component features. It is highly opioninated and integrates very well with tailwind css for now.
-
-This originally started out as of fork of this awesome go-app PWA framework. All credits goes to Maxence Charriere for majority of the work.
-
-Inspired by:
-* [go-app](https://github.com/maxence-charriere/go-app)
-* [react](https://reactjs.org/docs/components-and-props.html)
-* [reacct-hooks](https://reactjs.org/docs/hooks-intro.html)
-* [jotai](https://github.com/pmndrs/jotai)
-* [klyva](https://github.com/merisbahti/klyva)
-
+**wapp** is a framework to build web apps in golang.
+It uses a declarative syntax using funcs that allows creating and dealing with HTML elements only by using Go, and without writing any HTML markup.ZZZIt is highly opioninated and integrates uses tailwind css and alpinejs.
 
 # Install
 
 **wapp** requirements:
 
-- [Go 1.15](https://golang.org/doc/go1.15)
+- [Go 1.16](https://golang.org/doc/go1.16)
 
 ```sh
 go mod init
 go get -u -v github.com/pyros2097/wapp
 ```
 
-# Demos
+[Demo](https://github.com/pyros2097/wapp-example)
 
-[Demo 1](https://wapp.pyros2097.dev/)
-
-[Demo 2](https://timer.pyros2097.dev/)
-
-# Examples
-
-[Example 1](https://github.com/pyros2097/wapp/tree/master/example)
-
-[Example 2](https://github.com/pyros2097/wapp-timer)
-
-**Counter**
+**Example**
 
 ```go
 package main
@@ -52,92 +31,48 @@ import (
 	. "github.com/pyros2097/wapp"
 )
 
-func Counter(c *RenderContext) UI {
-	count, setCount := c.UseInt(0)
-	inc := func() { setCount(count() + 1) }
-	dec := func() { setCount(count() - 1) }
-	return Col(
-		Row(
-			Row(Css("text-6xl"),
-				Text("Counter"),
-			),
+func Header() *Element {
+	return Row(Css("w-full mb-20 font-bold text-xl text-gray-700 p-4"),
+		Div(Css("text-blue-700"),
+			A(Href("https://wapp.pyros2097.dev"), Text("wapp.pyros2097.dev")),
 		),
-		Row(
-			Row(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(dec),
-				Text("-"),
-			),
-			Row(Css("text-6xl m-20"),
-				Text(count()),
-			),
-			Row(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(inc),
-				Text("+"),
-			),
+		Div(Css("flex flex-row flex-1 justify-end items-end p-2"),
+			Div(Css("border-b-2 border-white text-lg text-blue-700 mr-4"), Text("Examples: ")),
+			Div(Css("link mr-4"), A(Href("/"), Text("Home"))),
+			Div(Css("link mr-4"), A(Href("/clock"), Text("Clock"))),
+			Div(Css("link mr-4"), A(Href("/about"), Text("About"))),
+			Div(Css("link mr-4"), A(Href("/container"), Text("Container"))),
+			Div(Css("link mr-4"), A(Href("/panic"), Text("Panic"))),
 		),
 	)
 }
 
-func main() {
-	Route("/", Counter)
-	Run()
-}
-```
-
-**Clock**
-
-```go
-package main
-
-import (
-	"time"
-
-	. "github.com/pyros2097/wapp"
-)
-
-func Route(c *RenderContext, title string) UI {
-	timeValue, setTime := c.UseState(time.Now())
-	running, setRunning := c.UseState(false)
-	startTimer := func() {
-		setRunning(true)
-		go func() {
-			for running().(bool) {
-				setTime(time.Now())
-				time.Sleep(time.Second * 1)
-			}
-		}()
-	}
-	stopTimer := func() {
-		setRunning(false)
-	}
-	c.UseEffect(func() func() {
-		startTimer()
-		return stopTimer
-	})
-
-	return Col(
-		Row(
-			Div(Css("text-6xl"),
-				Text(title),
-			),
-		),
-		Row(
-			Div(Css("mt-10"),
-				Text(timeValue().(time.Time).Format("15:04:05")),
-			),
-		),
-		Row(
-			Div(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(startTimer),
-				Text("Start"),
-			),
-			Div(Css("text-6xl m-20 cursor-pointer select-none"), OnClick(stopTimer),
-				Text("Stop"),
+func Index(w http.ResponseWriter, r *http.Request) *Element {
+	return Page(
+		Col(
+			Header(),
+			H1(Text("Hello this is a h1")),
+			H2(Text("Hello this is a h2")),
+			H2(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
+			Col(Css("text-3xl text-gray-700"),
+				Row(
+					Row(Css("underline"),
+						Text("Counter"),
+					),
+				),
+				Row(
+					Button(Css("btn m-20"),
+						Text("-"),
+					),
+					Row(Css("m-20"),
+						Text(strconv.Itoa(1)),
+					),
+					Button(Css("btn m-20"),
+						Text("+"),
+					),
+				),
 			),
 		),
 	)
 }
-
-func main() {
-	Route("/", Clock)
-	Run()
-}
-
 ```
