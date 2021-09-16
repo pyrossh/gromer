@@ -2,12 +2,12 @@ package app
 
 import "reflect"
 
-func Html(elems ...UI) *Element {
+func Html(elems ...*Element) *Element {
 	return &Element{tag: "html", body: elems}
 }
 
-func Head(elems ...UI) *Element {
-	basic := []UI{
+func Head(elems ...*Element) *Element {
+	basic := []*Element{
 		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
 		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
 		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
@@ -15,39 +15,47 @@ func Head(elems ...UI) *Element {
 	return &Element{tag: "head", body: append(basic, elems...)}
 }
 
-func Body(elems ...UI) *Element {
+func Body(elems ...*Element) *Element {
 	return &Element{tag: "body", body: elems}
 }
 
 func Title(v string) *Element {
-	return &Element{tag: "title", body: []UI{Text(v)}}
+	return &Element{
+		tag:  "title",
+		body: []*Element{Text(v)},
+	}
+}
+func Text(v string) *Element {
+	return &Element{
+		tag:  "text",
+		text: v,
+	}
 }
 
 func Meta(name, content string) *Element {
-	e := &Element{
+	return &Element{
 		tag:         "meta",
 		selfClosing: true,
+		attrs: map[string]string{
+			"name":    name,
+			"content": content,
+		},
 	}
-	e.setAttr("name", name)
-	e.setAttr("content", content)
-	return e
 }
 
 func Link(rel, href string) *Element {
-	e := &Element{
+	return &Element{
 		tag:         "link",
 		selfClosing: true,
+		attrs: map[string]string{
+			"rel":  rel,
+			"href": href,
+		},
 	}
-	e.setAttr("rel", rel)
-	e.setAttr("href", href)
-	return e
 }
 
-func Script(str string) *Element {
-	return &Element{
-		tag:  "script",
-		body: []UI{Text(str)},
-	}
+func Script(uis ...interface{}) *Element {
+	return NewElement("script", false, uis...)
 }
 
 func Div(uis ...interface{}) *Element {
@@ -60,6 +68,25 @@ func A(uis ...interface{}) *Element {
 
 func P(uis ...interface{}) *Element {
 	return NewElement("p", false, uis...)
+}
+
+func H1(uis ...interface{}) *Element {
+	return NewElement("h1", false, uis...)
+}
+func H2(uis ...interface{}) *Element {
+	return NewElement("h1", false, uis...)
+}
+func H3(uis ...interface{}) *Element {
+	return NewElement("h1", false, uis...)
+}
+func H4(uis ...interface{}) *Element {
+	return NewElement("h1", false, uis...)
+}
+func H5(uis ...interface{}) *Element {
+	return NewElement("h1", false, uis...)
+}
+func H6(uis ...interface{}) *Element {
+	return NewElement("h1", false, uis...)
 }
 
 func Span(uis ...interface{}) *Element {
@@ -94,93 +121,48 @@ func Li(uis ...interface{}) *Element {
 	return NewElement("li", false, uis...)
 }
 
-func Row(uis ...interface{}) UI {
+func Row(uis ...interface{}) *Element {
 	return Div(append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
 }
 
-func Col(uis ...interface{}) UI {
+func Col(uis ...interface{}) *Element {
 	return Div(append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
 }
 
-func If(expr bool, a UI) UI {
+func If(expr bool, a *Element) *Element {
 	if expr {
 		return a
 	}
 	return nil
 }
 
-func IfElse(expr bool, a UI, b UI) UI {
+func IfElse(expr bool, a *Element, b *Element) *Element {
 	if expr {
 		return a
 	}
 	return b
 }
 
-func Map(source interface{}, f func(i int) UI) []UI {
+func Map(source interface{}, f func(i int) *Element) []*Element {
 	src := reflect.ValueOf(source)
 	if src.Kind() != reflect.Slice {
 		panic("range loop source is not a slice: " + src.Type().String())
 	}
-	body := make([]UI, 0, src.Len())
+	body := make([]*Element, 0, src.Len())
 	for i := 0; i < src.Len(); i++ {
 		body = append(body, f(i))
 	}
 	return body
 }
 
-func Map2(source interface{}, f func(v interface{}, i int) UI) []UI {
+func Map2(source interface{}, f func(v interface{}, i int) *Element) []*Element {
 	src := reflect.ValueOf(source)
 	if src.Kind() != reflect.Slice {
 		panic("range loop source is not a slice: " + src.Type().String())
 	}
-	body := make([]UI, 0, src.Len())
+	body := make([]*Element, 0, src.Len())
 	for i := 0; i < src.Len(); i++ {
 		body = append(body, f(src.Index(i), i))
 	}
 	return body
 }
-
-// func (r RangeLoop) Slice(f func(int) UI) RangeLoop {
-// 	src := reflect.ValueOf(r.source)
-// 	if src.Kind() != reflect.Slice && src.Kind() != reflect.Array {
-// 		panic("range loop source is not a slice or array: " + src.Type().String())
-// 	}
-
-// 	body := make([]UI, 0, src.Len())
-// 	for i := 0; i < src.Len(); i++ {
-// 		body = append(body, FilterUIElems(f(i))...)
-// 	}
-
-// 	r.body = body
-// 	return r
-// }
-
-// // Map sets the loop content by repeating the given function for the number
-// // of elements in the source. Elements are ordered by keys.
-// //
-// // It panics if the range source is not a map or if map keys are not strings.
-// func (r RangeLoop) Map(f func(string) UI) RangeLoop {
-// 	src := reflect.ValueOf(r.source)
-// 	if src.Kind() != reflect.Map {
-// 		panic("range loop source is not a map: " + src.Type().String())
-// 	}
-
-// 	if keyType := src.Type().Key(); keyType.Kind() != reflect.String {
-// 		panic("range loop source keys are not strings: " + src.Type().String() + keyType.String())
-// 	}
-
-// 	body := make([]UI, 0, src.Len())
-// 	keys := make([]string, 0, src.Len())
-
-// 	for _, k := range src.MapKeys() {
-// 		keys = append(keys, k.String())
-// 	}
-// 	sort.Strings(keys)
-
-// 	for _, k := range keys {
-// 		body = append(body, FilterUIElems(f(k))...)
-// 	}
-
-// 	r.body = body
-// 	return r
-// }

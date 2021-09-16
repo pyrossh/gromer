@@ -2,8 +2,6 @@ package app
 
 import (
 	"strconv"
-
-	"github.com/pyros2097/wapp/js"
 )
 
 type Attribute struct {
@@ -55,6 +53,10 @@ func Src(v string) Attribute {
 	return Attribute{"src", v}
 }
 
+func Defer() Attribute {
+	return Attribute{"defer", "true"}
+}
+
 func ViewBox(v string) Attribute {
 	return Attribute{"viewBox", v}
 }
@@ -94,37 +96,16 @@ func CssIf(v bool, d string) CssAttribute {
 	return CssAttribute{}
 }
 
-type OnClickAttribute struct {
-	cb func()
+func XData(v string) Attribute {
+	return Attribute{"x-data", v}
 }
 
-func OnClick(cb func()) OnClickAttribute {
-	return OnClickAttribute{cb: cb}
+func XText(v string) Attribute {
+	return Attribute{"x-text", v}
 }
-
-type OnChangeAttribute struct {
-	cb js.EventHandlerFunc
-}
-
-func OnChange(cb js.EventHandlerFunc) OnChangeAttribute {
-	return OnChangeAttribute{cb: cb}
-}
-
-type OnInputAttribute struct {
-	cb js.EventHandlerFunc
-}
-
-func OnInput(cb js.EventHandlerFunc) OnInputAttribute {
-	return OnInputAttribute{cb: cb}
-}
-
-type HelmetTitle string
-type HelmetDescription string
-type HelmetAuthor string
-type HelmetKeywords string
 
 func MergeAttributes(parent *Element, uis ...interface{}) *Element {
-	elems := []UI{}
+	elems := []*Element{}
 	for _, v := range uis {
 		switch c := v.(type) {
 		case Attribute:
@@ -135,23 +116,7 @@ func MergeAttributes(parent *Element, uis ...interface{}) *Element {
 			} else {
 				parent.setAttr("class", c.classes)
 			}
-		case OnClickAttribute:
-			parent.setEventHandler("click", func(e js.Event) {
-				c.cb()
-			})
-		case OnChangeAttribute:
-			parent.setEventHandler("change", c.cb)
-		case OnInputAttribute:
-			parent.setEventHandler("input", c.cb)
-		case HelmetTitle:
-			helmet.Title = string(c)
-		case HelmetDescription:
-			helmet.Description = string(c)
-		case HelmetAuthor:
-			helmet.Author = string(c)
-		case HelmetKeywords:
-			helmet.Keywords = string(c)
-		case UI:
+		case *Element:
 			elems = append(elems, c)
 		case nil:
 			// dont need to add nil items
@@ -161,7 +126,7 @@ func MergeAttributes(parent *Element, uis ...interface{}) *Element {
 		}
 	}
 	if !parent.selfClosing {
-		parent.setBody(elems)
+		parent.body = elems
 	}
 	return parent
 }

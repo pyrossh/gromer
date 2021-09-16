@@ -2,9 +2,14 @@ package app
 
 import (
 	"context"
+	"embed"
+	"errors"
+	"net/http"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	// "github.com/aws/aws-lambda-go/events"
 )
 
 func min(a, b int) int {
@@ -75,7 +80,7 @@ type node struct {
 	nType     nodeType
 	priority  uint32
 	children  []*node
-	handle    interface{}
+	handle    RouteFn
 }
 
 // Increments priority of the given child and reorders if necessary
@@ -103,7 +108,7 @@ func (n *node) incrementChildPrio(pos int) int {
 
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
-func (n *node) addRoute(path string, handle interface{}) {
+func (n *node) addRoute(path string, handle RouteFn) {
 	fullPath := path
 	n.priority++
 
@@ -211,7 +216,7 @@ walk:
 	}
 }
 
-func (n *node) insertChild(path, fullPath string, handle interface{}) {
+func (n *node) insertChild(path, fullPath string, handle RouteFn) {
 	for {
 		// Find prefix until first wildcard
 		wildcard, i, valid := findWildcard(path)
@@ -320,7 +325,7 @@ func (n *node) insertChild(path, fullPath string, handle interface{}) {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, params func() *Params) (handle interface{}, ps *Params, tsr bool) {
+func (n *node) getValue(path string, params func() *Params) (handle RouteFn, ps *Params, tsr bool) {
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -710,6 +715,8 @@ func ParamsFromContext(ctx context.Context) Params {
 	return p
 }
 
+type RouteFn func(w http.ResponseWriter, r *http.Request) *Element
+
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
@@ -723,15 +730,15 @@ type Router struct {
 	RedirectTrailingSlash bool
 
 	// Configurable handler which is called when no matching route is found.
-	NotFound RenderFunc
+	NotFound RouteFn
 
 	// Configurable handler which is called when an error occurs.
-	Error func(*RenderContext, error) UI
+	Error RouteFn
 }
 
 var globalRouter = &Router{
 	RedirectTrailingSlash: true,
-	NotFound: func(c *RenderContext) UI {
+	NotFound: func(w http.ResponseWriter, r *http.Request) *Element {
 		return Col(
 			Row(
 				Text("This is the default 404 - Not Found Route handler"),
@@ -741,46 +748,47 @@ var globalRouter = &Router{
 			),
 		)
 	},
-	Error: func(c *RenderContext, err error) UI {
+	Error: func(w http.ResponseWriter, r *http.Request) *Element {
+		// err.Error()s
 		return Col(
 			Row(
 				Text("This is the default 500 - Internal Server Error Route handler"),
 			),
 			Row(
-				Text("Error: "+err.Error()),
+				Text("Error: "),
 			),
 			Row(
-				Text("SetErrorHandler(func(c *RenderContext, err error) UI {}) to override it"),
+				Text("SetErrorHandler(func(r *http.Request, w http.ResponseWriter) *Element {}) to override it"),
 			),
 		)
 	},
 }
 
-func SetNotFoundHandler(b func(c *RenderContext) UI) {
+func SetNotFoundHandler(b RouteFn) {
 	globalRouter.NotFound = b
 }
 
-func SetErrorHandler(b func(c *RenderContext, err error) UI) {
+func SetErrorHandler(b RouteFn) {
 	globalRouter.Error = b
 }
 
 // GET route
-func (r *Router) GET(path string, handle interface{}) {
+func (r *Router) GET(path string, handle RouteFn) {
 	r.Handle("GET", path, handle)
 }
 
 // POST route
-func (r *Router) POST(path string, handle interface{}) {
+func (r *Router) POST(path string, handle RouteFn) {
 	r.Handle("POST", path, handle)
 }
 
 // PUT route
-func (r *Router) PUT(path string, handle interface{}) {
+func (r *Router) PUT(path string, handle RouteFn) {
 	r.Handle("PUT", path, handle)
 }
 
 // DELETE route
-func (r *Router) DELETE(path string, handle interface{}) {
+func (r *Router) DELETE(path string, handle RouteFn) {
 	r.Handle("DELETE", path, handle)
 }
 
@@ -792,7 +800,7 @@ func (r *Router) DELETE(path string, handle interface{}) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Router) Handle(method, path string, handle interface{}) {
+func (r *Router) Handle(method, path string, handle RouteFn) {
 	varsCount := uint16(0)
 
 	if method == "" {
@@ -804,11 +812,6 @@ func (r *Router) Handle(method, path string, handle interface{}) {
 	if handle == nil {
 		panic("handle must not be nil")
 	}
-
-	// if r.SaveMatchedRoutePath {
-	// 	varsCount++
-	// 	handle = r.saveMatchedRoutePath(path, handle)
-	// }
 
 	if r.trees == nil {
 		r.trees = make(map[string]*node)
@@ -845,4 +848,121 @@ func (r *Router) Lookup(method, path string) (interface{}, Params, bool) {
 		return handle, *ps, tsr
 	}
 	return nil, nil, false
+}
+
+// ServeHTTP makes the router implement the http.Handler interface.
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Handle errors
+	defer func() {
+		if rcv := recover(); rcv != nil {
+			var err error
+			switch x := rcv.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			// r.Error(w, req)
+		}
+	}()
+
+	path := req.URL.Path
+	println("route: " + req.URL.Path)
+
+	if root := r.trees[req.Method]; root != nil {
+		// TODO: use _ ps save it to context for useParam()
+		if handle, _, tsr := root.getValue(path, nil); handle != nil {
+			// w.Header().Set("Content-Type", "text/html")
+			// w.WriteHeader(http.StatusOK)
+			elm := handle(w, req)
+			if elm != nil {
+				elm.HtmlWithIndent(w, 2)
+			}
+			return
+		} else if req.Method != http.MethodConnect && path != "/" {
+			// Moved Permanently, request with GET method
+			code := http.StatusMovedPermanently
+			if req.Method != http.MethodGet {
+				// Permanent Redirect, request with same method
+				code = http.StatusPermanentRedirect
+			}
+
+			if tsr && r.RedirectTrailingSlash {
+				if len(path) > 1 && path[len(path)-1] == '/' {
+					req.URL.Path = path[:len(path)-1]
+				} else {
+					req.URL.Path = path + "/"
+				}
+				http.Redirect(w, req, req.URL.String(), code)
+				return
+			}
+		}
+	}
+
+	// Handle 404
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusNotFound)
+	r.NotFound(w, req)
+}
+
+// func (r *Router) Lambda(ctx context.Context, e events.APIGatewayV2HTTPRequest) (res events.APIGatewayV2HTTPResponse, err error) {
+// 	res.StatusCode = 200
+// 	res.Headers = map[string]string{
+// 		"Content-Type": "text/html",
+// 	}
+// 	// Handle errors
+// 	defer func() {
+// 		if rcv := recover(); rcv != nil {
+// 			switch x := rcv.(type) {
+// 			case string:
+// 				err = errors.New(x)
+// 			case error:
+// 				err = x
+// 			default:
+// 				err = errors.New("unknown panic")
+// 			}
+// 			res.Body = r.getPage(r.Error(err))
+// 		}
+// 	}()
+
+// 	println("route: " + e.RawPath)
+// 	path := strings.Replace(e.RawPath, "/Prod/", "/", 1)
+// 	if root := r.trees[e.RequestContext.HTTP.Method]; root != nil {
+// 		if handle, _, _ := root.getValue(path, nil); handle != nil {
+// 			res.Body = r.getPage(handle)
+// 			return
+// 		}
+// 	}
+
+// 	// Handle 404
+// 	res.StatusCode = http.StatusNotFound
+// 	res.Body = r.getPage(r.NotFound(NewRenderContext()))
+// 	return
+// }
+
+func Run(assetsFS embed.FS) {
+	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
+	if !isLambda {
+		assetsHandler := http.FileServer(http.FS(assetsFS))
+		globalRouter.GET("/assets/*filepath", func(w http.ResponseWriter, r *http.Request) *Element {
+			assetsHandler.ServeHTTP(w, r)
+			return nil
+		})
+		println("Serving on http://localhost:1234")
+		http.ListenAndServe(":1234", globalRouter)
+	} else {
+		// 	println("running in lambda mode")
+		// 	lambda.Start(globalRouter.Lambda)
+	}
+
+}
+
+func Route(path string, render RouteFn) {
+	println("registering route: " + path)
+	globalRouter.GET(path, render)
 }

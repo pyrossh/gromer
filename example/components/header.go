@@ -4,7 +4,7 @@ import (
 	. "github.com/pyros2097/wapp"
 )
 
-func Header(c *RenderContext) UI {
+func Header() *Element {
 	return Row(Css("w-full mb-20 font-bold text-xl text-gray-700 p-4"),
 		Div(Css("text-blue-700"),
 			A(Href("https://wapp.pyros2097.dev"), Text("wapp.pyros2097.dev")),
