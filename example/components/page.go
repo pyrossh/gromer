@@ -1,10 +1,12 @@
 package components
 
 import (
+	"fmt"
 	. "github.com/pyros2097/wapp"
+	. "github.com/pyros2097/wapp/example/context"
 )
 
-func Page(elem *Element) *Element {
+func Page(ctx *ReqContext, elem *Element) *Element {
 	return Html(
 		Head(
 			Title("123"),
@@ -17,6 +19,10 @@ func Page(elem *Element) *Element {
 			Link("stylesheet", "/assets/styles.css"),
 			Script(Src("/assets/alpine.js"), Defer()),
 		),
-		Body(elem),
+		Body(elem, Script(Text(fmt.Sprintf(`
+			document.addEventListener('alpine:init', () => {
+				%s
+			});
+		`, ctx.JS.String())))),
 	)
 }

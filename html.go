@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+type M map[string]interface{}
+
 type Element struct {
 	tag         string
 	attrs       map[string]string
@@ -225,11 +227,11 @@ func Li(uis ...interface{}) *Element {
 }
 
 func Row(uis ...interface{}) *Element {
-	return Div(append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
+	return NewElement("div", false, append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
 }
 
 func Col(uis ...interface{}) *Element {
-	return Div(append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
+	return NewElement("div", false, append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
 }
 
 func If(expr bool, a *Element) *Element {
@@ -273,6 +275,14 @@ func Map2(source interface{}, f func(v interface{}, i int) *Element) []*Element 
 type Attribute struct {
 	Key   string
 	Value string
+}
+
+func Attr(k, v string) Attribute {
+	return Attribute{k, v}
+}
+
+func OnClick(v string) Attribute {
+	return Attribute{"@click", v}
 }
 
 func ID(v string) Attribute {
@@ -379,3 +389,54 @@ func MergeAttributes(parent *Element, uis ...interface{}) *Element {
 	}
 	return parent
 }
+
+// func UseData(name, data string) *Element {
+// 	return Script(Text(fmt.Sprintf(`
+// 		document.addEventListener('alpine:init', () => {
+// 			Alpine.data('%s', () => {
+// 				return %s;
+// 			});
+// 		});
+// 	`, name, data)))
+// }
+
+// func HTML(html string, data map[string]interface{}) string {
+// 	return fmt.Sprintf("")
+// }
+
+// func Counter2(start int) string {
+// 	data := map[string]interface{}{
+// 		"count": 1,
+// 		"names": []string{"123", "123"},
+// 		"increment": func() string {
+// 			return "this.count += 1;"
+// 		},
+// 		"decrement": func() string {
+// 			return "this.count -= 1;"
+// 		},
+// 	}
+// 	return HTML(`
+// 		<div class="flex flex-col justify-center items-center text-3xl text-gray-700">
+// 			<div class="flex flex-row justify-center items-center">
+// 				<div class="flex flex-row justify-center items-center underline">
+// 				Counter
+// 				</div>
+// 			</div>
+// 			<div class="flex flex-row justify-center items-center" x-data="counter">
+// 				<button @click="decrement" class="btn m-20">-</button>
+// 				<div class="flex flex-row justify-center items-center m-20">{{ count }}</div>
+// 				<button @click="increment" class="btn m-20">+</button>
+// 			</div>
+// 			<div>
+// 			{{#if true }}
+// 				render this
+// 			{{/if}}
+// 			</div>
+// 			<div>
+// 			{{#each names}}
+// 				<li>{{ @index }} - {{ @value }}</li>
+// 			{{/each}}
+// 			</div>
+// 		</div>
+// 	`, data)
+// }

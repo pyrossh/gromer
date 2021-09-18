@@ -1,38 +1,40 @@
 package pages
 
 import (
-	"net/http"
-	"strconv"
-
 	. "github.com/pyros2097/wapp"
 	. "github.com/pyros2097/wapp/example/components"
+	"github.com/pyros2097/wapp/example/context"
 )
 
-func Index(w http.ResponseWriter, r *http.Request) *Element {
-	return Page(
+//wapp:page method=GET path=/
+func Index(c *context.ReqContext) (interface{}, int, error) {
+	return Page(c,
 		Col(
 			Header(),
+			H1(Text("Hello "+c.UserID)),
 			H1(Text("Hello this is a h1")),
 			H2(Text("Hello this is a h2")),
-			H2(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
-			Col(Css("text-3xl text-gray-700"),
-				Row(
-					Row(Css("underline"),
-						Text("Counter"),
-					),
-				),
-				Row(
-					Button(Css("btn m-20"),
-						Text("-"),
-					),
-					Row(Css("m-20"),
-						Text(strconv.Itoa(1)),
-					),
-					Button(Css("btn m-20"),
-						Text("+"),
-					),
-				),
-			),
+			H3(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
+			Counter(c, 4),
 		),
-	)
+	), 200, nil
 }
+
+// func Index2(c *context.ReqContext) (interface{}, int, error) {
+// 	data := M{
+// 		"userID":  c.UserID,
+// 		"message": "I ❤️ Alpine",
+// 	}
+// 	return Html(`
+// 		<page x-data="pageData">
+// 			<div class="flex flex-col items-center justify-center">
+// 				<header></header>
+// 				<h1>Hello <template x-text="userID"></template></h1>
+// 				<h2>Hello this is a h1</h1>
+// 				<h2>Hello this is a h2</h1>
+// 				<h3 x-text="message"></h3>
+// 				<counter></counter>
+// 			</div>
+// 		</page>
+// 		`, data), 200, nil
+// }
