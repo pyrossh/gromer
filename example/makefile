@@ -1,5 +1,5 @@
 run:
-	go run *.go
+	go run main.go
 
 local:
 	sam local start-api

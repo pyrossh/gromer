@@ -3,11 +3,35 @@ package pages
 import (
 	. "github.com/pyros2097/wapp"
 	. "github.com/pyros2097/wapp/example/components"
-	"github.com/pyros2097/wapp/example/context"
+	. "github.com/pyros2097/wapp/example/context"
 )
 
-//wapp:page method=GET path=/
-func Index(c *context.ReqContext) (interface{}, int, error) {
+func init() {
+	RegisterComponent("page", func(c ReqContext) string {
+		return Html2(c, `
+		<html>
+			<body>
+				<slot></slot>
+			</body>
+		</html>
+		`, M{})
+	})
+}
+
+func Index(c ReqContext) (interface{}, int, error) {
+	ss := Html2(c, `
+	<page x-data="pageData">
+		<div class="flex flex-col items-center justify-center">
+			<header></header>
+			<h1>Hello {{ userID }}</h1>
+			<h2>Hello this is a h1</h1>
+			<h2>Hello this is a h2</h1>
+			<h3 x-text="message"></h3>
+			<counter start={4}></counter>
+		</div>
+	</page>
+	`, M{"userID": c.UserID})
+	println("ss", ss)
 	return Page(c,
 		Col(
 			Header(),
@@ -25,16 +49,16 @@ func Index(c *context.ReqContext) (interface{}, int, error) {
 // 		"userID":  c.UserID,
 // 		"message": "I ❤️ Alpine",
 // 	}
-// 	return Html(`
-// 		<page x-data="pageData">
-// 			<div class="flex flex-col items-center justify-center">
-// 				<header></header>
-// 				<h1>Hello <template x-text="userID"></template></h1>
-// 				<h2>Hello this is a h1</h1>
-// 				<h2>Hello this is a h2</h1>
-// 				<h3 x-text="message"></h3>
-// 				<counter></counter>
-// 			</div>
-// 		</page>
-// 		`, data), 200, nil
+// return Html(`
+// 	<page x-data="pageData">
+// 		<div class="flex flex-col items-center justify-center">
+// 			<header></header>
+// 			<h1>Hello <template x-text="userID"></template></h1>
+// 			<h2>Hello this is a h1</h1>
+// 			<h2>Hello this is a h2</h1>
+// 			<h3 x-text="message"></h3>
+// 			<counter start={4}></counter>
+// 		</div>
+// 	</page>
+// 	`, data), 200, nil
 // }

@@ -6,7 +6,7 @@ import (
 	. "github.com/pyros2097/wapp/example/context"
 )
 
-func Page(ctx *ReqContext, elem *Element) *Element {
+func Page(ctx ReqContext, elem *Element) *Element {
 	return Html(
 		Head(
 			Title("123"),

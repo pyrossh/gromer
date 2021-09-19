@@ -1,7 +1,6 @@
 package components
 
 import (
-	"fmt"
 	"strconv"
 
 	. "github.com/pyros2097/wapp"
@@ -19,17 +18,12 @@ import (
 // 	},
 // }
 
-func Counter(ctx *ReqContext, start int) *Element {
-	UseData(ctx, "counter", fmt.Sprintf(`{
-			count: %d,
-			increment() {
-				this.count += 1;
-			},
-			decrement() {
-				this.count -= 1;
-			},
-		}
-	`, start))
+func Counter(ctx ReqContext, start int) *Element {
+	UseData(ctx, "counter", M{
+		"count":     start,
+		"increment": func() string { return "this.count += 1;" },
+		"decrement": func() string { return "this.count -= 1;" },
+	})
 	return Col(Css("text-3xl text-gray-700"),
 		Row(
 			Row(Css("underline"),
@@ -40,7 +34,7 @@ func Counter(ctx *ReqContext, start int) *Element {
 			Button(Css("btn m-20"), OnClick("decrement"),
 				Text("-"),
 			),
-			Row(Css("m-20"), XText("count"),
+			Row(Css("m-20 text-8xl"), XText("count"),
 				Text(strconv.Itoa(start)),
 			),
 			Button(Css("btn m-20"), OnClick("increment"),
