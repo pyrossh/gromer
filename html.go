@@ -1,12 +1,10 @@
-package app
+package wapp
 
 import (
 	"io"
 	"reflect"
 	"strconv"
 )
-
-type M map[string]interface{}
 
 type Element struct {
 	tag         string
