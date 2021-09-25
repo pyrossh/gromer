@@ -147,7 +147,6 @@ func main() {
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	r := mux.NewRouter()
 	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(assetsFS)))
-
 	{{#each routes as |route| }}r.HandleFunc("{{ route.Path }}", context.Wrap({{ route.Pkg }}.{{ route.Method }})).Methods("{{ route.Method }}")
 	{{/each}}
 	if !isLambda {
