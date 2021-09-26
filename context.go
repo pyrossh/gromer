@@ -65,7 +65,7 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Write(data)
 }
 
-func PerformRequest(h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) {
+func PerformRequest(h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) error {
 	args := []reflect.Value{reflect.ValueOf(ctx)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
@@ -76,7 +76,7 @@ func PerformRequest(h interface{}, ctx interface{}, w http.ResponseWriter, r *ht
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())
 			if err != nil {
 				RespondError(w, 500, err)
-				return
+				return err
 			}
 		} else if r.Method == "GET" {
 			rv := instance.Elem()
@@ -96,16 +96,17 @@ func PerformRequest(h interface{}, ctx interface{}, w http.ResponseWriter, r *ht
 	responseError := values[2].Interface()
 	if responseError != nil {
 		RespondError(w, responseStatus, responseError.(error))
-		return
+		return responseError.(error)
 	}
 	if v, ok := response.(*Element); ok {
 		w.WriteHeader(responseStatus)
 		w.Header().Set("Content-Type", "text/html")
 		v.WriteHtml(w)
-		return
+		return nil
 	}
 	w.WriteHeader(responseStatus)
 	w.Header().Set("Content-Type", "application/json")
 	data, _ := json.Marshal(response)
 	w.Write(data)
+	return nil
 }
