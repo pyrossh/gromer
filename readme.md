@@ -15,6 +15,14 @@ It uses a declarative syntax using funcs that allows creating and dealing with H
 go mod init
 go get -u -v github.com/pyros2097/wapp
 ```
+
+# Install Cli
+
+```sh
+go mod init
+go get -u -v github.com/pyros2097/wapp/cmd/wapp
+```
+
 # Example 
 
 https://github.com/pyros2097/wapp-example
