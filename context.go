@@ -1,59 +1,18 @@
 package wapp
 
 import (
-	"bytes"
-	c "context"
 	"encoding/json"
 	"net/http"
 	"reflect"
-
-	"github.com/gobuffalo/velvet"
-	"github.com/gorilla/mux"
 )
 
-type WappContext struct {
-	c.Context
-	PathParams map[string]string
-	JS         *bytes.Buffer
-	CSS        *bytes.Buffer
-}
+type State map[string]interface{}
+type Actions map[string]func() string
 
-func NewWappContext(r *http.Request) (WappContext, error) {
-	pathParams := mux.Vars(r)
-	return WappContext{
-		Context:    r.Context(),
-		PathParams: pathParams,
-		JS:         bytes.NewBuffer(nil),
-		CSS:        bytes.NewBuffer(nil),
-	}, nil
-}
-
-func (r WappContext) UseData(name string, data map[string]interface{}) {
-	v := velvet.NewContext()
-	v.Set("name", name)
-	generatedMap := map[string]interface{}{}
-	for k, v := range data {
-		if reflect.TypeOf(v).Kind() == reflect.Func {
-			f := v.(func() string)
-			generatedMap[k] = "() {" + f() + "}"
-		} else {
-			generatedMap[k+":"] = v
-		}
-	}
-	v.Set("data", generatedMap)
-	s, err := velvet.Render(`
-		Alpine.data('{{ name }}', () => {
-			return {
-				{{#each data}}
-				{{ @key }}{{ @value }},
-				{{/each}}
-			};
-		});
-	`, v)
-	if err != nil {
-		panic(err)
-	}
-	r.JS.WriteString(s)
+type Reducer struct {
+	Name string
+	State
+	Actions
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
@@ -98,7 +57,7 @@ func PerformRequest(h interface{}, ctx interface{}, w http.ResponseWriter, r *ht
 		RespondError(w, responseStatus, responseError.(error))
 		return responseError.(error)
 	}
-	if v, ok := response.(*Element); ok {
+	if v, ok := response.(*HtmlPage); ok {
 		w.WriteHeader(responseStatus)
 		w.Header().Set("Content-Type", "text/html")
 		v.WriteHtml(w)

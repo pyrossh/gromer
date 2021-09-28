@@ -1,10 +1,143 @@
 package wapp
 
 import (
+	"bytes"
+	"fmt"
 	"io"
-	"reflect"
 	"strconv"
+	"strings"
+
+	"github.com/gobuffalo/velvet"
 )
+
+func writeIndent(w io.Writer, indent int) {
+	for i := 0; i < indent*2; i++ {
+		w.Write([]byte(" "))
+	}
+}
+
+func mergeAttributes(parent *Element, uis ...interface{}) *Element {
+	elems := []*Element{}
+	for _, v := range uis {
+		switch c := v.(type) {
+		case Attribute:
+			parent.setAttr(c.Key, c.Value)
+		case *Element:
+			elems = append(elems, c)
+		case nil:
+			// dont need to add nil items
+		default:
+			panic(fmt.Sprintf("unknown type in render %+v", v))
+		}
+	}
+	if !parent.selfClosing {
+		parent.body = elems
+	}
+	return parent
+}
+
+type HtmlPage struct {
+	classLookup map[string]bool
+	css         *bytes.Buffer
+	js          *bytes.Buffer
+	Head        *Element
+	Body        *Element
+}
+
+func (p *HtmlPage) computeCss(elems []*Element) {
+	for _, el := range elems {
+		if v, ok := el.attrs["class"]; ok {
+			classes := strings.Split(v, " ")
+			for _, c := range classes {
+				if s, ok := twClassLookup[c]; ok {
+					if _, ok2 := p.classLookup[c]; !ok2 {
+						p.classLookup[c] = true
+						p.css.WriteString("\n      ." + c + " { " + s + " } ")
+					}
+				}
+			}
+		}
+		if len(el.body) > 0 {
+			p.computeCss(el.body)
+		}
+	}
+}
+
+func (p *HtmlPage) computeJs(elems []*Element) {
+	for _, el := range elems {
+		if strings.HasPrefix(el.text, "wapp_js|") {
+			p.js.WriteString(strings.Replace(el.text, "wapp_js|", "", 1) + "\n")
+		}
+		if len(el.body) > 0 {
+			p.computeJs(el.body)
+		}
+	}
+}
+
+func (p *HtmlPage) WriteHtml(w io.Writer) {
+	w.Write([]byte("<!DOCTYPE html>\n"))
+	w.Write([]byte("<html>\n"))
+	p.computeCss(p.Body.body)
+	p.computeJs(p.Body.body)
+	p.Head.body = append(p.Head.body, StyleTag(Text(p.css.String())))
+	p.Head.writeHtmlIndent(w, 1)
+	p.Body.body = append(p.Body.body, Script(Text(p.js.String())))
+	p.Body.writeHtmlIndent(w, 1)
+	w.Write([]byte("\n</html>"))
+}
+
+func Html(h *Element, b *Element) HtmlPage {
+	return HtmlPage{
+		classLookup: map[string]bool{},
+		js:          bytes.NewBuffer(nil),
+		css:         bytes.NewBuffer(nil),
+		Head:        h,
+		Body:        b,
+	}
+}
+
+func Head(elems ...*Element) *Element {
+	basic := []*Element{
+		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
+		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
+		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
+	}
+	return &Element{tag: "head", body: append(basic, elems...)}
+}
+
+func Body(elems ...*Element) *Element {
+	return &Element{tag: "body", body: elems}
+}
+
+func Component(r Reducer, elems ...*Element) *Element {
+	v := velvet.NewContext()
+	stateMap := map[string]interface{}{}
+	actionsMap := map[string]interface{}{}
+	// structType := reflect.TypeOf(r)
+	for k, v := range r.State {
+		stateMap[k+":"] = v
+	}
+	for k, v := range r.Actions {
+		actionsMap[k] = "() {" + v() + "}"
+	}
+	v.Set("name", r.Name)
+	v.Set("state", stateMap)
+	v.Set("actions", actionsMap)
+	s, err := velvet.Render(`
+	Alpine.data('{{ name }}', ({
+		state: {
+			{{#each state}}{{ @key }}{{ @value }},
+			{{/each}}
+		},
+		{{#each actions}}{{ @key }}{{ @value }},
+		{{/each}}
+	}));
+	`, v)
+	if err != nil {
+		panic(err)
+	}
+	return &Element{tag: r.Name, text: "wapp_js|" + s, body: elems}
+}
 
 type Element struct {
 	tag         string
@@ -15,7 +148,7 @@ type Element struct {
 }
 
 func NewElement(tag string, selfClosing bool, uis ...interface{}) *Element {
-	return MergeAttributes(&Element{tag: tag, selfClosing: selfClosing}, uis...)
+	return mergeAttributes(&Element{tag: tag, selfClosing: selfClosing}, uis...)
 }
 
 func (e *Element) setAttr(k string, v string) {
@@ -48,17 +181,10 @@ func (e *Element) setAttr(k string, v string) {
 	}
 }
 
-func (e *Element) WriteHtml(w io.Writer) {
-	e.writeHtmlIndent(w, 0)
-}
-
 func (e *Element) writeHtmlIndent(w io.Writer, indent int) {
-	e.writeIndent(w, indent)
-	if e.tag == "html" {
-		w.Write([]byte("<!DOCTYPE html>\n"))
-	}
+	writeIndent(w, indent)
 	if e.tag == "text" {
-		e.writeIndent(w, indent)
+		writeIndent(w, indent)
 		w.Write([]byte(e.text))
 		return
 	}
@@ -83,43 +209,22 @@ func (e *Element) writeHtmlIndent(w io.Writer, indent int) {
 	}
 
 	for _, c := range e.body {
-		w.Write([]byte("\n"))
+		if len(e.body) > 1 {
+			w.Write([]byte("\n"))
+		}
 		if c != nil {
 			c.writeHtmlIndent(w, indent+1)
 		}
 	}
 
 	if len(e.body) != 0 {
-		w.Write([]byte("\n"))
-		e.writeIndent(w, indent)
+		// w.Write([]byte("\n"))
+		writeIndent(w, indent)
 	}
 
 	w.Write([]byte("</"))
 	w.Write([]byte(e.tag))
-	w.Write([]byte(">"))
-}
-
-func (e *Element) writeIndent(w io.Writer, indent int) {
-	for i := 0; i < indent*4; i++ {
-		w.Write([]byte(" "))
-	}
-}
-
-func Html(elems ...*Element) *Element {
-	return &Element{tag: "html", body: elems}
-}
-
-func Head(elems ...*Element) *Element {
-	basic := []*Element{
-		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
-		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
-		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
-	}
-	return &Element{tag: "head", body: append(basic, elems...)}
-}
-
-func Body(elems ...*Element) *Element {
-	return &Element{tag: "body", body: elems}
+	w.Write([]byte(">\n"))
 }
 
 func Title(v string) *Element {
@@ -159,6 +264,10 @@ func Link(rel, href string) *Element {
 
 func Script(uis ...interface{}) *Element {
 	return NewElement("script", false, uis...)
+}
+
+func StyleTag(uis ...interface{}) *Element {
+	return NewElement("style", false, uis...)
 }
 
 func Div(uis ...interface{}) *Element {
@@ -222,52 +331,6 @@ func Ul(uis ...interface{}) *Element {
 
 func Li(uis ...interface{}) *Element {
 	return NewElement("li", false, uis...)
-}
-
-func Row(uis ...interface{}) *Element {
-	return NewElement("div", false, append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
-}
-
-func Col(uis ...interface{}) *Element {
-	return NewElement("div", false, append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
-}
-
-func If(expr bool, a *Element) *Element {
-	if expr {
-		return a
-	}
-	return nil
-}
-
-func IfElse(expr bool, a *Element, b *Element) *Element {
-	if expr {
-		return a
-	}
-	return b
-}
-
-func Map(source interface{}, f func(i int) *Element) []*Element {
-	src := reflect.ValueOf(source)
-	if src.Kind() != reflect.Slice {
-		panic("range loop source is not a slice: " + src.Type().String())
-	}
-	body := make([]*Element, 0, src.Len())
-	for i := 0; i < src.Len(); i++ {
-		body = append(body, f(i))
-	}
-	return body
-}
-
-func Map2(source interface{}, f func(v interface{}, i int) *Element) []*Element {
-	src := reflect.ValueOf(source)
-	if src.Kind() != reflect.Slice {
-		panic("range loop source is not a slice: " + src.Type().String())
-	}
-	body := make([]*Element, 0, src.Len())
-	for i := 0; i < src.Len(); i++ {
-		body = append(body, f(src.Index(i), i))
-	}
-	return body
 }
 
 type Attribute struct {
@@ -365,25 +428,4 @@ func XData(v string) Attribute {
 
 func XText(v string) Attribute {
 	return Attribute{"x-text", v}
-}
-
-func MergeAttributes(parent *Element, uis ...interface{}) *Element {
-	elems := []*Element{}
-	for _, v := range uis {
-		switch c := v.(type) {
-		case Attribute:
-			parent.setAttr(c.Key, c.Value)
-		case *Element:
-			elems = append(elems, c)
-		case nil:
-			// dont need to add nil items
-		default:
-			// fmt.Printf("%v\n", v)
-			panic("unknown type in render")
-		}
-	}
-	if !parent.selfClosing {
-		parent.body = elems
-	}
-	return parent
 }

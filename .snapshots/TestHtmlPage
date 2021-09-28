@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta http-equiv="encoding" content="utf-8">
+    <meta name="title" content="title">
+    <style>            
+      .flex { display: flex; } 
+      .flex-col { flex-direction: column; } 
+      .justify-center { justify-content: center; } 
+      .items-center { align-items: center; } 
+      .text-3xl { font-size: 1.875rem; line-height: 2.25rem; } 
+      .text-gray-700 { color: rgba(55, 65, 81, 1); } 
+      .flex-row { flex-direction: row; } 
+      .underline { text-decoration: underline; } 
+      .m-20 { margin: 5rem; } 
+      .text-8xl { font-size: 6rem; line-height: 1; }     </style>
+  </head>
+  <body>
+    <h1>            Hello this is a h1    </h1>
+
+    <h2>            Hello this is a h2    </h2>
+
+    <h3 x-data="{ message: 'I ❤️ Alpine' }" x-text="message">                </h3>
+
+    <counter>      <div class="flex flex-col justify-center items-center text-3xl text-gray-700">
+        <div class="flex flex-row justify-center items-center">          <div class="flex flex-row justify-center items-center underline">                        Counter          </div>
+        </div>
+
+        <div x-data="counter" class="flex flex-row justify-center items-center">
+          <button class="btn m-20" @click="decrement">                        -          </button>
+
+          <div x-text="state.count" class="flex flex-row justify-center items-center m-20 text-8xl">                        4          </div>
+
+          <button class="btn m-20" @click="increment">                        +          </button>
+        </div>
+      </div>
+    </counter>
+
+    <script>            
+	Alpine.data('counter', ({
+		state: {
+			count:1,
+			
+		},
+		increment() {this.state.count += 1;},
+		decrement() {this.state.count -= 1;},
+		
+	}));
+	
+    </script>
+  </body>
+
+</html>

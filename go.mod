@@ -6,6 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.7.1 // indirect
 	github.com/apex/gateway/v2 v2.0.0
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
+	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible // indirect
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/kr/pretty v0.1.0 // indirect
@@ -18,7 +19,7 @@ require (
 	github.com/shurcooL/octicon v0.0.0-20191102190552-cbb32d6a785c // indirect
 	github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d // indirect
 	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
