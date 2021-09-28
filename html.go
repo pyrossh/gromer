@@ -34,7 +34,7 @@ func mergeAttributes(parent *Element, uis ...interface{}) *Element {
 		}
 	}
 	if !parent.selfClosing {
-		parent.body = elems
+		parent.children = elems
 	}
 	return parent
 }
@@ -60,8 +60,8 @@ func (p *HtmlPage) computeCss(elems []*Element) {
 				}
 			}
 		}
-		if len(el.body) > 0 {
-			p.computeCss(el.body)
+		if len(el.children) > 0 {
+			p.computeCss(el.children)
 		}
 	}
 }
@@ -71,8 +71,8 @@ func (p *HtmlPage) computeJs(elems []*Element) {
 		if strings.HasPrefix(el.text, "wapp_js|") {
 			p.js.WriteString(strings.Replace(el.text, "wapp_js|", "", 1) + "\n")
 		}
-		if len(el.body) > 0 {
-			p.computeJs(el.body)
+		if len(el.children) > 0 {
+			p.computeJs(el.children)
 		}
 	}
 }
@@ -80,11 +80,11 @@ func (p *HtmlPage) computeJs(elems []*Element) {
 func (p *HtmlPage) WriteHtml(w io.Writer) {
 	w.Write([]byte("<!DOCTYPE html>\n"))
 	w.Write([]byte("<html>\n"))
-	p.computeCss(p.Body.body)
-	p.computeJs(p.Body.body)
-	p.Head.body = append(p.Head.body, StyleTag(Text(normalizeStyles+p.css.String())))
+	p.computeCss(p.Body.children)
+	p.computeJs(p.Body.children)
+	p.Head.children = append(p.Head.children, StyleTag(Text(normalizeStyles+p.css.String())))
 	p.Head.writeHtmlIndent(w, 1)
-	p.Body.body = append(p.Body.body, Script(Text(fmt.Sprintf(`
+	p.Body.children = append(p.Body.children, Script(Text(fmt.Sprintf(`
 			document.addEventListener('alpine:init', () => {
 				%s
 			});
@@ -109,11 +109,11 @@ func Head(elems ...*Element) *Element {
 		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
 		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
 	}
-	return &Element{tag: "head", body: append(basic, elems...)}
+	return &Element{tag: "head", children: append(basic, elems...)}
 }
 
 func Body(elems ...*Element) *Element {
-	return &Element{tag: "body", body: elems}
+	return &Element{tag: "body", children: elems}
 }
 
 func Component(r Reducer, uis ...interface{}) *Element {
@@ -149,7 +149,7 @@ func Component(r Reducer, uis ...interface{}) *Element {
 type Element struct {
 	tag         string
 	attrs       map[string]string
-	body        []*Element
+	children    []*Element
 	selfClosing bool
 	text        string
 }
@@ -215,8 +215,8 @@ func (e *Element) writeHtmlIndent(w io.Writer, indent int) {
 		return
 	}
 
-	for _, c := range e.body {
-		if len(e.body) > 1 {
+	for _, c := range e.children {
+		if len(e.children) > 1 {
 			w.Write([]byte("\n"))
 		}
 		if c != nil {
@@ -224,7 +224,7 @@ func (e *Element) writeHtmlIndent(w io.Writer, indent int) {
 		}
 	}
 
-	if len(e.body) != 0 {
+	if len(e.children) != 0 {
 		// w.Write([]byte("\n"))
 		writeIndent(w, indent)
 	}
@@ -236,8 +236,8 @@ func (e *Element) writeHtmlIndent(w io.Writer, indent int) {
 
 func Title(v string) *Element {
 	return &Element{
-		tag:  "title",
-		body: []*Element{Text(v)},
+		tag:      "title",
+		children: []*Element{Text(v)},
 	}
 }
 func Text(v string) *Element {

@@ -82,13 +82,13 @@
 
     <h2>            Hello this is a h2    </h2>
 
-    <h3 x-data="{ message: 'I ❤️ Alpine' }" x-text="message">                </h3>
+    <h3 x-text="message" x-data="{ message: 'I ❤️ Alpine' }">                </h3>
 
     <counter x-data="counter">      <div class="flex flex-col justify-center items-center text-3xl text-gray-700">
         <div class="flex flex-row justify-center items-center">          <div class="flex flex-row justify-center items-center underline">                        Counter          </div>
         </div>
 
-        <div class="flex flex-row justify-center items-center" x-data="counter">
+        <div x-data="counter" class="flex flex-row justify-center items-center">
           <button class="btn m-20" @click="decrement">                        -          </button>
 
           <div class="flex flex-row justify-center items-center m-20 text-8xl" x-text="state.count">                        4          </div>
