@@ -16,83 +16,62 @@ func Col(uis ...interface{}) *Element {
 	return NewElement("div", false, append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
 }
 
-// type Container func() *Element
-
-// func CounterData(start int) Container {
-// 	return CreateContainer(Reducer{
-// 		Name: "counter",
-// 		State: State{
-// 			"count": start,
-// 		},
-// 		Actions: Actions{
-// 			"increment": func() string { return "this.state.count += 1;" },
-// 			"decrement": func() string { return "this.state.count -= 1;" },
-// 		},
-// 	})
-// }
-
-// type CounterState struct {
-// 	Count int
-// }
-
-// type CounterActions struct {
-// 	Increment func() string
-// 	Decrement func() string
-// }
-
-// type CounterReducer struct {
-// 	Reducer
-// 	State   CounterState
-// 	Actions CounterActions
-// }
-
-// func CounterData(start int) CounterReducer {
-// 	return CounterReducer{
-// 		Reducer: "counter",
-// 		State: CounterState{
-// 			Count: 1,
-// 		},
-// 		Actions: CounterActions{
-// 			Increment: func() string { return "this.state.count += 1;" },
-// 			Decrement: func() string { return "this.state.count -= 1;" },
-// 		},
-// 	}
-// }
-
-func CounterData(start int) Reducer {
-	return Reducer{
-		Name: "counter",
-		State: State{
-			"count": 1,
-		},
-		Actions: Actions{
-			"increment": func() string { return "this.state.count += 1;" },
-			"decrement": func() string { return "this.state.count -= 1;" },
-		},
-	}
+type CounterState struct {
+	Count int
 }
 
 func Counter(start int) *Element {
-	data := CounterData(start)
-	return Component(data, Col(Css("text-3xl text-gray-700"),
+	c := CounterState{Count: start}
+	return c.Render()
+}
+
+func (c *CounterState) Increment() {
+	c.Count += 1
+}
+
+func (c *CounterState) Decrement() {
+	c.Count -= 1
+}
+
+func (c *CounterState) Render() *Element {
+	return Col(Css("text-3xl text-gray-700"),
 		Row(
 			Row(Css("underline"),
 				Text("Counter"),
 			),
 		),
-		Row(XData("counter"),
-			Button(Css("btn m-20"), OnClick("decrement"),
-				Text("-"),
+		Row(
+			Button(OnClick(c.Decrement), Text("-")),
+			Row(Css("m-20 text-5xl"), XText("state.count"),
+				Text(strconv.Itoa(c.Count)),
 			),
-			Row(Css("m-20 text-8xl"), XText("state.count"),
-				Text(strconv.Itoa(start)),
-			),
-			Button(Css("btn m-20"), OnClick("increment"),
-				Text("+"),
-			),
+			Button(OnClick(c.Increment), Text("+")),
 		),
-	))
+	)
 }
+
+// func CounterHtml() string {
+// 	return `
+// 		<div class="flex flex-col justify-center items-center text-3xl text-gray-700">
+// 			<div class="flex flex-row justify-center items-center">
+// 				<div class="flex flex-row justify-center items-center underline">
+// 					Counter
+// 				</div>
+// 			</div>
+// 			<div class="flex flex-row justify-center items-center">
+// 				<button class="btn m-20" @click={{actions.Increment}}>
+// 					-
+// 				</button>
+// 				<div class="flex flex-row justify-center items-center m-20 text-8xl">
+// 					{{ state.count }}
+// 				</div>
+// 				<button class="btn m-20" @click={{actions.Decrement}}>
+// 					+
+// 				</button>
+// 			</div>
+// 		</div>
+// 	`
+// }
 
 func TestHtmlPage(t *testing.T) {
 	b := bytes.NewBuffer(nil)
@@ -117,5 +96,6 @@ func TestHtmlPage(t *testing.T) {
 		),
 	)
 	p.WriteHtml(b)
-	cupaloy.SnapshotT(t, b.String())
+	c := cupaloy.New(cupaloy.SnapshotFileExtension(".html"))
+	c.SnapshotT(t, b.String())
 }

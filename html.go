@@ -7,10 +7,9 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
-
-	"github.com/gobuffalo/velvet"
 )
 
 func writeIndent(w io.Writer, indent int) {
@@ -55,7 +54,7 @@ func (p *HtmlPage) computeCss(elems []*Element) {
 				if s, ok := twClassLookup[c]; ok {
 					if _, ok2 := p.classLookup[c]; !ok2 {
 						p.classLookup[c] = true
-						p.css.WriteString("      ." + c + " { " + s + " } \n")
+						p.css.WriteString("      ." + c + " { " + s + " }\n")
 					}
 				}
 			}
@@ -69,7 +68,7 @@ func (p *HtmlPage) computeCss(elems []*Element) {
 func (p *HtmlPage) computeJs(elems []*Element) {
 	for _, el := range elems {
 		if strings.HasPrefix(el.text, "wapp_js|") {
-			p.js.WriteString(strings.Replace(el.text, "wapp_js|", "", 1) + "\n")
+			p.js.WriteString(strings.Replace(el.text, "wapp_js|", "", 1)) //  + "\n" // TODO check with multiple components
 		}
 		if len(el.children) > 0 {
 			p.computeJs(el.children)
@@ -85,8 +84,7 @@ func (p *HtmlPage) WriteHtml(w io.Writer) {
 	p.Head.children = append(p.Head.children, StyleTag(Text(normalizeStyles+p.css.String())))
 	p.Head.writeHtmlIndent(w, 1)
 	p.Body.children = append(p.Body.children, Script(Text(fmt.Sprintf(`
-			document.addEventListener('alpine:init', () => {
-				%s
+			document.addEventListener('alpine:init', () => {%s
 			});
 	`, p.js.String()))))
 	p.Body.writeHtmlIndent(w, 1)
@@ -116,34 +114,26 @@ func Body(elems ...*Element) *Element {
 	return &Element{tag: "body", children: elems}
 }
 
-func Component(r Reducer, uis ...interface{}) *Element {
-	v := velvet.NewContext()
-	stateMap := map[string]interface{}{}
-	actionsMap := map[string]interface{}{}
-	// structType := reflect.TypeOf(r)
-	for k, v := range r.State {
-		stateMap[k+":"] = v
-	}
-	for k, v := range r.Actions {
-		actionsMap[k] = "() {" + v() + "}"
-	}
-	v.Set("name", r.Name)
-	v.Set("state", stateMap)
-	v.Set("actions", actionsMap)
-	s, err := velvet.Render(`
-				Alpine.data('{{ name }}',  () => ({
-					state: {
-						{{#each state}}{{ @key }}{{ @value }},
-						{{/each}}
-					},
-					{{#each actions}}{{ @key }}{{ @value }},
-					{{/each}}
-				}));
-	`, v)
+func Component(state interface{}, uis ...interface{}) *Element {
+	pc, _, _, _ := runtime.Caller(1)
+	details := runtime.FuncForPC(pc)
+	arr := strings.Split(details.Name(), ".")
+	name := strings.ToLower(arr[len(arr)-1])
+	// actionsMap := map[string]interface{}{}
+	// actionsType := reflect.TypeOf(actions)
+	// for k, v := range r.Actions {
+	// 	actionsMap[k] = "() {" + v() + "}"
+	// }
+	stateData, err := json.MarshalIndent(state, "					", "	")
 	if err != nil {
 		panic(err)
 	}
-	return mergeAttributes(&Element{tag: r.Name, text: "wapp_js|" + s}, append([]interface{}{XData(r.Name)}, uis...)...)
+	js := fmt.Sprintf(`
+				Alpine.data('%s',  () => (%s));`, name, string(stateData))
+	if err != nil {
+		panic(err)
+	}
+	return mergeAttributes(&Element{tag: name, text: "wapp_js|" + js}, append([]interface{}{XData(name)}, uis...)...)
 }
 
 type Element struct {
@@ -349,8 +339,14 @@ func Attr(k, v string) Attribute {
 	return Attribute{k, v}
 }
 
-func OnClick(v string) Attribute {
-	return Attribute{"@click", v}
+func GetFunctionName(i interface{}) string {
+	fnName := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	parts := strings.Split(fnName, ".")
+	return strings.Replace(parts[len(parts)-1], "-fm", "", 1)
+}
+
+func OnClick(v interface{}) Attribute {
+	return Attribute{"@click", GetFunctionName(v)}
 }
 
 func ID(v string) Attribute {
@@ -435,15 +431,6 @@ func XData(v string) Attribute {
 
 func XText(v string) Attribute {
 	return Attribute{"x-text", v}
-}
-
-type State map[string]interface{}
-type Actions map[string]func() string
-
-type Reducer struct {
-	Name string
-	State
-	Actions
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {

@@ -3,6 +3,7 @@ package wapp
 type M map[string]interface{}
 type MS map[string]string
 type Arr []interface{}
+
 type KeyValues struct {
 	Keys   M
 	Values MS
