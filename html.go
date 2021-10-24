@@ -24,6 +24,16 @@ func mergeAttributes(parent *Element, uis ...interface{}) *Element {
 		switch c := v.(type) {
 		case Attribute:
 			parent.setAttr(c.Key, c.Value)
+		case M:
+			for k, v := range c {
+				if a, ok := v.(string); ok {
+					parent.setAttr(k, a)
+				} else {
+					// store some server state on the component ctx
+					// parent.setAttr(k, a)
+				}
+
+			}
 		case *Element:
 			elems = append(elems, c)
 		case nil:
@@ -339,14 +349,8 @@ func Attr(k, v string) Attribute {
 	return Attribute{k, v}
 }
 
-func GetFunctionName(i interface{}) string {
-	fnName := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
-	parts := strings.Split(fnName, ".")
-	return strings.Replace(parts[len(parts)-1], "-fm", "", 1)
-}
-
-func OnClick(v interface{}) Attribute {
-	return Attribute{"@click", GetFunctionName(v)}
+func OnClick(v string) Attribute {
+	return Attribute{"@click", v}
 }
 
 func ID(v string) Attribute {

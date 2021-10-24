@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <meta http-equiv="encoding" content="utf-8">
+    <meta content="utf-8" http-equiv="encoding">
     <title>            123    </title>
 
     <meta name="description" content="123">
@@ -11,11 +11,11 @@
     <meta name="keywords" content="123">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <link rel="icon" href="/assets/icon.png">
-    <link rel="apple-touch-icon" href="/assets/icon.png">
+    <link href="/assets/icon.png" rel="apple-touch-icon">
     <link rel="stylesheet" href="/assets/styles.css">
     <script src="/assets/alpine.js" defer></script>
 
-    <meta name="title" content="title">
+    <meta content="title" name="title">
     <style>            
 			*, ::before, ::after { box-sizing: border-box; }
 			html { -moz-tab-size: 4; -o-tab-size: 4; tab-size: 4; line-height: 1.15; -webkit-text-size-adjust: 100%; }
@@ -89,11 +89,11 @@
       </div>
 
       <div class="flex flex-row justify-center items-center">
-        <button @click="Decrement">                    -        </button>
+        <button @click="decrement">                    -        </button>
 
-        <div x-text="state.count" class="flex flex-row justify-center items-center m-20 text-5xl">                    4        </div>
+        <div class="flex flex-row justify-center items-center m-20 text-5xl" x-text="count">                    4        </div>
 
-        <button @click="Increment">                    +        </button>
+        <button @click="increment">                    +        </button>
       </div>
     </div>
 

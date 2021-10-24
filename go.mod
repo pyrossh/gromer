@@ -7,6 +7,7 @@ require (
 	github.com/apex/gateway/v2 v2.0.0
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible // indirect
+	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf // indirect
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/kr/pretty v0.1.0 // indirect

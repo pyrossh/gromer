@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/bradleyjkemp/cupaloy"
+	. "github.com/franela/goblin"
 )
 
 func Row(uis ...interface{}) *Element {
@@ -16,24 +17,14 @@ func Col(uis ...interface{}) *Element {
 	return NewElement("div", false, append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
 }
 
-type CounterState struct {
-	Count int
-}
-
-func Counter(start int) *Element {
-	c := CounterState{Count: start}
-	return c.Render()
-}
-
-func (c *CounterState) Increment() {
-	c.Count += 1
-}
-
-func (c *CounterState) Decrement() {
-	c.Count -= 1
-}
-
-func (c *CounterState) Render() *Element {
+func Counter(c *Context, start int) *Element {
+	count, setCount := UseState(c, start)
+	increment := func() {
+		setCount(count().(int) + 1)
+	}
+	decrement := func() {
+		setCount(count().(int) + 1)
+	}
 	return Col(Css("text-3xl text-gray-700"),
 		Row(
 			Row(Css("underline"),
@@ -41,61 +32,69 @@ func (c *CounterState) Render() *Element {
 			),
 		),
 		Row(
-			Button(OnClick(c.Decrement), Text("-")),
-			Row(Css("m-20 text-5xl"), XText("state.count"),
-				Text(strconv.Itoa(c.Count)),
+			Button(OnClick("decrement"), Text("-")),
+			Row(Css("m-20 text-5xl"), XText("count"),
+				Text(strconv.Itoa(count().(int))),
 			),
-			Button(OnClick(c.Increment), Text("+")),
+			Button(OnClick("increment"), Text("+")),
 		),
+		M{
+			"count":     count,
+			"increment": increment,
+			"decrement": decrement,
+		},
 	)
+	// return `
+	// 	<div class="flex flex-col justify-center items-center text-3xl text-gray-700">
+	// 		<div class="flex flex-row justify-center items-center">
+	// 			<div class="flex flex-row justify-center items-center underline">
+	// 				Counter
+	// 			</div>
+	// 		</div>
+	// 		<div class="flex flex-row justify-center items-center">
+	// 			<button class="btn m-20" @click="Increment">
+	// 				-
+	// 			</button>
+	// 			<div class="flex flex-row justify-center items-center m-20 text-8xl">
+	// 				{{ count }}
+	// 			</div>
+	// 			<button class="btn m-20" @click="Decrement">
+	// 				+
+	// 			</button>
+	// 		</div>
+	// 	</div>
+	// `
 }
 
-// func CounterHtml() string {
-// 	return `
-// 		<div class="flex flex-col justify-center items-center text-3xl text-gray-700">
-// 			<div class="flex flex-row justify-center items-center">
-// 				<div class="flex flex-row justify-center items-center underline">
-// 					Counter
-// 				</div>
-// 			</div>
-// 			<div class="flex flex-row justify-center items-center">
-// 				<button class="btn m-20" @click={{actions.Increment}}>
-// 					-
-// 				</button>
-// 				<div class="flex flex-row justify-center items-center m-20 text-8xl">
-// 					{{ state.count }}
-// 				</div>
-// 				<button class="btn m-20" @click={{actions.Decrement}}>
-// 					+
-// 				</button>
-// 			</div>
-// 		</div>
-// 	`
-// }
-
-func TestHtmlPage(t *testing.T) {
-	b := bytes.NewBuffer(nil)
-	p := Html(
-		Head(
-			Title("123"),
-			Meta("description", "123"),
-			Meta("author", "123"),
-			Meta("keywords", "123"),
-			Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
-			Link("icon", "/assets/icon.png"),
-			Link("apple-touch-icon", "/assets/icon.png"),
-			Link("stylesheet", "/assets/styles.css"),
-			Script(Src("/assets/alpine.js"), Defer()),
-			Meta("title", "title"),
-		),
-		Body(
-			H1(Text("Hello this is a h1")),
-			H2(Text("Hello this is a h2")),
-			H3(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
-			Counter(4),
-		),
-	)
-	p.WriteHtml(b)
-	c := cupaloy.New(cupaloy.SnapshotFileExtension(".html"))
-	c.SnapshotT(t, b.String())
+func TestHtml(t *testing.T) {
+	g := Goblin(t)
+	g.Describe("Html", func() {
+		g.It("should match snapshot", func() {
+			ctx := &Context{index: 0, datas: []interface{}{}}
+			b := bytes.NewBuffer(nil)
+			p := Html(
+				Head(
+					Title("123"),
+					Meta("description", "123"),
+					Meta("author", "123"),
+					Meta("keywords", "123"),
+					Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
+					Link("icon", "/assets/icon.png"),
+					Link("apple-touch-icon", "/assets/icon.png"),
+					Link("stylesheet", "/assets/styles.css"),
+					Script(Src("/assets/alpine.js"), Defer()),
+					Meta("title", "title"),
+				),
+				Body(
+					H1(Text("Hello this is a h1")),
+					H2(Text("Hello this is a h2")),
+					H3(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
+					Counter(ctx, 4),
+				),
+			)
+			p.WriteHtml(b)
+			c := cupaloy.New(cupaloy.SnapshotFileExtension(".html"))
+			c.SnapshotT(t, b.String())
+		})
+	})
 }
