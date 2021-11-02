@@ -241,7 +241,6 @@ import (
 	"github.com/apex/gateway/v2"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/wapp"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"{{ moduleName }}/context"
@@ -253,10 +252,9 @@ import (
 var assetsFS embed.FS
 
 func main() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	r := mux.NewRouter()
+	r.NotFoundHandler = http.HandlerFunc(notFound)
 	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(assetsFS)))
 	{{#each routes as |route| }}handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
@@ -275,15 +273,22 @@ func main() {
 	}
 }
 
+func notFound(w http.ResponseWriter, r *http.Request) {
+	wapp.LogReq(404, r)
+}
+
 func handle(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		log.Info().Msgf("%-4.4s %s", r.Method, r.URL.Path)
+		var status int
+		defer func() {
+			wapp.LogReq(status, r)
+		}()
 		ctx, err := context.WithContext(r.Context())
 		if err != nil {
 			wapp.RespondError(w, 500, err)
 			return
 		}
-		err = wapp.PerformRequest(route, h, ctx, w, r)
+		status, err = wapp.PerformRequest(route, h, ctx, w, r)
 		if err != nil {
 			log.Error().Stack().Err(err).Msg("")
 		}

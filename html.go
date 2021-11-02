@@ -6,13 +6,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
+
+func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+}
 
 func writeIndent(w io.Writer, indent int) {
 	for i := 0; i < indent*2; i++ {
@@ -416,7 +425,7 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 
 var pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
 
-func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) error {
+func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) (int, error) {
 	params := pathParamsRegex.FindAllString(route, -1)
 	args := []reflect.Value{reflect.ValueOf(ctx)}
 	funcType := reflect.TypeOf(h)
@@ -432,7 +441,7 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())
 			if err != nil {
 				RespondError(w, 500, err)
-				return err
+				return 500, err
 			}
 		} else if r.Method == "GET" {
 			rv := instance.Elem()
@@ -452,17 +461,35 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 	responseError := values[2].Interface()
 	if responseError != nil {
 		RespondError(w, responseStatus, responseError.(error))
-		return responseError.(error)
+		return responseStatus, responseError.(error)
 	}
 	if v, ok := response.(HtmlPage); ok {
 		w.WriteHeader(responseStatus)
 		w.Header().Set("Content-Type", "text/html")
 		v.WriteHtml(w)
-		return nil
+		return 200, nil
 	}
 	w.WriteHeader(responseStatus)
 	w.Header().Set("Content-Type", "application/json")
 	data, _ := json.Marshal(response)
 	w.Write(data)
-	return nil
+	return 200, nil
+}
+
+func LogReq(status int, r *http.Request) {
+	a := color.FgGreen
+	if status >= 500 {
+		a = color.FgRed
+	} else if status >= 400 {
+		a = color.FgYellow
+	}
+	m := color.FgCyan
+	if r.Method == "POST" {
+		m = color.FgYellow
+	} else if r.Method == "PUT" {
+		m = color.FgMagenta
+	} else if r.Method == "DELETE" {
+		m = color.FgRed
+	}
+	log.Info().Msgf("%3s %s %s", color.New(a).Sprint(status), color.New(m).Sprintf("%-4s", r.Method), color.WhiteString(r.URL.Path))
 }
