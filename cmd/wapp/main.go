@@ -121,6 +121,60 @@ func getApiFunc(method, route string, params []string) ApiCall {
 	}
 }
 
+// "io/ioutil"
+// func migrate() {
+// 	db := context.InitDB()
+// 	ctx := c.Background()
+// 	tx, err := context.BeginTransaction(db, ctx)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	files, err := ioutil.ReadDir("./migrations")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	for _, f := range files {
+// 		data, err := ioutil.ReadFile("./migrations/" + f.Name())
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		tx.MustExec(string(data))
+// 	}
+// 	err = tx.Commit()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
+
+// "github.com/bxcodec/faker/v3"
+// func seed() {
+// 	db := context.InitDB()
+// 	ctx := c.Background()
+// 	tx, err := context.BeginTransaction(db, ctx)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	reqContext := context.ReqContext{
+// 		Tx:     tx,
+// 		UserID: "123",
+// 	}
+// 	for i := 0; i < 20; i++ {
+// 		ti := todos.TodoInput{}
+// 		err := faker.FakeData(&ti)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		_, _, err = todos.POST(reqContext, ti)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 	}
+// 	err = tx.Commit()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
+
 func main() {
 	data, err := ioutil.ReadFile("go.mod")
 	if err != nil {
@@ -144,13 +198,13 @@ func main() {
 				method := getMethod(route)
 				path := getRoute(method, route)
 				pkg := getPackage(path)
-				routePath := rewritePath(path)
-				params := pathParamsRegex.FindAllString(routePath, -1)
 				allPkgs[pkg] = ""
 				if path == "" { // for index page
 					path = "/"
 					pkg = "pages"
 				}
+				routePath := rewritePath(path)
+				params := pathParamsRegex.FindAllString(routePath, -1)
 				routes = append(routes, &Route{
 					Method: method,
 					Path:   routePath,
@@ -180,7 +234,6 @@ package main
 
 import (
 	"embed"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -188,6 +241,8 @@ import (
 	"github.com/apex/gateway/v2"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/wapp"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"{{ moduleName }}/context"
 	{{#each allPkgs }}"{{ moduleName }}/pages{{ @key }}"
@@ -198,6 +253,8 @@ import (
 var assetsFS embed.FS
 
 func main() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	r := mux.NewRouter()
 	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(assetsFS)))
@@ -211,25 +268,24 @@ func main() {
 			WriteTimeout: 30 * time.Second,
 			ReadTimeout:  30 * time.Second,
 		}
-		log.Fatal(srv.ListenAndServe())
+		log.Fatal().Stack().Err(srv.ListenAndServe()).Msg("failed to listen")
 	} else {
 		log.Print("running in lambda mode")
-		log.Fatal(gateway.ListenAndServe(":3000", r))
+		log.Fatal().Stack().Err(gateway.ListenAndServe(":3000", r)).Msg("failed to listen")
 	}
 }
 
 func handle(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := context.NewReqContext(r)
+		log.Info().Msgf("%-4.4s %s", r.Method, r.URL.Path)
+		ctx, err := context.WithContext(r.Context())
 		if err != nil {
 			wapp.RespondError(w, 500, err)
 			return
 		}
 		err = wapp.PerformRequest(route, h, ctx, w, r)
 		if err != nil {
-			ctx.Rollback()
-		} else {
-			ctx.Commit()
+			log.Error().Stack().Err(err).Msg("")
 		}
 	}).Methods(method)
 }
