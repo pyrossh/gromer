@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"runtime"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 func writeIndent(w io.Writer, indent int) {
@@ -75,22 +77,10 @@ func (p *HtmlPage) computeCss(elems []*Element) {
 	}
 }
 
-func (p *HtmlPage) computeJs(elems []*Element) {
-	for _, el := range elems {
-		if strings.HasPrefix(el.text, "wapp_js|") {
-			p.js.WriteString(strings.Replace(el.text, "wapp_js|", "", 1)) //  + "\n" // TODO check with multiple components
-		}
-		if len(el.children) > 0 {
-			p.computeJs(el.children)
-		}
-	}
-}
-
 func (p *HtmlPage) WriteHtml(w io.Writer) {
 	w.Write([]byte("<!DOCTYPE html>\n"))
 	w.Write([]byte("<html>\n"))
 	p.computeCss(p.Body.children)
-	p.computeJs(p.Body.children)
 	p.Head.children = append(p.Head.children, StyleTag(Text(normalizeStyles+p.css.String())))
 	p.Head.writeHtmlIndent(w, 1)
 	p.Body.children = append(p.Body.children, Script(Text(fmt.Sprintf(`
@@ -122,28 +112,6 @@ func Head(elems ...*Element) *Element {
 
 func Body(elems ...*Element) *Element {
 	return &Element{tag: "body", children: elems}
-}
-
-func Component(state interface{}, uis ...interface{}) *Element {
-	pc, _, _, _ := runtime.Caller(1)
-	details := runtime.FuncForPC(pc)
-	arr := strings.Split(details.Name(), ".")
-	name := strings.ToLower(arr[len(arr)-1])
-	// actionsMap := map[string]interface{}{}
-	// actionsType := reflect.TypeOf(actions)
-	// for k, v := range r.Actions {
-	// 	actionsMap[k] = "() {" + v() + "}"
-	// }
-	stateData, err := json.MarshalIndent(state, "					", "	")
-	if err != nil {
-		panic(err)
-	}
-	js := fmt.Sprintf(`
-				Alpine.data('%s',  () => (%s));`, name, string(stateData))
-	if err != nil {
-		panic(err)
-	}
-	return mergeAttributes(&Element{tag: name, text: "wapp_js|" + js}, append([]interface{}{XData(name)}, uis...)...)
 }
 
 type Element struct {
@@ -446,12 +414,19 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Write(data)
 }
 
-func PerformRequest(h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) error {
+var pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
+
+func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) error {
+	params := pathParamsRegex.FindAllString(route, -1)
 	args := []reflect.Value{reflect.ValueOf(ctx)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
-	if icount == 2 {
-		structType := funcType.In(1)
+	vars := mux.Vars(r)
+	for _, k := range params {
+		args = append(args, reflect.ValueOf(vars[k]))
+	}
+	if len(args) != icount {
+		structType := funcType.In(icount - 1)
 		instance := reflect.New(structType)
 		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())

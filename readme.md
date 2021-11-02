@@ -26,3 +26,13 @@ go get -u -v github.com/pyros2097/wapp/cmd/wapp
 # Example 
 
 https://github.com/pyros2097/wapp-example
+
+```go
+func WithWappContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, "wapp", WappContext{})
+}
+
+func GetWappContext(ctx context.Context) WappContext {
+	return ctx.Value("wapp").(WaåppContext)
+}
+```
