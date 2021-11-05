@@ -9,6 +9,16 @@ import (
 	. "github.com/franela/goblin"
 )
 
+func TestGetRouteParams(t *testing.T) {
+	g := Goblin(t)
+	g.Describe("GetRouteParams", func() {
+		g.It("should return all the right params", func() {
+			params := GetRouteParams("/api/todos/{id}/update/{action}")
+			g.Assert(params).Equal([]string{"id", "action"})
+		})
+	})
+}
+
 func Row(uis ...interface{}) *Element {
 	return NewElement("div", false, append([]interface{}{Css("flex flex-row justify-center items-center")}, uis...)...)
 }

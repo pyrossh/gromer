@@ -7,20 +7,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/gobuffalo/velvet"
+	"github.com/pyros2097/wapp"
 	"golang.org/x/mod/modfile"
 )
-
-var pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
 
 type Route struct {
 	Method string
 	Path   string
 	Pkg    string
-	Params []string
 }
 
 type ApiCall struct {
@@ -204,12 +201,11 @@ func main() {
 					pkg = "pages"
 				}
 				routePath := rewritePath(path)
-				params := pathParamsRegex.FindAllString(routePath, -1)
+				params := wapp.GetRouteParams(routePath)
 				routes = append(routes, &Route{
 					Method: method,
 					Path:   routePath,
 					Pkg:    rewritePkg(pkg),
-					Params: params,
 				})
 				if strings.Contains(path, "/api/") {
 					apiCalls = append(apiCalls, getApiFunc(method, path, params))
@@ -233,6 +229,7 @@ func main() {
 package main
 
 import (
+	c "context"
 	"embed"
 	"net/http"
 	"os"
@@ -283,7 +280,9 @@ func handle(router *mux.Router, method, route string, h interface{}) {
 		defer func() {
 			wapp.LogReq(status, r)
 		}()
-		ctx, err := context.WithContext(r.Context())
+		ctx, err := context.WithContext(c.WithValue(
+			c.WithValue(r.Context(), "url", r.URL),
+			"header", r.Header))
 		if err != nil {
 			wapp.RespondError(w, 500, err)
 			return

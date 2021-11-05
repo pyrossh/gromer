@@ -425,8 +425,17 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 
 var pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
 
+func GetRouteParams(route string) []string {
+	params := []string{}
+	found := pathParamsRegex.FindAllString(route, -1)
+	for _, v := range found {
+		params = append(params, strings.Replace(strings.Replace(v, "}", "", 1), "{", "", 1))
+	}
+	return params
+}
+
 func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) (int, error) {
-	params := pathParamsRegex.FindAllString(route, -1)
+	params := GetRouteParams(route)
 	args := []reflect.Value{reflect.ValueOf(ctx)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
