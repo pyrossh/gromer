@@ -290,7 +290,7 @@ func Span(uis ...interface{}) *Element {
 }
 
 func Input(uis ...interface{}) *Element {
-	return NewElement("input", false, uis...)
+	return NewElement("input", true, uis...)
 }
 
 func Image(uis ...interface{}) *Element {
