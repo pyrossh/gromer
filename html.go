@@ -88,7 +88,7 @@ func (p *HtmlPage) computeCss(elems []*Element) {
 
 func (p *HtmlPage) WriteHtml(w io.Writer) {
 	w.Write([]byte("<!DOCTYPE html>\n"))
-	w.Write([]byte("<html>\n"))
+	w.Write([]byte("<html lang=\"en\">\n"))
 	p.computeCss(p.Body.children)
 	p.Head.children = append(p.Head.children, StyleTag(Text(normalizeStyles+p.css.String())))
 	p.Head.writeHtmlIndent(w, 1)
