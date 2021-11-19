@@ -54,16 +54,19 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 				Meta("author", "pyros2097"),
 				Meta("keywords", "wapp,pyros2097"),
 				Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
-				Link("icon", "/assets/icon.png"),
+				Link("icon", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAMFBMVEU0OkArMjhobHEoPUPFEBIuO0L+AAC2FBZ2JyuNICOfGx7xAwTjCAlCNTvVDA1aLzQ3COjMAAAAVUlEQVQI12NgwAaCDSA0888GCItjn0szWGBJTVoGSCjWs8TleQCQYV95evdxkFT8Kpe0PLDi5WfKd4LUsN5zS1sKFolt8bwAZrCaGqNYJAgFDEpQAAAzmxafI4vZWwAAAABJRU5ErkJggg=="),
 				Link("stylesheet", "https://cdn.jsdelivr.net/npm/codemirror@5.63.1/lib/codemirror.css"),
 				StyleTag(Text(`
 					html, body {
 						height: 100vh;
-						overflow: hidden;
 					} 
 	
-					.CodeMirror { 
-						height: 100vh; 
+					#left .CodeMirror {
+						height: 400px; 
+					}
+
+					#right .CodeMirror {
+						height: calc(100vh - 60px); 
 					}
 	
 					.form-select {
@@ -93,9 +96,17 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 						box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
 						border-color: #63b3ed;
 					}
+
+					table {
+						width: 100%;
+					}
+
+					tr {
+						width: 100%;
+					}
 	
 					td, th {
-						// border-bottom: 1px solid rgb(204, 204, 204);
+						border-bottom: 1px solid rgb(204, 204, 204);
 						border-left: 1px solid rgb(204, 204, 204);
 						text-align: left;
 					}
@@ -149,7 +160,7 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 				Script(Src("https://cdn.jsdelivr.net/npm/codemirror@5.63.1/mode/javascript/javascript.js")),
 			),
 			Body(
-				Div(Css("flex flex-col w-screen h-screen"),
+				Div(Css("flex flex-col"),
 					Div(Css("flex w-full p-2 bg-gray-50 border-b border-gray-200 items-center justify-start"),
 						Div(Css("flex mr-4 text-gray-700 text-2xl font-bold"), Text("API Explorer")),
 						Div(Css("text-xl"),
@@ -159,37 +170,43 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 							Text("RUN"),
 						)),
 					),
-					Div(Css("flex w-full h-full"),
-						Div(Css("h-full"), Style("width: 50%;"),
-							Section("Headers"),
-							Table(ID("headersTable"), Css("w-full"),
-								TR(
-									TD(Style("width: 50%;"), Input(Css("w-full p-1"), Attr("value", "Authorization"))),
-									TD(Style("width: 50%;"), Input(Css("w-full p-1"))),
+					Div(Css("flex"),
+						Div(Css("flex flex-row"), Style("width: 50%;"),
+							Div(Css("pr-8 border-r border-gray-300"), Style("background: #f7f7f7;")),
+							Div(Css("w-full"),
+								Section("Headers"),
+								Table(ID("headersTable"),
+									TR(
+										TD(Input(Css("w-full p-1"), Attr("value", "Authorization"))),
+										TD(Input(Css("w-full p-1"))),
+									),
 								),
-							),
-							Section("Path Params"),
-							Table(ID("pathParamsTable"), Css("w-full"),
-								TR(
-									TD(Css("text-gray-700"), Style("width: 50%;"), Div(Css("p-1"), Text("123"))),
-									TD(Style("width: 50%;"), Input(Css("w-full p-1"))),
+								Section("Path Params"),
+								Table(ID("pathParamsTable"),
+									TR(
+										TD(Css("text-gray-700"), Style("width: 50%;"), Div(Css("p-1"), Text("123"))),
+										TD(Style("width: 50%;"), Input(Css("w-full p-1"))),
+									),
 								),
-							),
-							Section("Query Params"),
-							Table(ID("queryParamsTable"), Css("w-full"),
-								TR(
-									TD(Css("text-gray-700"), Style("width: 50%;"), Div(Css("p-1"), Text("123"))),
-									TD(Style("width: 50%;"), Input(Css("w-full p-1"))),
+								Section("Query Params"),
+								Table(ID("queryParamsTable"),
+									TR(
+										TD(Css("text-gray-700"), Style("width: 50%;"), Div(Css("p-1"), Text("123"))),
+										TD(Style("width: 50%;"), Input(Css("w-full p-1"))),
+									),
 								),
+								Section("Body"),
+								Div(ID("left"), Css("border-b border-gray-200 text-md")),
 							),
-							Section("Body"),
-							Div(ID("left"), Style("height: 400px; overflow: scroll;"), Css("border-b border-gray-200 text-lg")),
 						),
-						Div(ID("right"), Css("h-full border-l border-l-gray-200 text-lg"), Style("width: 50%;")),
+						Div(Css("flex flex-row"), Style("width: 50%;"),
+							Div(ID("right"), Css("w-full border-l border-l-gray-200 text-md")),
+							Div(Css("pr-8 border-l border-gray-300"), Style("background: #f7f7f7;")),
+						),
 					),
 				),
 				Script(Text("window.apiDefs = "+string(data))),
-				Script(Text("window.codeLeft = CodeMirror(document.getElementById('left'), {value: '{}',mode:  'javascript', lineNumbers: true })")),
+				Script(Text("window.codeLeft = CodeMirror(document.getElementById('left'), {value: '{}',mode:  'javascript' })")),
 				Script(Text("window.codeRight = CodeMirror(document.getElementById('right'), {value: '',mode:  'javascript', lineNumbers: true, readOnly: true, lineWrapping: true })")),
 				Script(Text(`
 					const getCurrentApiCall = () => {
@@ -208,8 +225,9 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 							const row = table.insertRow(0);
 							const cell1 = row.insertCell(0);
 							const cell2 = row.insertCell(1);
-							cell1.style = "width: 50%;";
+							cell1.style = "width: 30%; border-left: 0px;";
 							cell1.class = "text-gray-700";
+							cell2.style = "width: 70%;";
 							cell1.innerHTML = "<div class='p-1'>" + param + "</div>";
 							cell2.innerHTML = "<input id='path-param-" + param + "' class='w-full p-1'>";
 						}
@@ -241,8 +259,8 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 								const row = table.insertRow(0);
 								const cell1 = row.insertCell(0);
 								const cell2 = row.insertCell(1);
-								cell1.style = "width: 50%;";
-								cell2.style = "width: 50%;";
+								cell1.style = "width: 30%; border-left: 0px;";
+								cell2.style = "width: 70%;";
 								cell1.innerHTML = "<input value='" + key + "' class='w-full p-1'>";
 								cell2.innerHTML = "<input value='" + value + "' class='w-full p-1'>";
 							}

@@ -220,6 +220,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/wapp"
 	"github.com/rs/zerolog/log"
+	"gocloud.dev/server"
 
 	"{{ moduleName }}/context"
 	{{#each allPkgs }}"{{ moduleName }}/pages{{ @key }}"
@@ -233,23 +234,29 @@ func main() {
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	r := mux.NewRouter()
 	r.NotFoundHandler = http.HandlerFunc(notFound)
-	r.PathPrefix("/assets/").Handler(http.FileServer(http.FS(assetsFS)))
+	r.PathPrefix("/assets/").Handler(wrapCache(http.FileServer(http.FS(assetsFS))))
 	handle(r, "GET", "/api", wapp.ApiExplorer(apiDefinitions()))
 	{{#each routes as |route| }}handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
 	if !isLambda {
 		println("http server listening on http://localhost:3000")
-		srv := &http.Server{
-			Handler:      r,
-			Addr:         "127.0.0.1:3000",
-			WriteTimeout: 30 * time.Second,
-			ReadTimeout:  30 * time.Second,
+		srv := server.New(http.DefaultServeMux, nil)
+		if err := srv.ListenAndServe(":3000"); err != nil {
+			log.Fatal().Stack().Err(err).Msg("failed to listen")
 		}
-		log.Fatal().Stack().Err(srv.ListenAndServe()).Msg("failed to listen")
 	} else {
 		log.Print("running in lambda mode")
-		log.Fatal().Stack().Err(gateway.ListenAndServe(":3000", r)).Msg("failed to listen")
+		if err := gateway.ListenAndServe(":3000", r); err != nil {
+			log.Fatal().Stack().Err(err).Msg("failed to listen")
+		}
 	}
+}
+
+func wrapCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=2592000")
+		h.ServeHTTP(w, r)
+	})
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
@@ -263,7 +270,9 @@ func handle(router *mux.Router, method, route string, h interface{}) {
 			wapp.LogReq(status, r)
 		}()
 		ctx, err := context.WithContext(c.WithValue(
-			c.WithValue(r.Context(), "url", r.URL),
+			c.WithValue(
+				c.WithValue(r.Context(), "assetsFS", assetsFS),
+					"url", r.URL),
 			"header", r.Header))
 		if err != nil {
 			wapp.RespondError(w, 500, err)

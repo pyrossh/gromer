@@ -92,10 +92,10 @@ func (p *HtmlPage) WriteHtml(w io.Writer) {
 	p.computeCss(p.Body.children)
 	p.Head.children = append(p.Head.children, StyleTag(Text(normalizeStyles+p.css.String())))
 	p.Head.writeHtmlIndent(w, 1)
-	p.Body.children = append(p.Body.children, Script(Text(fmt.Sprintf(`
-			document.addEventListener('alpine:init', () => {%s
-			});
-	`, p.js.String()))))
+	// p.Body.children = append(p.Body.children, Script(Text(fmt.Sprintf(`
+	// 		document.addEventListener('alpine:init', () => {%s
+	// 		});
+	// `, p.js.String()))))
 	p.Body.writeHtmlIndent(w, 1)
 	w.Write([]byte("\n</html>"))
 }
@@ -458,7 +458,18 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 				if f := rv.Field(i); f.CanSet() {
 					jsonName := structType.Field(i).Tag.Get("json")
 					jsonValue := r.URL.Query().Get(jsonName)
-					f.SetString(jsonValue)
+					if f.Kind() == reflect.String {
+						f.SetString(jsonValue)
+					} else if f.Kind() == reflect.Int64 {
+						v, err := strconv.ParseInt(jsonValue, 10, 64)
+						if err != nil {
+							RespondError(w, 500, err)
+							return 500, err
+						}
+						f.SetInt(v)
+					} else {
+						panic("Uknown query param: " + jsonValue)
+					}
 				}
 			}
 		}
@@ -473,13 +484,15 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		return responseStatus, responseError.(error)
 	}
 	if v, ok := response.(HtmlPage); ok {
-		w.WriteHeader(responseStatus)
 		w.Header().Set("Content-Type", "text/html")
+		// This has to be at end always
+		w.WriteHeader(responseStatus)
 		v.WriteHtml(w)
 		return 200, nil
 	}
-	w.WriteHeader(responseStatus)
 	w.Header().Set("Content-Type", "application/json")
+	// This has to be at end always
+	w.WriteHeader(responseStatus)
 	data, _ := json.Marshal(response)
 	w.Write(data)
 	return 200, nil
