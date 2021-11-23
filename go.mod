@@ -29,6 +29,7 @@ require (
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/markbates/inflect v1.0.4 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.15 // indirect
 	github.com/openzipkin/zipkin-go v0.1.1 // indirect

@@ -214,7 +214,6 @@ import (
 	"embed"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/apex/gateway/v2"
 	"github.com/gorilla/mux"
@@ -240,7 +239,7 @@ func main() {
 	{{/each}}
 	if !isLambda {
 		println("http server listening on http://localhost:3000")
-		srv := server.New(http.DefaultServeMux, nil)
+		srv := server.New(r, nil)
 		if err := srv.ListenAndServe(":3000"); err != nil {
 			log.Fatal().Stack().Err(err).Msg("failed to listen")
 		}
