@@ -18,6 +18,7 @@ go get -u -v github.com/pyros2097/wapp/cmd/gromer
 
 # Using
 You need to follow this directory structure similar to nextjs for the api route handlers to be generated
-Please look at the example for now,
+
+Take a look at the example for now,
 
 [Example](https://github.com/pyros2097/gromer/tree/master/example)
