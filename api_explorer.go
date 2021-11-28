@@ -31,10 +31,10 @@ func Section(title string) *Element {
 }
 
 type ApiDefinition struct {
-	Method      string            `json:"method"`
-	Path        string            `json:"path"`
-	PathParams  []string          `json:"pathParams"`
-	QueryParams map[string]string `json:"queryParams"`
+	Method     string                 `json:"method"`
+	Path       string                 `json:"path"`
+	PathParams []string               `json:"pathParams"`
+	Params     map[string]interface{} `json:"params"`
 }
 
 func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int, error) {
@@ -233,22 +233,39 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 						}
 					}
 	
-					const updateQueryParams = (apiCall) => {
+					const updateParams = (apiCall) => {
 						const table = document.getElementById("queryParamsTable");
-						if (!apiCall.queryParams) {
+						if (!apiCall.params) {
 							table.innerHTML = "<div style='background-color: rgb(245, 245, 245); padding: 0.25rem; text-align: center; color: gray;'>NONE</div>";
 						} else {
 							table.innerHTML = "";
 						}
+						if (apiCall.method === "GET" || apiCall.method === "DELETE") {
+							for(const key of Object.keys(apiCall.params)) {
+								const row = table.insertRow(0);
+								const cell1 = row.insertCell(0);
+								const cell2 = row.insertCell(1);
+								cell1.style = "width: 30%; border-left: 0px;";
+								cell1.class = "text-gray-700";
+								cell2.style = "width: 70%;";
+								cell1.innerHTML = "<div class='p-1'>" + key + "</div>";
+								cell2.innerHTML = "<input id='query-param-" + key + "' class='w-full p-1'>";
+							}
+						}
 					}
 	
 					const updateBody = (apiCall) => {
-						const editor = document.getElementById("left");
+						if (apiCall.method !== "GET" && apiCall.method !== "DELETE") {
+							window.codeLeft.setValue(JSON.stringify(apiCall.params, 2, 2));
+						} else {
+							window.codeLeft.setValue("");
+						}
 					}
 					
 					const init = () => {
 						updatePathParams(window.apiDefs[0]);
-						updateQueryParams(window.apiDefs[0]);
+						updateParams(window.apiDefs[0]);
+						updateBody(window.apiDefs[0]);
 						const headersJson = localStorage.getItem("headers");
 						if (headersJson) {
 							const table = document.getElementById("headersTable");
@@ -274,7 +291,7 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 					document.getElementById("api-select").onchange = () => {
 						const apiCall = getCurrentApiCall();
 						updatePathParams(apiCall);
-						updateQueryParams(apiCall);
+						updateParams(apiCall);
 						updateBody(apiCall);
 					}
 					
@@ -293,10 +310,22 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 						const bodyParams = {};
 						if (apiCall.method !== "GET" && apiCall.method != "DELETE") {
 							bodyParams["body"] = window.codeLeft.getValue();
-						}
-						for(const param of apiCall.pathParams) {
-							const value = document.getElementById('path-param-' + param).value;
-							path = path.replace('{' + param + '}', value);
+						} else {
+							for(const param of apiCall.pathParams) {
+								const value = document.getElementById('path-param-' + param).value;
+								path = path.replace('{' + param + '}', value);
+							}
+							const paramsKeys = Object.keys(apiCall.params);
+							if (paramsKeys.length > 0) {
+								path += "?";
+								paramsKeys.forEach((key, i) => {
+									const value = document.getElementById('query-param-' + key).value;
+									path += key+"="+value;
+									if (i !== paramsKeys.length - 1) {
+										path += "&";
+									}
+								});
+							}
 						}
 						localStorage.setItem("headers", JSON.stringify(headers));
 						try {

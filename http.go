@@ -58,8 +58,8 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())
 			if err != nil {
-				RespondError(w, 500, err)
-				return 500, err
+				RespondError(w, 400, err)
+				return 400, err
 			}
 		} else if r.Method == "GET" {
 			rv := instance.Elem()
@@ -69,22 +69,23 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 					jsonValue := r.URL.Query().Get(jsonName)
 					if f.Kind() == reflect.String {
 						f.SetString(jsonValue)
-					} else if f.Kind() == reflect.Int64 {
-						v, err := strconv.ParseInt(jsonValue, 10, 64)
-						if err != nil {
-							RespondError(w, 500, err)
-							return 500, err
+					} else if f.Kind() == reflect.Int64 || f.Kind() == reflect.Int32 || f.Kind() == reflect.Int {
+						base := 64
+						if f.Kind() == reflect.Int32 {
+							base = 32
 						}
-						f.SetInt(v)
-					} else if f.Kind() == reflect.Int32 {
-						v, err := strconv.ParseInt(jsonValue, 10, 32)
-						if err != nil {
-							RespondError(w, 500, err)
-							return 500, err
+						if jsonValue == "" {
+							f.SetInt(0)
+						} else {
+							v, err := strconv.ParseInt(jsonValue, 10, base)
+							if err != nil {
+								RespondError(w, 400, err)
+								return 400, err
+							}
+							f.SetInt(v)
 						}
-						f.SetInt(v)
 					} else {
-						panic("Uknown query param: " + jsonValue)
+						panic("Uknown query param: " + jsonName + " " + jsonValue)
 					}
 				}
 			}

@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/gobuffalo/velvet"
 	"github.com/pyros2097/gromer"
@@ -79,7 +83,7 @@ func rewritePkg(pkg string) string {
 	return lastItem
 }
 
-func getApiFunc(method, route string, params []string) gromer.ApiDefinition {
+func getApiFunc(method, route string, pathParams []string, params map[string]interface{}) gromer.ApiDefinition {
 	muxRoute := bytes.NewBuffer(nil)
 	foundStart := false
 	for _, v := range route {
@@ -95,64 +99,18 @@ func getApiFunc(method, route string, params []string) gromer.ApiDefinition {
 	}
 	return gromer.ApiDefinition{
 		Method:     method,
-		PathParams: params,
 		Path:       muxRoute.String(),
+		PathParams: pathParams,
+		Params:     params,
 	}
 }
 
-// "io/ioutil"
-// func migrate() {
-// 	db := context.InitDB()
-// 	ctx := c.Background()
-// 	tx, err := context.BeginTransaction(db, ctx)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	files, err := ioutil.ReadDir("./migrations")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	for _, f := range files {
-// 		data, err := ioutil.ReadFile("./migrations/" + f.Name())
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		tx.MustExec(string(data))
-// 	}
-// 	err = tx.Commit()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
-
-// "github.com/bxcodec/faker/v3"
-// func seed() {
-// 	db := context.InitDB()
-// 	ctx := c.Background()
-// 	tx, err := context.BeginTransaction(db, ctx)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	reqContext := context.ReqContext{
-// 		Tx:     tx,
-// 		UserID: "123",
-// 	}
-// 	for i := 0; i < 20; i++ {
-// 		ti := todos.TodoInput{}
-// 		err := faker.FakeData(&ti)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		_, _, err = todos.POST(reqContext, ti)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 	}
-// 	err = tx.Commit()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
+func lowerFirst(s string) string {
+	for i, v := range s {
+		return string(unicode.ToLower(v)) + s[i+1:]
+	}
+	return ""
+}
 
 func main() {
 	moduleName := ""
@@ -190,14 +148,50 @@ func main() {
 					pkg = "pages"
 				}
 				routePath := rewritePath(path)
-				params := gromer.GetRouteParams(routePath)
+				pathParams := gromer.GetRouteParams(routePath)
 				routes = append(routes, &Route{
 					Method: method,
 					Path:   routePath,
 					Pkg:    rewritePkg(pkg),
 				})
 				if strings.Contains(path, "/api/") {
-					apiDefs = append(apiDefs, getApiFunc(method, path, params))
+					data, err := ioutil.ReadFile(filesrc)
+					if err != nil {
+						panic(err)
+					}
+					fset := token.NewFileSet()
+					f, err := parser.ParseFile(fset, "", string(data), parser.AllErrors)
+					if err != nil {
+						panic(err)
+					}
+					var params map[string]interface{}
+					mapsOfInputParams := map[string]map[string]interface{}{}
+					for _, d := range f.Decls {
+						if decl, ok := d.(*ast.GenDecl); ok {
+							for _, spec := range decl.Specs {
+								if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+									if st, ok := typeSpec.Type.(*ast.StructType); ok {
+										mapsOfInputParams[typeSpec.Name.Name] = map[string]interface{}{}
+										for _, f := range st.Fields.List {
+											fieldName := lowerFirst(f.Names[0].Name)
+											mapsOfInputParams[typeSpec.Name.Name][fieldName] = fmt.Sprintf("%+s", f.Type)
+										}
+									}
+								}
+							}
+						}
+						if decl, ok := d.(*ast.FuncDecl); ok {
+							if decl.Name.Name == method {
+								list := decl.Type.Params.List
+								lastParam := list[len(list)-1]
+								lastParamTypeName := fmt.Sprintf("%+s", lastParam.Type)
+								if v, ok := mapsOfInputParams[lastParamTypeName]; ok {
+									params = v
+								}
+							}
+						}
+					}
+					apiDefs = append(apiDefs, getApiFunc(method, path, pathParams, params))
 				}
 			}
 			return nil
@@ -299,6 +293,9 @@ func apiDefinitions() []gromer.ApiDefinition {
 			Method: "{{api.Method}}",
 			Path: "{{api.Path}}",
 			PathParams: []string{ {{#each api.PathParams as |param| }}"{{param}}", {{/each}} },
+			Params: map[string]interface{}{
+				{{#each api.Params }}"{{ @key }}": "{{ @value }}", {{/each}}
+			},
 		},{{/each}}
 	}
 }

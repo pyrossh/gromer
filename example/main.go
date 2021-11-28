@@ -14,10 +14,10 @@ import (
 	"gocloud.dev/server"
 
 	"github.com/pyros2097/gromer/example/context"
-	"github.com/pyros2097/gromer/example/pages/about"
-	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
 	"github.com/pyros2097/gromer/example/pages/api/todos"
 	"github.com/pyros2097/gromer/example/pages"
+	"github.com/pyros2097/gromer/example/pages/about"
+	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
 	
 )
 
@@ -92,26 +92,41 @@ func apiDefinitions() []gromer.ApiDefinition {
 			Method: "DELETE",
 			Path: "/api/todos/{todoId}",
 			PathParams: []string{ "todoId",  },
+			Params: map[string]interface{}{
+				
+			},
 		},
 		{
 			Method: "GET",
 			Path: "/api/todos/{todoId}",
 			PathParams: []string{ "todoId",  },
+			Params: map[string]interface{}{
+				"show": "string", 
+			},
 		},
 		{
 			Method: "PUT",
 			Path: "/api/todos/{todoId}",
 			PathParams: []string{ "todoId",  },
+			Params: map[string]interface{}{
+				"completed": "bool", 
+			},
 		},
 		{
 			Method: "GET",
 			Path: "/api/todos",
 			PathParams: []string{  },
+			Params: map[string]interface{}{
+				"limit": "int", "offset": "int", 
+			},
 		},
 		{
 			Method: "POST",
 			Path: "/api/todos",
 			PathParams: []string{  },
+			Params: map[string]interface{}{
+				"text": "string", 
+			},
 		},
 	}
 }

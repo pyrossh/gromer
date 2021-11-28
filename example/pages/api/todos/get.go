@@ -6,16 +6,19 @@ import (
 	"github.com/pyros2097/gromer/example/db"
 )
 
-// type GetParams struct {
-// 	Limit  int `json:"limit"`
-// 	Offset int `json:"limit"`
-// }
-// , params GetParams
+type GetParams struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
 
-func GET(ctx context.Context) ([]*db.Todo, int, error) {
+func GET(ctx context.Context, params GetParams) ([]*db.Todo, int, error) {
+	limit := params.Limit
+	if limit == 0 {
+		limit = 10
+	}
 	todos, err := db.Query.ListTodos(ctx, db.ListTodosParams{
-		Limit:  int32(10),
-		Offset: int32(0),
+		Limit:  int32(limit),
+		Offset: int32(params.Offset),
 	})
 	if err != nil {
 		return nil, 500, err
