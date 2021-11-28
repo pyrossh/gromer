@@ -7,7 +7,11 @@ import (
 )
 
 func DELETE(ctx context.Context, id string) (string, int, error) {
-	err := db.Query.DeleteTodo(ctx, id)
+	_, status, err := GET(ctx, id, GetParams{})
+	if err != nil {
+		return "", status, err
+	}
+	err = db.Query.DeleteTodo(ctx, id)
 	if err != nil {
 		return id, 500, err
 	}

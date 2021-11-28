@@ -12,6 +12,10 @@ type PutParams struct {
 }
 
 func PUT(ctx context.Context, id string, params PutParams) (*db.Todo, int, error) {
+	_, status, err := GET(ctx, id, GetParams{})
+	if err != nil {
+		return nil, status, err
+	}
 	todo, err := db.Query.UpdateTodo(ctx, db.UpdateTodoParams{
 		ID:        id,
 		Completed: params.Completed,
