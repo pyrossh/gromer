@@ -1,9 +1,10 @@
-module github.com/pyros2097/wapp
+module github.com/pyros2097/gromer
 
 go 1.16
 
 require (
 	git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999 // indirect
+	github.com/apex/gateway/v2 v2.0.0 // indirect
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
@@ -19,6 +20,7 @@ require (
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f
 	github.com/gogo/protobuf v1.1.1 // indirect
 	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go v2.0.0+incompatible // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
@@ -28,6 +30,7 @@ require (
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
+	github.com/lib/pq v1.10.4 // indirect
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect

@@ -1,4 +1,4 @@
-package wapp
+package gromer
 
 import (
 	"context"
@@ -51,8 +51,8 @@ func ApiExplorer(apiDefs []ApiDefinition) func(c context.Context) (HtmlPage, int
 			Head(
 				Title("Example"),
 				Meta("description", "Example"),
-				Meta("author", "pyros2097"),
-				Meta("keywords", "wapp,pyros2097"),
+				Meta("author", "pyros.sh"),
+				Meta("keywords", "pyros.sh, gromer"),
 				Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
 				Link("icon", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAMFBMVEU0OkArMjhobHEoPUPFEBIuO0L+AAC2FBZ2JyuNICOfGx7xAwTjCAlCNTvVDA1aLzQ3COjMAAAAVUlEQVQI12NgwAaCDSA0888GCItjn0szWGBJTVoGSCjWs8TleQCQYV95evdxkFT8Kpe0PLDi5WfKd4LUsN5zS1sKFolt8bwAZrCaGqNYJAgFDEpQAAAzmxafI4vZWwAAAABJRU5ErkJggg=="),
 				Link("stylesheet", "https://cdn.jsdelivr.net/npm/codemirror@5.63.1/lib/codemirror.css"),

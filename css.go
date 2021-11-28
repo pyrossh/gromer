@@ -1,4 +1,4 @@
-package wapp
+package gromer
 
 type M map[string]interface{}
 type MS map[string]string
@@ -467,8 +467,9 @@ func mapApply(obj KeyValues) {
 				twClassLookup[className] = vstring + ": " + vv + ";"
 			}
 			if varr, ok := v.(Arr); ok {
+				twClassLookup[className] = ""
 				for _, kk := range varr {
-					twClassLookup[className] = kk.(string) + ": " + vv + ";"
+					twClassLookup[className] += kk.(string) + ": " + vv + ";"
 				}
 			}
 		}
