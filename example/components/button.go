@@ -6,7 +6,7 @@ import (
 
 func Button2(title, clickHandler string) *Element {
 	return Button(Css("bg-gray-300 border-b-2 border-white hover:bg-gray-200 focus:outline-none rounded text-gray-700"), OnClick(clickHandler),
-		Div(Css("flex flex-row flex-1 justify-center items-center p-4"),
+		Div(Css("flex flex-row flex-1 justify-center items-center py-4 px-6"),
 			Text(title),
 		),
 	)

@@ -9,6 +9,7 @@ import (
 )
 
 func GET(c context.Context) (HtmlPage, int, error) {
+	ctx := WithState(c)
 	userID := GetUserID(c)
 	return Html(
 		Head(
@@ -28,7 +29,7 @@ func GET(c context.Context) (HtmlPage, int, error) {
 				H2(Text("Hello this is a h2")),
 				H3(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
 				Div(Css("mt-10"),
-					Counter(4),
+					Counter(ctx, 4),
 				),
 			),
 		),

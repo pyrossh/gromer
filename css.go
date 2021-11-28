@@ -476,6 +476,14 @@ func mapApply(obj KeyValues) {
 	}
 }
 
+func CreateTheme() {
+}
+
+func Styled(name string, classes string) {
+}
+
+// var Button = Styled("button", "px-20 bg-gray-500")
+
 var normalizeStyles = `
 			*, ::before, ::after { box-sizing: border-box; }
 			html { -moz-tab-size: 4; -o-tab-size: 4; tab-size: 4; line-height: 1.15; -webkit-text-size-adjust: 100%; }

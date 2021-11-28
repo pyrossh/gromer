@@ -2,6 +2,7 @@ package gromer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"strconv"
@@ -45,6 +46,7 @@ func mergeAttributes(parent *Element, uis ...interface{}) *Element {
 }
 
 type HtmlPage struct {
+	ctx         context.Context
 	classLookup map[string]bool
 	css         *bytes.Buffer
 	js          *bytes.Buffer
@@ -87,6 +89,7 @@ func (p *HtmlPage) WriteHtml(w io.Writer) {
 
 func Html(h *Element, b *Element) HtmlPage {
 	return HtmlPage{
+		// ctx:         context.WithValue(ctx, "state", &StateContext{}),
 		classLookup: map[string]bool{},
 		js:          bytes.NewBuffer(nil),
 		css:         bytes.NewBuffer(nil),
@@ -97,9 +100,9 @@ func Html(h *Element, b *Element) HtmlPage {
 
 func Head(elems ...*Element) *Element {
 	basic := []*Element{
-		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
-		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
-		&Element{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
+		{tag: "meta", selfClosing: true, attrs: map[string]string{"charset": "UTF-8"}},
+		{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "Content-Type", "content": "text/html;charset=utf-8"}},
+		{tag: "meta", selfClosing: true, attrs: map[string]string{"http-equiv": "encoding", "content": "utf-8"}},
 	}
 	return &Element{tag: "head", children: append(basic, elems...)}
 }
