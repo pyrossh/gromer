@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: my-app
+commonLabels:
+  app: my-app
+resources:
+  - deployment.yaml
+  - configmap.yaml
+  - service.yaml
+  - ingress.yaml

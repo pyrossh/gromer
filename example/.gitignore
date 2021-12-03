@@ -19,4 +19,7 @@ test
 *.gcloudignore
 *.wasm
 main
-dev.db
+.terraform
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl

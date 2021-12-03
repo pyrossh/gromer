@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namePrefix: integration-
+namespace: integration-my-app
+commonLabels:
+  environment: integration
+
+bases:
+  - ../base
+
+resources:
+  - namespace.yaml
+
+patchesStrategicMerge:
+  - configmap.yaml
