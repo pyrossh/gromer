@@ -1,6 +1,7 @@
 package gromer
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/franela/goblin"
@@ -9,13 +10,14 @@ import (
 func TestHooks(t *testing.T) {
 	g := Goblin(t)
 	g.Describe("useState", func() {
-		ctx := &Context{index: 0, datas: []interface{}{}}
+		ctx := WithState(context.Background())
+		stateCtx := getState(ctx)
 		getValue, setValue := UseState(ctx, 12)
 
 		g.It("should be initialized ", func() {
-			g.Assert(1).Equal(ctx.index)
-			g.Assert(1).Equal(len(ctx.datas))
-			g.Assert(ctx.datas[0]).Equal(12)
+			g.Assert(1).Equal(stateCtx.index)
+			g.Assert(1).Equal(len(stateCtx.datas))
+			g.Assert(stateCtx.datas[0]).Equal(12)
 		})
 
 		g.It("should get value ", func() {
@@ -24,7 +26,7 @@ func TestHooks(t *testing.T) {
 
 		g.It("should set value", func() {
 			setValue(15)
-			g.Assert(ctx.datas[0]).Equal(15)
+			g.Assert(stateCtx.datas[0]).Equal(15)
 			g.Assert(getValue()).Equal(15)
 		})
 	})

@@ -10,7 +10,9 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/iancoleman/strcase"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -21,11 +23,30 @@ func init() {
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
-	data, _ := json.Marshal(map[string]string{
+	w.WriteHeader(status) // always write status last
+	merror := map[string]interface{}{
 		"error": err.Error(),
-	})
+	}
+	validationErrors, ok := err.(validator.ValidationErrors)
+	if ok {
+		emap := map[string]string{}
+		for _, e := range validationErrors {
+			parts := strings.Split(e.StructNamespace(), ".")
+			lowerParts := []string{}
+			for _, p := range parts[1:] {
+				lowerParts = append(lowerParts, strcase.ToLowerCamel(p))
+			}
+			k := strings.Join(lowerParts, ".")
+			if e.Tag() == "required" {
+				emap[k] = "is required"
+			} else {
+				emap[k] = e.Error()
+			}
+		}
+		merror["error"] = emap
+	}
+	data, _ := json.Marshal(merror)
 	w.Write(data)
 }
 

@@ -8,9 +8,11 @@ require (
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
 	github.com/fatih/color v1.13.0
 	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf
+	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
+	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/lib/pq v1.10.4
 	github.com/markbates/inflect v1.0.4
 	github.com/microcosm-cc/bluemonday v1.0.15 // indirect

@@ -2,6 +2,7 @@ package gromer
 
 import (
 	"bytes"
+	"context"
 	"strconv"
 	"testing"
 
@@ -27,7 +28,7 @@ func Col(uis ...interface{}) *Element {
 	return NewElement("div", false, append([]interface{}{Css("flex flex-col justify-center items-center")}, uis...)...)
 }
 
-func Counter(c *Context, start int) *Element {
+func Counter(c context.Context, start int) *Element {
 	count, setCount := UseState(c, start)
 	increment := func() {
 		setCount(count().(int) + 1)
@@ -80,7 +81,7 @@ func TestHtml(t *testing.T) {
 	g := Goblin(t)
 	g.Describe("Html", func() {
 		g.It("should match snapshot", func() {
-			ctx := &Context{index: 0, datas: []interface{}{}}
+			ctx := WithState(context.Background())
 			b := bytes.NewBuffer(nil)
 			p := Html(
 				Head(
