@@ -173,8 +173,10 @@ func main() {
 									if st, ok := typeSpec.Type.(*ast.StructType); ok {
 										mapsOfInputParams[typeSpec.Name.Name] = map[string]interface{}{}
 										for _, f := range st.Fields.List {
-											fieldName := lowerFirst(f.Names[0].Name)
-											mapsOfInputParams[typeSpec.Name.Name][fieldName] = fmt.Sprintf("%+s", f.Type)
+											if len(f.Names) > 0 {
+												fieldName := lowerFirst(f.Names[0].Name)
+												mapsOfInputParams[typeSpec.Name.Name][fieldName] = fmt.Sprintf("%+s", f.Type)
+											}
 										}
 									}
 								}
@@ -184,9 +186,13 @@ func main() {
 							if decl.Name.Name == method {
 								list := decl.Type.Params.List
 								lastParam := list[len(list)-1]
-								lastParamTypeName := fmt.Sprintf("%+s", lastParam.Type)
-								if v, ok := mapsOfInputParams[lastParamTypeName]; ok {
-									params = v
+								if spec, ok := lastParam.Type.(*ast.Ident); ok {
+									if spec.IsExported() {
+										// TODO: need to read from imported files and pick up the struct and
+										// convert it to json
+									} else if v, ok := mapsOfInputParams[spec.Name]; ok {
+										params = v
+									}
 								}
 							}
 						}
