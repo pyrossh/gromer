@@ -35,6 +35,7 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 			parts := strings.Split(e.StructNamespace(), ".")
 			lowerParts := []string{}
 			for _, p := range parts[1:] {
+				// TODO: fix pan
 				lowerParts = append(lowerParts, strcase.ToLowerCamel(p))
 			}
 			k := strings.Join(lowerParts, ".")

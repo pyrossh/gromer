@@ -1,8 +1,8 @@
 setup:
-	brew install sqlc
-	brew install dbmate
-	go install github.com/mitranim/gow
-	go install github.com/pyros2097/gromer/cmd/gromer
+	go install github.com/kyleconroy/sqlc/cmd/sqlc@v1.11.0
+	go install github.com/amacneil/dbmate@v1.12.1
+	go install github.com/mitranim/gow@latest
+	go install github.com/pyros2097/gromer/cmd/gromer@v0.9.1
 	docker pull postgres:14.1
 
 start-db:
