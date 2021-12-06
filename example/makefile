@@ -25,13 +25,16 @@ build: export GOARCH=amd64
 build:
 	go build -o main
 
-build-image:
-	cd .. && docker build -t example:develop .
+docker-build:
+	docker build -f ../example/Dockerfile  -t example:latest ../
 
-run-image: export DATABASE_URL=postgres://postgres:demo@docker.for.mac.host.internal:5432/postgres?sslmode=disable
-run-image:
-	docker run -p 3000:3000 -e DATABASE_URL=$$DATABASE_URL example:develop
+docker-run: export DATABASE_URL=postgres://postgres:demo@docker.for.mac.host.internal:5432/postgres?sslmode=disable
+docker-run:
+	docker run -p 3000:3000 -e DATABASE_URL=$$DATABASE_URL example:latest
 
-k8s-local:
+k8s-setup:
+	kubectl apply -f https://raw.githubusercontent.com/reactive-tech/kubegres/v1.13/kubegres.yaml
 	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.0/deploy/static/provider/cloud/deploy.yaml
-	kubectl apply -k k8s/development
+
+k8s-run:
+	kubectl apply -k k8s/overlays/development

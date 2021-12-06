@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-app
-data:
-  ENV: production
-  POSTGRES_CONN_URL: hello

@@ -4,8 +4,12 @@ kind: Kustomization
 namespace: my-app
 commonLabels:
   app: my-app
+
 resources:
   - deployment.yaml
-  - configmap.yaml
   - service.yaml
   - ingress.yaml
+  - kubegres.yaml
+
+configurations:
+  - nameReference.yaml

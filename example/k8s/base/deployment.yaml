@@ -8,6 +8,9 @@ spec:
     spec:
       containers:
         - name: my-app
-          image: example:develop
+          image: example:latest
           ports:
             - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: my-app
