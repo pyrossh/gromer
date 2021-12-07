@@ -43,5 +43,5 @@ k8s-run:
 	kubectl apply -k k8s/overlays/development
 
 k8s-migrate:
-	kubectl delete -f k8s/overlays/development/migration.yaml
+	kubectl delete -f k8s/overlays/development/migration.yaml || true
 	kubectl apply -f k8s/overlays/development/migration.yaml
