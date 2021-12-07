@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
         - name: my-app
-          image: example:latest
+          image: example-app:develop
           ports:
             - containerPort: 3000
           envFrom:

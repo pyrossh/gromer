@@ -17,6 +17,9 @@ images:
     newName: example
     newTag: latest
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 secretGenerator:
   - name: my-app
     namespace: development-my-app

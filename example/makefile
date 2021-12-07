@@ -25,11 +25,14 @@ build: export GOARCH=amd64
 build:
 	go build -o main
 
-docker-build:
-	docker build -f ../example/Dockerfile  -t example:latest ../
+docker-build-app:
+	docker build -f ../example/Dockerfile  -t example-app:develop ../
 
-docker-run: export DATABASE_URL=postgres://postgres:demo@docker.for.mac.host.internal:5432/postgres?sslmode=disable
-docker-run:
+docker-build-dbmate:
+	docker build -f Dockerfile.dbmate  -t example-dbmate:develop .
+
+docker-run-app: export DATABASE_URL=postgres://postgres:demo@docker.for.mac.host.internal:5432/postgres?sslmode=disable
+docker-run-app:
 	docker run -p 3000:3000 -e DATABASE_URL=$$DATABASE_URL example:latest
 
 k8s-setup:
@@ -38,3 +41,7 @@ k8s-setup:
 
 k8s-run:
 	kubectl apply -k k8s/overlays/development
+
+k8s-migrate:
+	kubectl delete -f k8s/overlays/development/migration.yaml
+	kubectl apply -f k8s/overlays/development/migration.yaml
