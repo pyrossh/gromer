@@ -7,7 +7,7 @@ commonLabels:
   environment: development
 
 bases:
-  - ../../base
+  - ../base
 
 resources:
   - namespace.yaml

@@ -10,7 +10,7 @@ spec:
       containers:
         - name: migration
           image: example-dbmate:develop
-          command: ["dbmate", "up"]
+          command: ["dbmate", "migrate"]
           envFrom:
             - secretRef:
                 name: development-my-app
