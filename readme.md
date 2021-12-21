@@ -14,7 +14,7 @@ It also generates http handlers for your routes which follow a particular folder
 # Install
 
 ```sh
-go get -u -v github.com/pyros2097/wapp/cmd/gromer
+go get -u -v github.com/pyros2097/gromer/cmd/gromer
 ```
 
 # Using
