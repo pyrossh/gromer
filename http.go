@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/go-playground/validator/v10"
@@ -105,6 +106,17 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 								return 400, err
 							}
 							f.SetInt(v)
+						}
+					} else if f.Kind() == reflect.Struct && f.Type().Name() == "Time" {
+						if jsonValue == "" {
+							f.Set(reflect.ValueOf(time.Time{}))
+						} else {
+							v, err := time.Parse(time.RFC3339, jsonValue)
+							if err != nil {
+								RespondError(w, 400, err)
+								return 400, err
+							}
+							f.Set(reflect.ValueOf(v))
 						}
 					} else {
 						panic("Uknown query param: " + jsonName + " " + jsonValue)
