@@ -164,5 +164,5 @@ func LogReq(status int, r *http.Request) {
 	} else if r.Method == "DELETE" {
 		m = color.FgRed
 	}
-	log.Info().Msgf("%3s %s %s", color.New(a).Sprint(status), color.New(m).Sprintf("%-4s", r.Method), color.WhiteString(r.URL.Path))
+	log.Info().Msgf("%3s %s %s", color.New(a).Sprint(status), color.New(m).Sprintf("%-4s", r.Method), color.WhiteString(r.URL.String()))
 }
