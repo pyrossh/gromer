@@ -17,8 +17,8 @@ import (
 	"github.com/pyros2097/gromer/example/pages/api/todos"
 	"github.com/pyros2097/gromer/example/pages"
 	"github.com/pyros2097/gromer/example/pages/about"
+	"github.com/pyros2097/gromer/example/pages/api/recover"
 	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
-	
 )
 
 //go:embed assets/*
@@ -27,7 +27,8 @@ var assetsFS embed.FS
 func main() {
 	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	r := mux.NewRouter()
-	r.NotFoundHandler = http.HandlerFunc(notFound)
+	r.Use(gromer.LogMiddleware)
+	r.NotFoundHandler = gromer.NotFoundHandler
 	r.PathPrefix("/assets/").Handler(wrapCache(http.FileServer(http.FS(assetsFS))))
 	handle(r, "GET", "/api", gromer.ApiExplorer(apiDefinitions()))
 	handle(r, "GET", "/about", about.GET)
@@ -36,6 +37,7 @@ func main() {
 	handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
 	handle(r, "GET", "/api/todos", todos.GET)
 	handle(r, "POST", "/api/todos", todos.POST)
+	handle(r, "GET", "/api/recover", recover.GET)
 	handle(r, "GET", "/", pages.GET)
 	
 	if !isLambda {
@@ -59,16 +61,8 @@ func wrapCache(h http.Handler) http.Handler {
 	})
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
-	gromer.LogReq(404, r)
-}
-
 func handle(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		var status int
-		defer func() {
-			gromer.LogReq(status, r)
-		}()
 		ctx, err := context.WithContext(c.WithValue(
 			c.WithValue(
 				c.WithValue(r.Context(), "assetsFS", assetsFS),
@@ -78,10 +72,7 @@ func handle(router *mux.Router, method, route string, h interface{}) {
 			gromer.RespondError(w, 500, err)
 			return
 		}
-		status, err = gromer.PerformRequest(route, h, ctx, w, r)
-		if err != nil {
-			log.Error().Stack().Err(err).Msg("")
-		}
+		gromer.PerformRequest(route, h, ctx, w, r)
 	}).Methods(method)
 }
 

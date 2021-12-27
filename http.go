@@ -2,25 +2,38 @@ package gromer
 
 import (
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/iancoleman/strcase"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/pkgerrors"
 )
 
+var info *debug.BuildInfo
+var IsLambda bool
+
 func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	IsLambda = os.Getenv("_LAMBDA_SERVER_PORT") != ""
+	info, _ = debug.ReadBuildInfo()
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	if !IsLambda {
+		log.Logger = log.Output(zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: zerolog.TimeFormatUnix,
+		})
+	}
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
@@ -28,6 +41,10 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 	w.WriteHeader(status) // always write status last
 	merror := map[string]interface{}{
 		"error": err.Error(),
+	}
+	if status >= 500 {
+		log.Error().Str("type", "panic").Msg(err.Error())
+		merror["error"] = "Internal Server Error"
 	}
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if ok {
@@ -63,7 +80,7 @@ func GetRouteParams(route string) []string {
 	return params
 }
 
-func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) (int, error) {
+func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) {
 	params := GetRouteParams(route)
 	args := []reflect.Value{reflect.ValueOf(ctx)}
 	funcType := reflect.TypeOf(h)
@@ -76,13 +93,13 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		structType := funcType.In(icount - 1)
 		instance := reflect.New(structType)
 		if structType.Kind() != reflect.Struct {
-			panic(route + " func final param should be a struct")
+			log.Fatal().Msgf("router '%s' func final param should be a struct", route)
 		}
 		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())
 			if err != nil {
 				RespondError(w, 400, err)
-				return 400, err
+				return
 			}
 		} else if r.Method == "GET" {
 			rv := instance.Elem()
@@ -103,7 +120,7 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 							v, err := strconv.ParseInt(jsonValue, 10, base)
 							if err != nil {
 								RespondError(w, 400, err)
-								return 400, err
+								return
 							}
 							f.SetInt(v)
 						}
@@ -114,12 +131,12 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 							v, err := time.Parse(time.RFC3339, jsonValue)
 							if err != nil {
 								RespondError(w, 400, err)
-								return 400, err
+								return
 							}
 							f.Set(reflect.ValueOf(v))
 						}
 					} else {
-						panic("Uknown query param: " + jsonName + " " + jsonValue)
+						log.Fatal().Msgf("Uknown query param: '%s' '%s'", jsonName, jsonValue)
 					}
 				}
 			}
@@ -132,37 +149,90 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 	responseError := values[2].Interface()
 	if responseError != nil {
 		RespondError(w, responseStatus, responseError.(error))
-		return responseStatus, responseError.(error)
+		return
 	}
 	if v, ok := response.(HtmlPage); ok {
 		w.Header().Set("Content-Type", "text/html")
 		// This has to be at end always
 		w.WriteHeader(responseStatus)
 		v.WriteHtml(w)
-		return 200, nil
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
 	data, _ := json.Marshal(response)
 	w.Write(data)
-	return 200, nil
 }
 
-func LogReq(status int, r *http.Request) {
-	a := color.FgGreen
-	if status >= 500 {
-		a = color.FgRed
-	} else if status >= 400 {
-		a = color.FgYellow
-	}
-	m := color.FgCyan
-	if r.Method == "POST" {
-		m = color.FgYellow
-	} else if r.Method == "PUT" {
-		m = color.FgMagenta
-	} else if r.Method == "DELETE" {
-		m = color.FgRed
-	}
-	log.Info().Msgf("%3s %s %s", color.New(a).Sprint(status), color.New(m).Sprintf("%-4s", r.Method), color.WhiteString(r.URL.String()))
+type writeCounter int64
+
+func (wc *writeCounter) Write(p []byte) (n int, err error) {
+	*wc += writeCounter(len(p))
+	return len(p), nil
 }
+func headerSize(h http.Header) int64 {
+	var wc writeCounter
+	h.Write(&wc)
+	return int64(wc) + 2 // for CRLF
+}
+
+type LogResponseWriter struct {
+	http.ResponseWriter
+	responseStatusCode    int
+	responseContentLength int
+	responseHeaderSize    int
+}
+
+func NewLogResponseWriter(w http.ResponseWriter) *LogResponseWriter {
+	return &LogResponseWriter{ResponseWriter: w}
+}
+
+func (w *LogResponseWriter) WriteHeader(code int) {
+	w.ResponseWriter.WriteHeader(code)
+	w.responseStatusCode = code
+	w.responseHeaderSize = int(headerSize(w.Header()))
+
+}
+
+func (w *LogResponseWriter) Write(body []byte) (int, error) {
+	w.responseContentLength += len(body)
+	return w.ResponseWriter.Write(body)
+}
+
+var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				stack := string(debug.Stack())
+				RespondError(w, 500, fmt.Errorf("panic: %+v\n %s", err, stack))
+			}
+		}()
+		startTime := time.Now()
+		logRespWriter := NewLogResponseWriter(w)
+		next.ServeHTTP(logRespWriter, r)
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if len(ip) > 0 && ip[0] == '[' {
+			ip = ip[1 : len(ip)-1]
+		}
+		log.Info().
+			Str("method", r.Method).
+			Str("url", r.URL.String()).
+			Int("header_size", int(headerSize(r.Header))).
+			Int64("body_size", r.ContentLength).
+			Str("host", r.Host).
+			// Str("agent", r.UserAgent()).
+			Str("referer", r.Referer()).
+			Str("proto", r.Proto).
+			Str("remote_ip", ip).
+			Int("status", logRespWriter.responseStatusCode).
+			Int("resp_header_size", logRespWriter.responseHeaderSize).
+			Int("resp_body_size", logRespWriter.responseContentLength).
+			Str("latency", time.Since(startTime).String()).
+			Msg("")
+	})
+})
+
+var NotFoundHandler = LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	RespondError(w, 404, fmt.Errorf("path '%s' not found", r.URL.String()))
+}))
