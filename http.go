@@ -15,7 +15,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
-	"github.com/iancoleman/strcase"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -48,22 +47,7 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 	}
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if ok {
-		emap := map[string]string{}
-		for _, e := range validationErrors {
-			parts := strings.Split(e.StructNamespace(), ".")
-			lowerParts := []string{}
-			for _, p := range parts[1:] {
-				// TODO: fix pan
-				lowerParts = append(lowerParts, strcase.ToLowerCamel(p))
-			}
-			k := strings.Join(lowerParts, ".")
-			if e.Tag() == "required" {
-				emap[k] = "is required"
-			} else {
-				emap[k] = e.Error()
-			}
-		}
-		merror["error"] = emap
+		merror["error"] = GetValidationError(validationErrors)
 	}
 	data, _ := json.Marshal(merror)
 	w.Write(data)

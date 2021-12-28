@@ -1,10 +1,8 @@
 package gromer
 
 import (
-	"reflect"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/iancoleman/strcase"
@@ -16,24 +14,6 @@ var ValidatorErrorMap = map[string]string{
 	"required": "is required",
 }
 var upperRegex = regexp.MustCompile("^[^a-z]*$")
-
-type timeTransformer struct {
-}
-
-func (t timeTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
-	if typ == reflect.TypeOf(time.Time{}) {
-		return func(dst, src reflect.Value) error {
-			if dst.CanSet() {
-				srcResult := src.MethodByName("IsZero").Call([]reflect.Value{})
-				if !srcResult[0].Bool() {
-					dst.Set(src)
-				}
-			}
-			return nil
-		}
-	}
-	return nil
-}
 
 func Merge(dst interface{}, src interface{}) error {
 	err := mergo.Merge(dst, src, mergo.WithOverwriteWithEmptyValue)
