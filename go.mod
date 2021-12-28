@@ -12,6 +12,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/iancoleman/strcase v0.2.0
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/lib/pq v1.10.4
 	github.com/markbates/inflect v1.0.4
 	github.com/microcosm-cc/bluemonday v1.0.15 // indirect
