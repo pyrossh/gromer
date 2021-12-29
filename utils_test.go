@@ -91,6 +91,7 @@ func TestMerge(t *testing.T) {
 		Text:      "2",
 		CreatedAt: time.Date(2020, 11, 11, 0, 0, 0, 0, time.UTC),
 	}, note)
+	// TODO: look at this merge
 	err = Merge(note, &Note{
 		ID:        "2",
 		Text:      "",
@@ -99,7 +100,7 @@ func TestMerge(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, &Note{
 		ID:        "2",
-		Text:      "",
-		CreatedAt: time.Time{},
+		Text:      "2",
+		CreatedAt: time.Date(2020, 11, 11, 0, 0, 0, 0, time.UTC),
 	}, note)
 }

@@ -12,12 +12,12 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/imdario/mergo v0.3.12
 	github.com/lib/pq v1.10.4
 	github.com/markbates/inflect v1.0.4
-	github.com/microcosm-cc/bluemonday v1.0.15 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.16 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.26.0
+	github.com/rs/zerolog v1.26.1
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shurcooL/github_flavored_markdown v0.0.0-20210228213109-c3a9aa474629
 	github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636 // indirect
@@ -30,5 +30,5 @@ require (
 	github.com/stretchr/testify v1.7.0
 	gocloud.dev v0.24.0
 	golang.org/x/mod v0.5.1
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
 )
