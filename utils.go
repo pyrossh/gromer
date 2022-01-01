@@ -2,20 +2,18 @@ package gromer
 
 import (
 	"reflect"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/iancoleman/strcase"
 	"github.com/imdario/mergo"
+	"github.com/segmentio/go-camelcase"
 )
 
 var Validator = validator.New()
 var ValidatorErrorMap = map[string]string{
 	"required": "is required",
 }
-var upperRegex = regexp.MustCompile("^[^a-z]*$")
 
 type timeTransformer struct {
 }
@@ -58,11 +56,7 @@ func GetValidationError(err validator.ValidationErrors) map[string]string {
 		parts := strings.Split(e.StructNamespace(), ".")
 		lowerParts := []string{}
 		for _, p := range parts[1:] {
-			if upperRegex.MatchString(p) {
-				lowerParts = append(lowerParts, strings.ToLower(p))
-			} else {
-				lowerParts = append(lowerParts, strcase.ToLowerCamel(p))
-			}
+			lowerParts = append(lowerParts, camelcase.Camelcase(p))
 		}
 		k := strings.Join(lowerParts, ".")
 		errorMsg, ok := ValidatorErrorMap[e.Tag()]

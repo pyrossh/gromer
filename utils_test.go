@@ -16,40 +16,37 @@ func init() {
 	})
 }
 
-func TestUpperRegex(t *testing.T) {
-	assert.Equal(t, true, upperRegex.MatchString("PAN"))
-	assert.Equal(t, false, upperRegex.MatchString("PaN"))
-}
-
-type Todo struct {
-	ID        string    `json:"id" validate:"required"`
-	Pincode   string    `json:"pincode" validate:"required,pincode"`
-	PAN       string    `json:"pan" validate:"required"`
-	CreatedAt time.Time `json:"createdAt"`
-}
-
 func TestValidator(t *testing.T) {
 	assert.NoError(t, Validator.Var("560001", "pincode"))
 	assert.EqualError(t, Validator.Var("ABCD", "pincode"), "Key: '' Error:Field validation for '' failed on the 'pincode' tag")
 }
 
+type Todo struct {
+	ID        string    `json:"id" validate:"required"`
+	OrgID     string    `json:"orgId" validate:"required"`
+	Pincode   string    `json:"pincode" validate:"required,pincode"`
+	PAN       string    `json:"pan" validate:"required"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 func TestValidate(t *testing.T) {
 	todo := &Todo{
 		ID:      "123",
+		OrgID:   "",
 		Pincode: "",
 		PAN:     "",
 	}
 	err := Validate(todo)
-	assert.EqualError(t, err, "Key: 'Todo.Pincode' Error:Field validation for 'Pincode' failed on the 'required' tag\nKey: 'Todo.PAN' Error:Field validation for 'PAN' failed on the 'required' tag")
 	validationErrors := err.(validator.ValidationErrors)
 	assert.Equal(t, GetValidationError(validationErrors), map[string]string{
 		"pincode": "is required",
 		"pan":     "is required",
+		"orgId":   "is required",
 	})
 
 	todo.Pincode = "AWS"
+	todo.OrgID = "123"
 	err = Validate(todo)
-	assert.EqualError(t, err, "Key: 'Todo.Pincode' Error:Field validation for 'Pincode' failed on the 'pincode' tag\nKey: 'Todo.PAN' Error:Field validation for 'PAN' failed on the 'required' tag")
 	validationErrors = err.(validator.ValidationErrors)
 	assert.EqualValues(t, map[string]string{
 		"pincode": "is not in valid format",
