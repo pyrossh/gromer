@@ -238,22 +238,22 @@ import (
 var assetsFS embed.FS
 
 func main() {
-	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
+	port := os.Getenv("PORT")
 	r := mux.NewRouter()
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	r.PathPrefix("/assets/").Handler(wrapCache(http.FileServer(http.FS(assetsFS))))
 	handle(r, "GET", "/api", gromer.ApiExplorer(apiDefinitions()))
 	{{#each routes as |route| }}handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
-	if !isLambda {
-		println("http server listening on http://localhost:3000")
+	if !gromer.IsLambda {
+		println("http server listening on http://localhost:"+port)
 		srv := server.New(r, nil)
-		if err := srv.ListenAndServe(":3000"); err != nil {
+		if err := srv.ListenAndServe(":"+port); err != nil {
 			log.Fatal().Stack().Err(err).Msg("failed to listen")
 		}
 	} else {
 		log.Print("running in lambda mode")
-		if err := gateway.ListenAndServe(":3000", r); err != nil {
+		if err := gateway.ListenAndServe(":"+port, r); err != nil {
 			log.Fatal().Stack().Err(err).Msg("failed to listen")
 		}
 	}

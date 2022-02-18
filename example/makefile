@@ -14,6 +14,7 @@ generate:
 	gromer -pkg github.com/pyros2097/gromer/example
 	dbmate migrate
 
+run: export PORT=3000
 run: export DATABASE_URL=postgres://postgres:demo@127.0.0.1:5432/postgres?sslmode=disable
 run:
 	gow run main.go

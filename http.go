@@ -22,12 +22,14 @@ import (
 
 var info *debug.BuildInfo
 var IsLambda bool
+var IsCloundRun bool
 
 func init() {
 	IsLambda = os.Getenv("_LAMBDA_SERVER_PORT") != ""
+	IsCloundRun = os.Getenv("K_REVISION") != ""
 	info, _ = debug.ReadBuildInfo()
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	if !IsLambda {
+	if !IsLambda || !IsCloundRun {
 		log.Logger = log.Output(zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			TimeFormat: zerolog.TimeFormatUnix,
