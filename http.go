@@ -29,7 +29,7 @@ func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
 	info, _ = debug.ReadBuildInfo()
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	if !IsLambda || !IsCloundRun {
+	if !IsLambda && !IsCloundRun {
 		log.Logger = log.Output(zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			TimeFormat: zerolog.TimeFormatUnix,
