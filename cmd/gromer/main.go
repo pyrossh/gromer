@@ -276,15 +276,11 @@ func handle(router *mux.Router, method, route string, h interface{}) {
 		defer func() {
 			gromer.LogReq(status, r)
 		}()
-		ctx, err := context.WithContext(c.WithValue(
+		ctx := c.WithValue(
 			c.WithValue(
 				c.WithValue(r.Context(), "assetsFS", assetsFS),
 					"url", r.URL),
-			"header", r.Header))
-		if err != nil {
-			gromer.RespondError(w, 500, err)
-			return
-		}
+			"header", r.Header)
 		status, err = gromer.PerformRequest(route, h, ctx, w, r)
 		if err != nil {
 			log.Error().Stack().Err(err).Msg("")
