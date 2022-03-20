@@ -3,7 +3,6 @@ module github.com/pyros2097/gromer
 go 1.16
 
 require (
-	github.com/apex/gateway/v2 v2.0.0
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
 	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf
@@ -24,6 +23,7 @@ require (
 	github.com/shurcooL/highlight_diff v0.0.0-20181222201841-111da2e7d480 // indirect
 	github.com/shurcooL/highlight_go v0.0.0-20191220051317-782971ddf21b // indirect
 	github.com/shurcooL/octicon v0.0.0-20191102190552-cbb32d6a785c // indirect
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d // indirect
 	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
 	github.com/stretchr/testify v1.7.0

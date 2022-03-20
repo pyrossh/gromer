@@ -223,7 +223,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/apex/gateway/v2"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer"
 	"github.com/rs/zerolog/log"
@@ -245,17 +244,10 @@ func main() {
 	handle(r, "GET", "/api", gromer.ApiExplorer(apiDefinitions()))
 	{{#each routes as |route| }}handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
-	if !gromer.IsLambda {
-		println("http server listening on http://localhost:"+port)
-		srv := server.New(r, nil)
-		if err := srv.ListenAndServe(":"+port); err != nil {
-			log.Fatal().Stack().Err(err).Msg("failed to listen")
-		}
-	} else {
-		log.Print("running in lambda mode")
-		if err := gateway.ListenAndServe(":"+port, r); err != nil {
-			log.Fatal().Stack().Err(err).Msg("failed to listen")
-		}
+	println("http server listening on http://localhost:"+port)
+	srv := server.New(r, nil)
+	if err := srv.ListenAndServe(":"+port); err != nil {
+		log.Fatal().Stack().Err(err).Msg("failed to listen")
 	}
 }
 

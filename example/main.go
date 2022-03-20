@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/apex/gateway/v2"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer"
 	"github.com/rs/zerolog/log"
@@ -25,7 +24,6 @@ import (
 var assetsFS embed.FS
 
 func main() {
-	isLambda := os.Getenv("_LAMBDA_SERVER_PORT") != ""
 	r := mux.NewRouter()
 	r.Use(gromer.LogMiddleware)
 	r.NotFoundHandler = gromer.NotFoundHandler
@@ -39,18 +37,10 @@ func main() {
 	handle(r, "POST", "/api/todos", todos.POST)
 	handle(r, "GET", "/api/recover", recover.GET)
 	handle(r, "GET", "/", pages.GET)
-	
-	if !isLambda {
-		println("http server listening on http://localhost:3000")
-		srv := server.New(r, nil)
-		if err := srv.ListenAndServe(":3000"); err != nil {
-			log.Fatal().Stack().Err(err).Msg("failed to listen")
-		}
-	} else {
-		log.Print("running in lambda mode")
-		if err := gateway.ListenAndServe(":3000", r); err != nil {
-			log.Fatal().Stack().Err(err).Msg("failed to listen")
-		}
+	println("http server listening on http://localhost:3000")
+	srv := server.New(r, nil)
+	if err := srv.ListenAndServe(":3000"); err != nil {
+		log.Fatal().Stack().Err(err).Msg("failed to listen")
 	}
 }
 
