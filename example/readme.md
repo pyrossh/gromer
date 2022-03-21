@@ -6,7 +6,7 @@ It uses postgres as the database and sqlc to generate queries and models. It use
 
 # Requirements
 
-1. go >= 1.16
+1. go >= 1.18
 2. docker >= 20
 
 # Running
