@@ -1,7 +1,11 @@
 package components
 
+import (
+	. "github.com/pyros2097/gromer"
+)
+
 func Page() string {
-	return (`
+	return Component(`
 		<!DOCTYPE html>
 		<html lang="en">
 			<head>

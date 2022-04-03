@@ -1,30 +1,60 @@
 package components
 
+import (
+	. "github.com/pyros2097/gromer"
+)
+
 func Header() string {
-	return (`
-		<div class="flex flex-row justify-center items-center w-full mb-20 font-bold text-xl text-gray-700 p-4">
-			<div class="text-blue-700">
-					<a href="https://pyros.sh"> pyros.sh </a>
-			</div>
-			<div class="flex flex-row flex-1 justify-end items-end p-2">
-					<div class="border-b-2 border-white text-lg text-blue-700 mr-4">Examples:</div>
-					<div class="border-b-2 border-white hover:border-red-700 mr-4">
-							<a href="/"> Home </a>
-					</div>
-					<div class="border-b-2 border-white hover:border-red-700 mr-4">
-							<a href="/clock"> Clock </a>
-					</div>
-					<div class="border-b-2 border-white hover:border-red-700 mr-4">
-							<a href="/about"> About </a>
-					</div>
-					<div class="border-b-2 border-white hover:border-red-700 mr-4">
-							<a href="/container"> Container </a>
-					</div>
-					<div class="border-b-2 border-white hover:border-red-700 mr-4">
-							<a href="/panic"> Panic </a>
-					</div>
-			</div>
-			{{ children }}
-		</div>
+	return Component(`
+		<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="https://bulma.io">
+      <img src="https://bulma.io/images/bulma-logo.png" width="112" height="28">
+    </a>
+
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div id="navbarBasicExample" class="navbar-menu">
+    <div class="navbar-start">
+      <a class="navbar-item" href="/">
+        Home
+      </a>
+
+      <a class="navbar-item" href="/about">
+        About
+      </a>
+
+			<a class="navbar-item" href="/clock">
+        Clock
+      </a>
+
+			<a class="navbar-item" href="/counter">
+        Counter
+      </a>
+
+			<a class="navbar-item" href="/api">
+        API
+      </a>
+    </div>
+
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <div class="buttons">
+          <a class="button is-primary">
+            <strong>Sign up</strong>
+          </a>
+          <a class="button is-light">
+            Log in
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
 	`)
 }

@@ -31,11 +31,12 @@ var IsCloundRun bool
 var RouteDefs []RouteDefinition
 
 type RouteDefinition struct {
-	Pkg     string      `json:"pkg"`
-	PkgPath string      `json:"pkgPath"`
-	Method  string      `json:"method"`
-	Path    string      `json:"path"`
-	Params  interface{} `json:"params"`
+	Pkg        string      `json:"pkg"`
+	PkgPath    string      `json:"pkgPath"`
+	Method     string      `json:"method"`
+	Path       string      `json:"path"`
+	PathParams []string    `json:"pathParams"`
+	Params     interface{} `json:"params"`
 }
 
 type HtmlContent string
@@ -50,6 +51,10 @@ func Html(tpl string, params map[string]interface{}) (HtmlContent, int, error) {
 		return HtmlContent(""), 500, err
 	}
 	return HtmlContent(s), 200, nil
+}
+
+func Component(tpl string) string {
+	return tpl
 }
 
 func HtmlErr(status int, err error) (HtmlContent, int, error) {
@@ -135,9 +140,10 @@ func addRouteDef(method, route string, h interface{}) {
 		body = instance.Interface()
 	}
 	RouteDefs = append(RouteDefs, RouteDefinition{
-		Method: method,
-		Path:   route,
-		Params: body,
+		Method:     method,
+		Path:       route,
+		PathParams: pathParams,
+		Params:     body,
 	})
 }
 
