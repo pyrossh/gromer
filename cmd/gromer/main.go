@@ -68,24 +68,11 @@ func rewritePath(route string) string {
 	return muxRoute.String()
 }
 
-func rewritePkg(pkg string) string {
-	arr := strings.Split(pkg, "/")
-	lastItem := arr[len(arr)-1]
-	if strings.Contains(lastItem, "_") {
-		return arr[len(arr)-2] + lastItem
-	}
-	return lastItem
-}
-
 func lowerFirst(s string) string {
 	for i, v := range s {
 		return string(unicode.ToLower(v)) + s[i+1:]
 	}
 	return ""
-}
-
-func getPackage(src string) string {
-	return src
 }
 
 func main() {
@@ -114,13 +101,16 @@ func main() {
 				route := strings.ReplaceAll(filesrc, "pages", "")
 				method := getMethod(route)
 				path := getRoute(method, route)
-				pkg := getPackage(path)
 				if path == "" { // for index page
 					path = "/"
-					pkg = "pages"
 				}
+				data, err := ioutil.ReadFile(filesrc)
+				if err != nil {
+					return err
+				}
+				lines := strings.Split(string(data), "\n")
 				gromer.RouteDefs = append(gromer.RouteDefs, gromer.RouteDefinition{
-					Pkg:     rewritePkg(pkg),
+					Pkg:     strings.Replace(""+lines[0], "package ", "", 1),
 					PkgPath: getRoute(method, route),
 					Method:  method,
 					Path:    rewritePath(path),
