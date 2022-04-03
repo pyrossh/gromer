@@ -10,10 +10,10 @@ import (
 	"gocloud.dev/server"
 
 	"github.com/pyros2097/gromer/example/assets"
-	"github.com/pyros2097/gromer/example/pages/api/todos"
 	"github.com/pyros2097/gromer/example/pages"
 	"github.com/pyros2097/gromer/example/pages/about"
 	"github.com/pyros2097/gromer/example/pages/api/recover"
+	"github.com/pyros2097/gromer/example/pages/api/todos"
 	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
 	
 )
@@ -25,17 +25,17 @@ func main() {
 	r.Use(gromer.LogMiddleware)
 	r.NotFoundHandler = gromer.NotFoundHandler
 	gromer.Static(r, "/assets/", assets.FS)
-	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer, nil)
-	gromer.Handle(r, "GET", "/about", about.GET, about.GetParams{})
-	gromer.Handle(r, "GET", "/api/recover", recover.GET, recover.GetParams{})
-	gromer.Handle(r, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE, todos_todoId_.DeleteParams{})
-	gromer.Handle(r, "GET", "/api/todos/{todoId}", todos_todoId_.GET, todos_todoId_.GetParams{})
-	gromer.Handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT, todos_todoId_.PutParams{})
-	gromer.Handle(r, "GET", "/api/todos", todos.GET, todos.GetParams{})
-	gromer.Handle(r, "POST", "/api/todos", todos.POST, todos.PostParams{})
-	gromer.Handle(r, "GET", "/", pages.GET, pages.GetParams{})
+	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
+	gromer.Handle(r, "GET", "/", pages.GET)
+	gromer.Handle(r, "GET", "/about", about.GET)
+	gromer.Handle(r, "GET", "/api/recover", recover.GET)
+	gromer.Handle(r, "GET", "/api/todos", todos.GET)
+	gromer.Handle(r, "POST", "/api/todos", todos.POST)
+	gromer.Handle(r, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
+	gromer.Handle(r, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
+	gromer.Handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
 	
-	println("http server listening on http://localhost:"+port)
+	log.Info().Msg("http server listening on http://localhost:"+port)
 	srv := server.New(r, nil)
 	if err := srv.ListenAndServe(":"+port); err != nil {
 		log.Fatal().Stack().Err(err).Msg("failed to listen")

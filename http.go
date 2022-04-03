@@ -31,10 +31,11 @@ var IsCloundRun bool
 var RouteDefs []RouteDefinition
 
 type RouteDefinition struct {
-	Method string      `json:"method"`
-	Pkg    string      `json:"pkg"`
-	Path   string      `json:"path"`
-	Params interface{} `json:"params"`
+	Pkg     string      `json:"pkg"`
+	PkgPath string      `json:"pkgPath"`
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Params  interface{} `json:"params"`
 }
 
 type HtmlContent string
@@ -119,6 +120,25 @@ func GetRouteParams(route string) []string {
 		params = append(params, strings.Replace(strings.Replace(v, "}", "", 1), "{", "", 1))
 	}
 	return params
+}
+
+func addRouteDef(method, route string, h interface{}) {
+	pathParams := GetRouteParams(route)
+	var body any = nil
+	funcType := reflect.TypeOf(h)
+	if funcType.NumIn() > len(pathParams)+1 {
+		structType := funcType.In(funcType.NumIn() - 1)
+		instance := reflect.New(structType)
+		if structType.Kind() != reflect.Struct {
+			log.Fatal().Msgf("router  '%s' '%s' func final param should be a struct", method, route)
+		}
+		body = instance.Interface()
+	}
+	RouteDefs = append(RouteDefs, RouteDefinition{
+		Method: method,
+		Path:   route,
+		Params: body,
+	})
 }
 
 func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) {
@@ -302,8 +322,8 @@ func Static(router *mux.Router, path string, fs embed.FS) {
 	router.PathPrefix(path).Handler(http.StripPrefix(path, WrapCache(http.FileServer(http.FS(fs)))))
 }
 
-func Handle(router *mux.Router, method, route string, h interface{}, params interface{}) {
-	RouteDefs = append(RouteDefs, RouteDefinition{method, route, "", params})
+func Handle(router *mux.Router, method, route string, h interface{}) {
+	addRouteDef(method, route, h)
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 		PerformRequest(route, h, ctx, w, r)

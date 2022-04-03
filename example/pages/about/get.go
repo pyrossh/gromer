@@ -6,8 +6,6 @@ import (
 	. "github.com/pyros2097/gromer"
 )
 
-type GetParams struct{}
-
 func GET(c context.Context) (HtmlContent, int, error) {
 	return Html(`
 		{{#Page "gromer example"}}
