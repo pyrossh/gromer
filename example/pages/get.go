@@ -29,6 +29,7 @@ func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 					{{/Header}}
 					<h1>Hello this is a h1</h1>
 					<h2>Hello this is a h2</h2>
+					<img src="/assets/icon.png" width="48" height="48" />
 					<h3 x-data="{ message: 'I ❤️ Alpine' }" x-text="message">I ❤️ Alpine</h3>
 					<table class="table">
 							<thead>

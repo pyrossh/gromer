@@ -2,9 +2,6 @@
 package main
 
 import (
-	c "context"
-	"embed"
-	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
@@ -12,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
 
+	"github.com/pyros2097/gromer/example/assets"
 	"github.com/pyros2097/gromer/example/pages/api/todos"
 	"github.com/pyros2097/gromer/example/pages"
 	"github.com/pyros2097/gromer/example/pages/about"
@@ -20,101 +18,26 @@ import (
 	
 )
 
-//go:embed assets/*
-var assetsFS embed.FS
-
 func main() {
 	port := os.Getenv("PORT")
 	r := mux.NewRouter()
 	r.Use(gromer.CorsMiddleware)
 	r.Use(gromer.LogMiddleware)
 	r.NotFoundHandler = gromer.NotFoundHandler
-	r.PathPrefix("/assets/").Handler(wrapCache(http.FileServer(http.FS(assetsFS))))
-	handle(r, "GET", "/api", gromer.ApiExplorer(apiDefinitions()))
-	handle(r, "GET", "/about", about.GET)
-	handle(r, "GET", "/api/recover", recover.GET)
-	handle(r, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
-	handle(r, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
-	handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
-	handle(r, "GET", "/api/todos", todos.GET)
-	handle(r, "POST", "/api/todos", todos.POST)
-	handle(r, "GET", "/", pages.GET)
+	gromer.Static(r, "/assets/", assets.FS)
+	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer, nil)
+	gromer.Handle(r, "GET", "/about", about.GET, about.GetParams{})
+	gromer.Handle(r, "GET", "/api/recover", recover.GET, recover.GetParams{})
+	gromer.Handle(r, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE, todos_todoId_.DeleteParams{})
+	gromer.Handle(r, "GET", "/api/todos/{todoId}", todos_todoId_.GET, todos_todoId_.GetParams{})
+	gromer.Handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT, todos_todoId_.PutParams{})
+	gromer.Handle(r, "GET", "/api/todos", todos.GET, todos.GetParams{})
+	gromer.Handle(r, "POST", "/api/todos", todos.POST, todos.PostParams{})
+	gromer.Handle(r, "GET", "/", pages.GET, pages.GetParams{})
 	
 	println("http server listening on http://localhost:"+port)
 	srv := server.New(r, nil)
 	if err := srv.ListenAndServe(":"+port); err != nil {
 		log.Fatal().Stack().Err(err).Msg("failed to listen")
-	}
-}
-
-func wrapCache(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=2592000")
-		h.ServeHTTP(w, r)
-	})
-}
-
-func handle(router *mux.Router, method, route string, h interface{}) {
-	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		ctx := c.WithValue(
-			c.WithValue(
-				c.WithValue(r.Context(), "assetsFS", assetsFS),
-				"url", r.URL),
-			"header", r.Header)
-		gromer.PerformRequest(route, h, ctx, w, r)
-	}).Methods(method, "OPTIONS")
-}
-
-func apiDefinitions() []gromer.ApiDefinition {
-	return []gromer.ApiDefinition{
-		
-		{
-			Method: "GET",
-			Path: "/api/recover",
-			PathParams: []string{  },
-			Params: map[string]interface{}{
-				
-			},
-		},
-		{
-			Method: "DELETE",
-			Path: "/api/todos/{todoId}",
-			PathParams: []string{ "todoId",  },
-			Params: map[string]interface{}{
-				
-			},
-		},
-		{
-			Method: "GET",
-			Path: "/api/todos/{todoId}",
-			PathParams: []string{ "todoId",  },
-			Params: map[string]interface{}{
-				
-			},
-		},
-		{
-			Method: "PUT",
-			Path: "/api/todos/{todoId}",
-			PathParams: []string{ "todoId",  },
-			Params: map[string]interface{}{
-				
-			},
-		},
-		{
-			Method: "GET",
-			Path: "/api/todos",
-			PathParams: []string{  },
-			Params: map[string]interface{}{
-				
-			},
-		},
-		{
-			Method: "POST",
-			Path: "/api/todos",
-			PathParams: []string{  },
-			Params: map[string]interface{}{
-				
-			},
-		},
 	}
 }

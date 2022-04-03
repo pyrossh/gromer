@@ -13,6 +13,8 @@ It also generates http handlers for your routes which follow a particular folder
 go get -u -v github.com/pyros2097/gromer/cmd/gromer
 ```
 
+You can install this plugin https://marketplace.visualstudio.com/items?itemName=pyros2097.vscode-go-inline-html for syntax highlighting html templates in golang.
+
 # Using
 
 You need to follow this directory structure similar to nextjs for the api route handlers to be generated

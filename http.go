@@ -1,6 +1,8 @@
 package gromer
 
 import (
+	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -25,6 +27,15 @@ import (
 
 var info *debug.BuildInfo
 var IsCloundRun bool
+
+var RouteDefs []RouteDefinition
+
+type RouteDefinition struct {
+	Method string      `json:"method"`
+	Pkg    string      `json:"pkg"`
+	Path   string      `json:"path"`
+	Params interface{} `json:"params"`
+}
 
 type HtmlContent string
 
@@ -279,3 +290,22 @@ func CorsMiddleware(next http.Handler) http.Handler {
 var NotFoundHandler = LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	RespondError(w, 404, fmt.Errorf("path '%s' not found", r.URL.String()))
 }))
+
+func WrapCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=2592000")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func Static(router *mux.Router, path string, fs embed.FS) {
+	router.PathPrefix(path).Handler(http.StripPrefix(path, WrapCache(http.FileServer(http.FS(fs)))))
+}
+
+func Handle(router *mux.Router, method, route string, h interface{}, params interface{}) {
+	RouteDefs = append(RouteDefs, RouteDefinition{method, route, "", params})
+	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
+		PerformRequest(route, h, ctx, w, r)
+	}).Methods(method, "OPTIONS")
+}

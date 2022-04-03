@@ -1,7 +1,7 @@
 package components
 
 func Header() string {
-	return `
+	return (`
 		<div class="flex flex-row justify-center items-center w-full mb-20 font-bold text-xl text-gray-700 p-4">
 			<div class="text-blue-700">
 					<a href="https://pyros.sh"> pyros.sh </a>
@@ -26,5 +26,5 @@ func Header() string {
 			</div>
 			{{ children }}
 		</div>
-	`
+	`)
 }

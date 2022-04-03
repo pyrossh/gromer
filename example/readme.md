@@ -13,7 +13,6 @@ It uses postgres as the database and sqlc to generate queries and models. It use
 
 ```sh
 make setup
-make start-db
 make generate
 make run
 ```

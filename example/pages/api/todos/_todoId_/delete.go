@@ -6,6 +6,8 @@ import (
 	"github.com/pyros2097/gromer/example/db"
 )
 
+type DeleteParams struct{}
+
 func DELETE(ctx context.Context, id string) (string, int, error) {
 	_, status, err := GET(ctx, id, GetParams{})
 	if err != nil {
