@@ -1,11 +1,9 @@
 setup:
-	go install github.com/kyleconroy/sqlc/cmd/sqlc@v1.11.0
+	go install github.com/kyleconroy/sqlc/cmd/sqlc@v1.13.0
 	go install github.com/amacneil/dbmate@v1.12.1
 	go install github.com/mitranim/gow@latest
 	go install github.com/pyros2097/gromer/cmd/gromer@v0.9.1
 	docker pull postgres:14.1
-
-start-db:
 	docker run --name postgres141 -p 5432:5432 -e POSTGRES_PASSWORD=demo -d postgres:14.1
 
 generate: export DATABASE_URL=postgres://postgres:demo@127.0.0.1:5432/postgres?sslmode=disable

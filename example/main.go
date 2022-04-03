@@ -12,34 +12,37 @@ import (
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
 
-	"github.com/pyros2097/gromer/example/context"
 	"github.com/pyros2097/gromer/example/pages/api/todos"
 	"github.com/pyros2097/gromer/example/pages"
 	"github.com/pyros2097/gromer/example/pages/about"
 	"github.com/pyros2097/gromer/example/pages/api/recover"
 	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
+	
 )
 
 //go:embed assets/*
 var assetsFS embed.FS
 
 func main() {
+	port := os.Getenv("PORT")
 	r := mux.NewRouter()
+	r.Use(gromer.CorsMiddleware)
 	r.Use(gromer.LogMiddleware)
 	r.NotFoundHandler = gromer.NotFoundHandler
 	r.PathPrefix("/assets/").Handler(wrapCache(http.FileServer(http.FS(assetsFS))))
 	handle(r, "GET", "/api", gromer.ApiExplorer(apiDefinitions()))
 	handle(r, "GET", "/about", about.GET)
+	handle(r, "GET", "/api/recover", recover.GET)
 	handle(r, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
 	handle(r, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
 	handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
 	handle(r, "GET", "/api/todos", todos.GET)
 	handle(r, "POST", "/api/todos", todos.POST)
-	handle(r, "GET", "/api/recover", recover.GET)
 	handle(r, "GET", "/", pages.GET)
-	println("http server listening on http://localhost:3000")
+	
+	println("http server listening on http://localhost:"+port)
 	srv := server.New(r, nil)
-	if err := srv.ListenAndServe(":3000"); err != nil {
+	if err := srv.ListenAndServe(":"+port); err != nil {
 		log.Fatal().Stack().Err(err).Msg("failed to listen")
 	}
 }
@@ -53,22 +56,26 @@ func wrapCache(h http.Handler) http.Handler {
 
 func handle(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := context.WithContext(c.WithValue(
+		ctx := c.WithValue(
 			c.WithValue(
 				c.WithValue(r.Context(), "assetsFS", assetsFS),
-					"url", r.URL),
-			"header", r.Header))
-		if err != nil {
-			gromer.RespondError(w, 500, err)
-			return
-		}
+				"url", r.URL),
+			"header", r.Header)
 		gromer.PerformRequest(route, h, ctx, w, r)
-	}).Methods(method)
+	}).Methods(method, "OPTIONS")
 }
 
 func apiDefinitions() []gromer.ApiDefinition {
 	return []gromer.ApiDefinition{
 		
+		{
+			Method: "GET",
+			Path: "/api/recover",
+			PathParams: []string{  },
+			Params: map[string]interface{}{
+				
+			},
+		},
 		{
 			Method: "DELETE",
 			Path: "/api/todos/{todoId}",
@@ -82,7 +89,7 @@ func apiDefinitions() []gromer.ApiDefinition {
 			Path: "/api/todos/{todoId}",
 			PathParams: []string{ "todoId",  },
 			Params: map[string]interface{}{
-				"show": "string", 
+				
 			},
 		},
 		{
@@ -90,7 +97,7 @@ func apiDefinitions() []gromer.ApiDefinition {
 			Path: "/api/todos/{todoId}",
 			PathParams: []string{ "todoId",  },
 			Params: map[string]interface{}{
-				"completed": "bool", 
+				
 			},
 		},
 		{
@@ -98,7 +105,7 @@ func apiDefinitions() []gromer.ApiDefinition {
 			Path: "/api/todos",
 			PathParams: []string{  },
 			Params: map[string]interface{}{
-				"limit": "int", "offset": "int", 
+				
 			},
 		},
 		{
@@ -106,7 +113,7 @@ func apiDefinitions() []gromer.ApiDefinition {
 			Path: "/api/todos",
 			PathParams: []string{  },
 			Params: map[string]interface{}{
-				"text": "string", 
+				
 			},
 		},
 	}

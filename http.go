@@ -3,17 +3,20 @@ package gromer
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net"
 	"net/http"
 	"os"
 	"reflect"
 	"regexp"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gobuffalo/velvet"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -22,6 +25,49 @@ import (
 
 var info *debug.BuildInfo
 var IsCloundRun bool
+
+type HtmlContent string
+
+func Html(tpl string, params map[string]interface{}) (HtmlContent, int, error) {
+	ctx := velvet.NewContext()
+	for k, v := range params {
+		ctx.Set(k, v)
+	}
+	s, err := velvet.Render(tpl, ctx)
+	if err != nil {
+		return HtmlContent(""), 500, err
+	}
+	return HtmlContent(s), 200, nil
+}
+
+func HtmlErr(status int, err error) (HtmlContent, int, error) {
+	return HtmlContent("ErrorPage/AccessDeniedPage/NotFoundPage based on status code"), status, err
+}
+
+func GetFunctionName(temp interface{}) string {
+	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name()), ".")
+	return strs[len(strs)-1]
+}
+
+func RegisterComponent(fn interface{}) {
+	name := GetFunctionName(fn)
+	// reflect.New(reflect.FuncOf())
+	velvet.Helpers.Add(name, func(title string, c velvet.HelperContext) (template.HTML, error) {
+		s, err := c.Block()
+		if err != nil {
+			return "", err
+		}
+		ctx := velvet.NewContext()
+		ctx.Set("title", title)
+		ctx.Set("children", template.HTML(s))
+		res := reflect.ValueOf(fn).Call([]reflect.Value{})
+		comp, err := velvet.Render(res[0].Interface().(string), ctx)
+		if err != nil {
+			return "", err
+		}
+		return template.HTML(comp), nil
+	})
+}
 
 func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
@@ -135,11 +181,11 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		RespondError(w, responseStatus, responseError.(error))
 		return
 	}
-	if v, ok := response.(HtmlPage); ok {
+	if v, ok := response.(HtmlContent); ok {
 		w.Header().Set("Content-Type", "text/html")
 		// This has to be at end always
 		w.WriteHeader(responseStatus)
-		v.WriteHtml(w)
+		w.Write([]byte(v))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -216,6 +262,19 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 			Msg("")
 	})
 })
+
+func CorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(200)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 var NotFoundHandler = LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	RespondError(w, 404, fmt.Errorf("path '%s' not found", r.URL.String()))

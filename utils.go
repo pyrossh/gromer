@@ -1,6 +1,7 @@
 package gromer
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -67,4 +68,17 @@ func GetValidationError(err validator.ValidationErrors) map[string]string {
 		}
 	}
 	return emap
+}
+
+func Zero[T any](s ...T) T {
+	var zero T
+	return zero
+}
+
+func Default[S any](a, b S) S {
+	va := fmt.Sprintf("%v", a)
+	if va == "" || va == "0" {
+		return b
+	}
+	return a
 }

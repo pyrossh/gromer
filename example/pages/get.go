@@ -4,34 +4,57 @@ import (
 	"context"
 
 	. "github.com/pyros2097/gromer"
-	. "github.com/pyros2097/gromer/example/components"
-	. "github.com/pyros2097/gromer/example/context"
+	_ "github.com/pyros2097/gromer/example/components"
+	"github.com/pyros2097/gromer/example/pages/api/todos"
 )
 
-func GET(c context.Context) (HtmlPage, int, error) {
-	ctx := WithState(c)
-	userID := GetUserID(c)
-	return Html(
-		Head(
-			Title("Example"),
-			Meta("description", "Example"),
-			Meta("author", "pyros.sh"),
-			Meta("keywords", "pyros.sh, gromer"),
-			Meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"),
-			Link("icon", "/assets/icon.png"),
-			Script(Src("/assets/alpine.js"), Defer()),
-		),
-		Body(
-			Col(
-				Header(),
-				H1(Text("Hello	 "+userID)),
-				H1(Text("Hello this is a h1")),
-				H2(Text("Hello this is a h2")),
-				H3(XData("{ message: 'I ❤️ Alpine' }"), XText("message"), Text("")),
-				Div(Css("mt-10"),
-					Counter(ctx, 4),
-				),
-			),
-		),
-	), 200, nil
+type GetParams struct {
+	Page int `json:"limit"`
+}
+
+func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
+	page := Default(params.Page, 1)
+	todos, status, err := todos.GET(ctx, todos.GetParams{
+		Limit:  10,
+		Offset: 10 * (page - 1),
+	})
+	if err != nil {
+		return HtmlErr(status, err)
+	}
+	return Html(`
+		{{#Page "gromer example"}}
+			<div class="flex flex-col justify-center items-center">
+					{{#Header "123"}}
+						A new link is here
+					{{/Header}}
+					<h1>Hello this is a h1</h1>
+					<h2>Hello this is a h2</h2>
+					<h3 x-data="{ message: 'I ❤️ Alpine' }" x-text="message">I ❤️ Alpine</h3>
+					<table class="table">
+							<thead>
+									<tr>
+										<th>ID</th>
+										<th>Title</th>
+										<th>Author</th>
+									</tr>
+							</thead>
+							<tbody id="new-book" hx-target="closest tr" hx-swap="outerHTML swap:0.5s">
+								{{#each todos as |todo|}}
+									<tr>
+										<td>{{todo.ID}}</td>
+										<td>Book1</td>
+										<td>Author1</td>
+										<td>
+												<button class="button is-primary">Edit</button>
+										</td>
+										<td>
+												<button hx-swap="delete" class="button is-danger" hx-delete="/api/todos/{{todo.ID}}">Delete</button>
+										</td>
+									</tr>
+								{{/each}}
+							</tbody>
+					</table>
+			</div>
+		{{/Page}}
+		`, M{"todos": todos})
 }

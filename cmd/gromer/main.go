@@ -228,7 +228,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
 
-	"{{ moduleName }}/context"
 	{{#each allPkgs }}"{{ moduleName }}/pages{{ @key }}"
 	{{/each}}
 )
@@ -239,7 +238,9 @@ var assetsFS embed.FS
 func main() {
 	port := os.Getenv("PORT")
 	r := mux.NewRouter()
-	r.NotFoundHandler = http.HandlerFunc(notFound)
+	r.Use(gromer.CorsMiddleware)
+	r.Use(gromer.LogMiddleware)
+	r.NotFoundHandler = gromer.NotFoundHandler
 	r.PathPrefix("/assets/").Handler(wrapCache(http.FileServer(http.FS(assetsFS))))
 	handle(r, "GET", "/api", gromer.ApiExplorer(apiDefinitions()))
 	{{#each routes as |route| }}handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
@@ -258,26 +259,15 @@ func wrapCache(h http.Handler) http.Handler {
 	})
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
-	gromer.LogReq(404, r)
-}
-
 func handle(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		var status int
-		defer func() {
-			gromer.LogReq(status, r)
-		}()
 		ctx := c.WithValue(
 			c.WithValue(
 				c.WithValue(r.Context(), "assetsFS", assetsFS),
-					"url", r.URL),
+				"url", r.URL),
 			"header", r.Header)
-		status, err = gromer.PerformRequest(route, h, ctx, w, r)
-		if err != nil {
-			log.Error().Stack().Err(err).Msg("")
-		}
-	}).Methods(method)
+		gromer.PerformRequest(route, h, ctx, w, r)
+	}).Methods(method, "OPTIONS")
 }
 
 func apiDefinitions() []gromer.ApiDefinition {
