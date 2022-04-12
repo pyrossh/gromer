@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gobuffalo/velvet"
 	"github.com/gorilla/mux"
+	"github.com/pyros2097/gromer/handlebars"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -42,11 +42,11 @@ type RouteDefinition struct {
 type HtmlContent string
 type HandlersTemplate struct {
 	text string
-	ctx  *velvet.Context
+	ctx  *handlebars.Context
 }
 
 func Html(tpl string) *HandlersTemplate {
-	return &HandlersTemplate{text: tpl, ctx: velvet.NewContext()}
+	return &HandlersTemplate{text: tpl, ctx: handlebars.NewContext()}
 }
 
 func (t *HandlersTemplate) Prop(key string, v any) *HandlersTemplate {
@@ -63,7 +63,7 @@ func (t *HandlersTemplate) Props(args ...any) *HandlersTemplate {
 }
 
 func (t *HandlersTemplate) Render(args ...any) (HtmlContent, int, error) {
-	s, err := velvet.Render(t.text, t.ctx)
+	s, err := handlebars.Render(t.text, t.ctx)
 	if err != nil {
 		return HtmlContent("Server Erorr"), 500, err
 	}
@@ -83,7 +83,7 @@ func RegisterComponent(fn interface{}, props ...string) {
 	name := GetFunctionName(fn)
 	fnType := reflect.TypeOf(fn)
 	fnValue := reflect.ValueOf(fn)
-	velvet.Helpers.Add(name, func(title string, c velvet.HelperContext) (template.HTML, error) {
+	handlebars.GlobalHelpers.Add(name, func(title string, c handlebars.HelperContext) (template.HTML, error) {
 		s, err := c.Block()
 		if err != nil {
 			return "", err
@@ -97,7 +97,7 @@ func RegisterComponent(fn interface{}, props ...string) {
 		}
 		res := fnValue.Call(args)
 		tpl := res[0].Interface().(*HandlersTemplate)
-		comp, err := velvet.Render(tpl.text, tpl.ctx)
+		comp, err := handlebars.Render(tpl.text, tpl.ctx)
 		if err != nil {
 			return "", err
 		}

@@ -8,7 +8,7 @@ import (
 
 func GET(c context.Context) (HtmlContent, int, error) {
 	return Html(`
-		{{#Page "gromer example"}}
+		{{#Page "About me"}}
 			<div class="flex flex-col justify-center items-center">
 					{{#Header "123"}}
 						A new link is here
