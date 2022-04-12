@@ -780,5 +780,8 @@ func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
 				</script>
 			</body>
 		</html>
-	`, M{"routes": apiRoutes, "apiData": template.HTML(string(apiData))})
+	`).Props(
+		"routes", apiRoutes,
+		"apiData", template.HTML(string(apiData)),
+	).Render()
 }

@@ -1,11 +1,13 @@
 package components
 
 import (
+	"html/template"
+
 	. "github.com/pyros2097/gromer"
 )
 
-func Page() string {
-	return Component(`
+func Page(title string, children template.HTML) *HandlersTemplate {
+	return Html(`
 		<!DOCTYPE html>
 		<html lang="en">
 			<head>
@@ -26,5 +28,8 @@ func Page() string {
 			{{ children }}
 			</body>
 		</html>
-	`)
+	`).Props(
+		"title", title,
+		"children", children,
+	)
 }

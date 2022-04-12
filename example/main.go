@@ -10,6 +10,7 @@ import (
 	"gocloud.dev/server"
 
 	"github.com/pyros2097/gromer/example/assets"
+	"github.com/pyros2097/gromer/example/components"
 	"github.com/pyros2097/gromer/example/pages"
 	"github.com/pyros2097/gromer/example/pages/about"
 	"github.com/pyros2097/gromer/example/pages/api/recover"
@@ -17,6 +18,12 @@ import (
 	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
 	
 )
+
+func init() {
+	gromer.RegisterComponent(components.Header)
+	gromer.RegisterComponent(components.Page)
+
+}
 
 func main() {
 	port := os.Getenv("PORT")

@@ -16,5 +16,5 @@ func GET(c context.Context) (HtmlContent, int, error) {
 					<h1>About Me</h1>
 			</div>
 		{{/Page}}
-		`, M{})
+		`).Render()
 }

@@ -74,5 +74,7 @@ func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 				</nav>
 			</main>
 		{{/Page}}
-		`, M{"todos": todos})
+		`).
+		Prop("todos", todos).
+		Render()
 }

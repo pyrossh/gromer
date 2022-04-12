@@ -40,21 +40,34 @@ type RouteDefinition struct {
 }
 
 type HtmlContent string
-
-func Html(tpl string, params map[string]interface{}) (HtmlContent, int, error) {
-	ctx := velvet.NewContext()
-	for k, v := range params {
-		ctx.Set(k, v)
-	}
-	s, err := velvet.Render(tpl, ctx)
-	if err != nil {
-		return HtmlContent(""), 500, err
-	}
-	return HtmlContent(s), 200, nil
+type HandlersTemplate struct {
+	text string
+	ctx  *velvet.Context
 }
 
-func Component(tpl string) string {
-	return tpl
+func Html(tpl string) *HandlersTemplate {
+	return &HandlersTemplate{text: tpl, ctx: velvet.NewContext()}
+}
+
+func (t *HandlersTemplate) Prop(key string, v any) *HandlersTemplate {
+	t.ctx.Set(key, v)
+	return t
+}
+
+func (t *HandlersTemplate) Props(args ...any) *HandlersTemplate {
+	for i := 0; i < len(args); i += 2 {
+		key := fmt.Sprintf("%s", args[i])
+		t.ctx.Set(key, args[i+1])
+	}
+	return t
+}
+
+func (t *HandlersTemplate) Render(args ...any) (HtmlContent, int, error) {
+	s, err := velvet.Render(t.text, t.ctx)
+	if err != nil {
+		return HtmlContent("Server Erorr"), 500, err
+	}
+	return HtmlContent(s), 200, nil
 }
 
 func HtmlErr(status int, err error) (HtmlContent, int, error) {
@@ -66,19 +79,25 @@ func GetFunctionName(temp interface{}) string {
 	return strs[len(strs)-1]
 }
 
-func RegisterComponent(fn interface{}) {
+func RegisterComponent(fn interface{}, props ...string) {
 	name := GetFunctionName(fn)
-	// reflect.New(reflect.FuncOf())
+	fnType := reflect.TypeOf(fn)
+	fnValue := reflect.ValueOf(fn)
 	velvet.Helpers.Add(name, func(title string, c velvet.HelperContext) (template.HTML, error) {
 		s, err := c.Block()
 		if err != nil {
 			return "", err
 		}
-		ctx := velvet.NewContext()
-		ctx.Set("title", title)
-		ctx.Set("children", template.HTML(s))
-		res := reflect.ValueOf(fn).Call([]reflect.Value{})
-		comp, err := velvet.Render(res[0].Interface().(string), ctx)
+		args := []reflect.Value{}
+		if fnType.NumIn() > 0 {
+			args = append(args, reflect.ValueOf(title))
+			if s != "" {
+				args = append(args, reflect.ValueOf(template.HTML(s)))
+			}
+		}
+		res := fnValue.Call(args)
+		tpl := res[0].Interface().(*HandlersTemplate)
+		comp, err := velvet.Render(tpl.text, tpl.ctx)
 		if err != nil {
 			return "", err
 		}
