@@ -22,7 +22,7 @@ import (
 func init() {
 	gromer.RegisterComponent(components.Header)
 	gromer.RegisterComponent(components.Page)
-
+	gromer.RegisterComponent(components.Todo)
 }
 
 func main() {

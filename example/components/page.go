@@ -6,7 +6,12 @@ import (
 	. "github.com/pyros2097/gromer"
 )
 
-func Page(title string, children template.HTML) *HandlersTemplate {
+type PageProps struct {
+	Title    string        `json:"title"`
+	Children template.HTML `json:"children"`
+}
+
+func Page(props PageProps) *HandlersTemplate {
 	return Html(`
 		<!DOCTYPE html>
 		<html lang="en">
@@ -14,8 +19,8 @@ func Page(title string, children template.HTML) *HandlersTemplate {
 					<meta charset="UTF-8" />
 					<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 					<meta content="utf-8" http-equiv="encoding" />
-					<title>{{ title }}</title>
-					<meta name="description" content="{{ title }}" />
+					<title>{{ props.Title }}</title>
+					<meta name="description" content="{{ props.Title }}" />
 					<meta name="author" content="pyros.sh" />
 					<meta content="pyros.sh, gromer" name="keywords" />
 					<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
@@ -25,11 +30,8 @@ func Page(title string, children template.HTML) *HandlersTemplate {
 					<script src="/assets/alpine.js" defer=""></script>
 			</head>
 			<body>
-			{{ children }}
+			{{ props.Children }}
 			</body>
 		</html>
-	`).Props(
-		"title", title,
-		"children", children,
-	)
+	`)
 }

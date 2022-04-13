@@ -22,9 +22,8 @@ func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 		return HtmlErr(status, err)
 	}
 	return Html(`
-		{{#Page "gromer example"}}
-			{{#Header "123"}}
-			{{/Header}}
+		{{#Page title="gromer example"}}
+			{{#Header}}{{/Header}}
 			<main class="box center">
 				<div class="columns">
 					<div>
@@ -46,17 +45,7 @@ func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 						</thead>
 						<tbody id="new-book" hx-target="closest tr" hx-swap="outerHTML swap:0.5s">
 							{{#each todos as |todo|}}
-								<tr>
-									<td>{{todo.ID}}</td>
-									<td>Book1</td>
-									<td>Author1</td>
-									<td>
-											<button class="button is-primary">Edit</button>
-									</td>
-									<td>
-											<button hx-swap="delete" class="button is-danger" hx-delete="/api/todos/{{todo.ID}}">Delete</button>
-									</td>
-								</tr>
+								{{#Todo todo=todo}}{{/Todo}}
 							{{/each}}
 						</tbody>
 				</table>

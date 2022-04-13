@@ -79,24 +79,41 @@ func GetFunctionName(temp interface{}) string {
 	return strs[len(strs)-1]
 }
 
-func RegisterComponent(fn interface{}, props ...string) {
+func RegisterComponent(fn any, props ...string) {
 	name := GetFunctionName(fn)
 	fnType := reflect.TypeOf(fn)
 	fnValue := reflect.ValueOf(fn)
-	handlebars.GlobalHelpers.Add(name, func(title string, c handlebars.HelperContext) (template.HTML, error) {
-		s, err := c.Block()
-		if err != nil {
-			return "", err
-		}
+	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
 		args := []reflect.Value{}
+		var props any
 		if fnType.NumIn() > 0 {
-			args = append(args, reflect.ValueOf(title))
-			if s != "" {
-				args = append(args, reflect.ValueOf(template.HTML(s)))
+			structType := fnType.In(0)
+			instance := reflect.New(structType)
+			if structType.Kind() != reflect.Struct {
+				log.Fatal().Msgf("component '%s' props should be a struct", name)
 			}
+			rv := instance.Elem()
+			for i := 0; i < structType.NumField(); i++ {
+				if f := rv.Field(i); f.CanSet() {
+					jsonName := structType.Field(i).Tag.Get("json")
+					fmt.Printf("jsonName %s %+v\n", jsonName, help.Context.Get(jsonName))
+					if jsonName == "children" {
+						s, err := help.Block()
+						if err != nil {
+							return "", err
+						}
+						f.Set(reflect.ValueOf(template.HTML(s)))
+					} else {
+						f.Set(reflect.ValueOf(help.Context.Get(jsonName)))
+					}
+				}
+			}
+			args = append(args, rv)
+			props = rv.Interface()
 		}
 		res := fnValue.Call(args)
 		tpl := res[0].Interface().(*HandlersTemplate)
+		tpl.ctx.Set("props", props)
 		comp, err := handlebars.Render(tpl.text, tpl.ctx)
 		if err != nil {
 			return "", err
@@ -120,11 +137,11 @@ func init() {
 func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status) // always write status last
+	w.(*LogResponseWriter).SetError(err)
 	merror := map[string]interface{}{
 		"error": err.Error(),
 	}
 	if status >= 500 {
-		log.Error().Str("type", "panic").Msg(err.Error())
 		merror["error"] = "Internal Server Error"
 	}
 	validationErrors, ok := err.(validator.ValidationErrors)
@@ -268,6 +285,7 @@ type LogResponseWriter struct {
 	responseStatusCode    int
 	responseContentLength int
 	responseHeaderSize    int
+	err                   error
 }
 
 func NewLogResponseWriter(w http.ResponseWriter) *LogResponseWriter {
@@ -278,7 +296,6 @@ func (w *LogResponseWriter) WriteHeader(code int) {
 	w.ResponseWriter.WriteHeader(code)
 	w.responseStatusCode = code
 	w.responseHeaderSize = int(headerSize(w.Header()))
-
 }
 
 func (w *LogResponseWriter) Write(body []byte) (int, error) {
@@ -286,12 +303,16 @@ func (w *LogResponseWriter) Write(body []byte) (int, error) {
 	return w.ResponseWriter.Write(body)
 }
 
+func (w *LogResponseWriter) SetError(err error) {
+	w.err = err
+}
+
 var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				stack := string(debug.Stack())
-				RespondError(w, 500, fmt.Errorf("panic: %+v\n %s", err, stack))
+				RespondError(w, 599, fmt.Errorf("panic: %+v\n %s", err, stack))
 			}
 		}()
 		startTime := time.Now()
@@ -301,7 +322,11 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 		if len(ip) > 0 && ip[0] == '[' {
 			ip = ip[1 : len(ip)-1]
 		}
-		log.Info().
+		logger := log.WithLevel(zerolog.InfoLevel)
+		if logRespWriter.err != nil {
+			logger = log.WithLevel(zerolog.ErrorLevel).Err(logRespWriter.err).Stack()
+		}
+		logger.
 			Str("method", r.Method).
 			Str("url", r.URL.String()).
 			Int("header_size", int(headerSize(r.Header))).
