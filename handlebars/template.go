@@ -1,24 +1,28 @@
 package handlebars
 
 import (
-	"sync"
+	"fmt"
 
 	"github.com/aymerick/raymond/ast"
 	"github.com/aymerick/raymond/parser"
 	"github.com/pkg/errors"
 )
 
+type HtmlContent string
+
 // Template represents an input and helpers to be used
 // to evaluate and render the input.
 type Template struct {
 	Input   string
+	Context *Context
 	program *ast.Program
 }
 
 // NewTemplate from the input string.
 func NewTemplate(input string) (*Template, error) {
 	t := &Template{
-		Input: input,
+		Input:   input,
+		Context: NewContext(),
 	}
 	err := t.Parse()
 	if err != nil {
@@ -43,53 +47,45 @@ func (t *Template) Parse() error {
 }
 
 // Exec the template using the content and return the results
-func (t *Template) Exec(ctx *Context) (string, error) {
+func (t *Template) Render() (HtmlContent, int, error) {
 	err := t.Parse()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return HtmlContent("Server Erorr"), 500, errors.WithStack(err)
 	}
-	v := newEvalVisitor(t, ctx)
+	v := newEvalVisitor(t, t.Context)
 	r := t.program.Accept(v)
 	switch rp := r.(type) {
 	case string:
-		return rp, nil
+		return HtmlContent(rp), 200, nil
 	case error:
-		return "", rp
+		return HtmlContent("Server Erorr"), 500, rp
 	case nil:
-		return "", nil
+		return HtmlContent(""), 200, nil
 	default:
-		return "", errors.WithStack(errors.Errorf("unsupport eval return format %T: %+v", r, r))
+		return HtmlContent("Server Erorr"), 500, errors.WithStack(errors.Errorf("unsupport eval return format %T: %+v", r, r))
 	}
 }
 
-var cache = map[string]*Template{}
-var moot = &sync.Mutex{}
-
-// Parse an input string and return a Template.
-func Parse(input string) (*Template, error) {
-	moot.Lock()
-	defer moot.Unlock()
-	if t, ok := cache[input]; ok {
-		return t, nil
-	}
-	t, err := NewTemplate(input)
-
-	if err == nil {
-		cache[input] = t
-	}
-
-	if err != nil {
-		return t, errors.WithStack(err)
-	}
-
-	return t, nil
+func (t *Template) Prop(key string, v any) *Template {
+	t.Context.Set(key, v)
+	return t
 }
 
-// Render a string using the given the context.
-func Render(input string, ctx *Context) (string, error) {
-	t, err := Parse(input)
-	if err != nil {
-		return "", errors.WithStack(err)
+func (t *Template) Props(args ...any) *Template {
+	for i := 0; i < len(args); i += 2 {
+		key := fmt.Sprintf("%s", args[i])
+		t.Context.Set(key, args[i+1])
 	}
-	return t.Exec(ctx)
+	return t
+}
+
+func Html(tpl string) *Template {
+	return &Template{
+		Input:   tpl,
+		Context: NewContext(),
+	}
+}
+
+func HtmlErr(status int, err error) (HtmlContent, int, error) {
+	return HtmlContent("ErrorPage/AccessDeniedPage/NotFoundPage based on status code"), status, err
 }

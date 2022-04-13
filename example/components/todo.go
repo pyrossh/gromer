@@ -1,15 +1,15 @@
 package components
 
 import (
-	. "github.com/pyros2097/gromer"
 	"github.com/pyros2097/gromer/example/db"
+	. "github.com/pyros2097/gromer/handlebars"
 )
 
 type TodoProps struct {
 	Todo *db.Todo `json:"todo"`
 }
 
-func Todo(props TodoProps) *HandlersTemplate {
+func Todo(props TodoProps) *Template {
 	return Html(`
 		<tr>
 			<td>{{ props.Todo.ID }}</td>

@@ -39,41 +39,6 @@ type RouteDefinition struct {
 	Params     interface{} `json:"params"`
 }
 
-type HtmlContent string
-type HandlersTemplate struct {
-	text string
-	ctx  *handlebars.Context
-}
-
-func Html(tpl string) *HandlersTemplate {
-	return &HandlersTemplate{text: tpl, ctx: handlebars.NewContext()}
-}
-
-func (t *HandlersTemplate) Prop(key string, v any) *HandlersTemplate {
-	t.ctx.Set(key, v)
-	return t
-}
-
-func (t *HandlersTemplate) Props(args ...any) *HandlersTemplate {
-	for i := 0; i < len(args); i += 2 {
-		key := fmt.Sprintf("%s", args[i])
-		t.ctx.Set(key, args[i+1])
-	}
-	return t
-}
-
-func (t *HandlersTemplate) Render(args ...any) (HtmlContent, int, error) {
-	s, err := handlebars.Render(t.text, t.ctx)
-	if err != nil {
-		return HtmlContent("Server Erorr"), 500, err
-	}
-	return HtmlContent(s), 200, nil
-}
-
-func HtmlErr(status int, err error) (HtmlContent, int, error) {
-	return HtmlContent("ErrorPage/AccessDeniedPage/NotFoundPage based on status code"), status, err
-}
-
 func GetFunctionName(temp interface{}) string {
 	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name()), ".")
 	return strs[len(strs)-1]
@@ -96,7 +61,6 @@ func RegisterComponent(fn any, props ...string) {
 			for i := 0; i < structType.NumField(); i++ {
 				if f := rv.Field(i); f.CanSet() {
 					jsonName := structType.Field(i).Tag.Get("json")
-					fmt.Printf("jsonName %s %+v\n", jsonName, help.Context.Get(jsonName))
 					if jsonName == "children" {
 						s, err := help.Block()
 						if err != nil {
@@ -112,13 +76,13 @@ func RegisterComponent(fn any, props ...string) {
 			props = rv.Interface()
 		}
 		res := fnValue.Call(args)
-		tpl := res[0].Interface().(*HandlersTemplate)
-		tpl.ctx.Set("props", props)
-		comp, err := handlebars.Render(tpl.text, tpl.ctx)
+		tpl := res[0].Interface().(*handlebars.Template)
+		tpl.Context.Set("props", props)
+		s, _, err := tpl.Render()
 		if err != nil {
 			return "", err
 		}
-		return template.HTML(comp), nil
+		return template.HTML(s), nil
 	})
 }
 
@@ -254,7 +218,7 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		RespondError(w, responseStatus, responseError.(error))
 		return
 	}
-	if v, ok := response.(HtmlContent); ok {
+	if v, ok := response.(handlebars.HtmlContent); ok {
 		w.Header().Set("Content-Type", "text/html")
 		// This has to be at end always
 		w.WriteHeader(responseStatus)

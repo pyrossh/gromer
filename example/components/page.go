@@ -3,7 +3,7 @@ package components
 import (
 	"html/template"
 
-	. "github.com/pyros2097/gromer"
+	. "github.com/pyros2097/gromer/handlebars"
 )
 
 type PageProps struct {
@@ -11,7 +11,7 @@ type PageProps struct {
 	Children template.HTML `json:"children"`
 }
 
-func Page(props PageProps) *HandlersTemplate {
+func Page(props PageProps) *Template {
 	return Html(`
 		<!DOCTYPE html>
 		<html lang="en">

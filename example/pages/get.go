@@ -6,6 +6,7 @@ import (
 	. "github.com/pyros2097/gromer"
 	_ "github.com/pyros2097/gromer/example/components"
 	"github.com/pyros2097/gromer/example/pages/api/todos"
+	. "github.com/pyros2097/gromer/handlebars"
 )
 
 type GetParams struct {

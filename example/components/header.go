@@ -1,10 +1,10 @@
 package components
 
 import (
-	. "github.com/pyros2097/gromer"
+	. "github.com/pyros2097/gromer/handlebars"
 )
 
-func Header() *HandlersTemplate {
+func Header() *Template {
 	return Html(`
 		<nav class="navbar" role="navigation" aria-label="main navigation">
 			<div class="navbar-brand">

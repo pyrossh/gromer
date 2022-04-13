@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"html/template"
 	"strings"
+
+	. "github.com/pyros2097/gromer/handlebars"
 )
 
 func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
