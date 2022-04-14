@@ -1,4 +1,4 @@
-package gromer
+package collection
 
 import (
 	"context"

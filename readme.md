@@ -20,7 +20,7 @@ You need to follow this directory structure similar to nextjs for the api route 
 
 Take a look at the example for now,
 
-[Example](https://github.com/pyros2097/gromer/tree/master/example)
+[Example](https://github.com/pyros2097/gromer/tree/master/_example)
 
 # Templating
 
