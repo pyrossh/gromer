@@ -26,7 +26,6 @@ import (
 )
 
 var info *debug.BuildInfo
-var IsCloundRun bool
 
 var RouteDefs []RouteDefinition
 
@@ -87,15 +86,12 @@ func RegisterComponent(fn any, props ...string) {
 }
 
 func init() {
-	IsCloundRun = os.Getenv("K_REVISION") != ""
 	info, _ = debug.ReadBuildInfo()
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	if !IsCloundRun {
-		log.Logger = log.Output(zerolog.ConsoleWriter{
-			Out:        os.Stdout,
-			TimeFormat: zerolog.TimeFormatUnix,
-		})
-	}
+	log.Logger = log.Output(zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: zerolog.TimeFormatUnix,
+	})
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
