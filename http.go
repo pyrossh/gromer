@@ -36,6 +36,7 @@ func init() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: zerolog.TimeFormatUnix,
+		NoColor:    IsCloundRun,
 	})
 }
 
