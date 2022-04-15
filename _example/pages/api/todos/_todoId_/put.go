@@ -2,24 +2,23 @@ package todos_todoId_
 
 import (
 	"context"
-	"time"
 
-	"github.com/pyros2097/gromer/_example/db"
+	"github.com/pyros2097/gromer/_example/services"
 )
 
 type PutParams struct {
-	Completed bool `json:"completed"`
+	Text      string `json:"text"`
+	Completed bool   `json:"completed"`
 }
 
-func PUT(ctx context.Context, id string, params PutParams) (*db.Todo, int, error) {
+func PUT(ctx context.Context, id string, params PutParams) (*services.Todo, int, error) {
 	_, status, err := GET(ctx, id, GetParams{})
 	if err != nil {
 		return nil, status, err
 	}
-	todo, err := db.Query.UpdateTodo(ctx, db.UpdateTodoParams{
-		ID:        id,
+	todo, err := services.UpdateTodo(ctx, id, services.UpdateTodoParams{
+		Text:      params.Text,
 		Completed: params.Completed,
-		UpdatedAt: time.Now(),
 	})
 	if err != nil {
 		return nil, 500, err

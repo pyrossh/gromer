@@ -1,4 +1,0 @@
-FROM amacneil/dbmate
-
-WORKDIR /
-COPY ./db ./db

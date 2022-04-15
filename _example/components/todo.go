@@ -1,12 +1,12 @@
 package components
 
 import (
-	"github.com/pyros2097/gromer/_example/db"
+	"github.com/pyros2097/gromer/_example/services"
 	. "github.com/pyros2097/gromer/handlebars"
 )
 
 type TodoProps struct {
-	Todo *db.Todo `json:"todo"`
+	Todo *services.Todo `json:"todo"`
 }
 
 func Todo(props TodoProps) *Template {

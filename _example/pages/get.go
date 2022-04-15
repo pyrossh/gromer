@@ -16,8 +16,7 @@ type GetParams struct {
 func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 	page := Default(params.Page, 1)
 	todos, status, err := todos.GET(ctx, todos.GetParams{
-		Limit:  10,
-		Offset: 10 * (page - 1),
+		Limit: page * 10,
 	})
 	if err != nil {
 		return HtmlErr(status, err)
