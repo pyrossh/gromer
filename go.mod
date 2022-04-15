@@ -22,6 +22,7 @@ require (
 	cloud.google.com/go/firestore v1.5.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
+	github.com/carlmjohnson/versioninfo v0.22.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

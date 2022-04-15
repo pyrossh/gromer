@@ -3,10 +3,15 @@
 [![Version](https://badge.fury.io/gh/pyros2097%2Fgromer.svg)](https://github.com/pyros2097/gromer)
 
 **gromer** is a framework and cli to build web apps in golang.
-It uses a declarative syntax using funcs that allows creating and dealing with HTML components and pages using templates.
-
+It uses a declarative syntax using inline handlebar templates for components and pages.
 It also generates http handlers for your routes which follow a particular folder structure. Similar to other frameworks like nextjs, sveltekit.
-These handlers are also normal functions and can be imported in other packages directly ((inspired by [Encore](https://encore.dev/)).
+These handlers are also normal functions and can be imported in other packages directly. ((inspired by [Encore](https://encore.dev/)).
+
+# Requirements
+
+```sh
+go >= v1.18
+```
 
 # Install
 
@@ -33,10 +38,10 @@ Let's assume you have a template (a string of some kind):
 
 ```handlebars
 <!-- some input -->
-<h1>{{ name }}</h1>
+<h1>{{name}}</h1>
 <ul>
   {{#each names}}
-    <li>{{ @value }}</li>
+    <li>{{@value}}</li>
   {{/each}}
 </ul>
 ```
@@ -56,7 +61,7 @@ Given that string, you can render the template like such:
 ### If Statements
 
 ```handlebars
-{{#if true }}
+{{#if true}}
   render this
 {{/if}}
 ```
@@ -64,9 +69,9 @@ Given that string, you can render the template like such:
 #### Else Statements
 
 ```handlebars
-{{#if false }}
+{{#if false}}
   won't render this
-{{ else }}
+{{else}}
   render this
 {{/if}}
 ```
@@ -74,7 +79,7 @@ Given that string, you can render the template like such:
 #### Unless Statements
 
 ```handlebars
-{{#unless true }}
+{{#unless true}}
   won't render this
 {{/unless}}
 ```
@@ -85,15 +90,15 @@ Given that string, you can render the template like such:
 
 When looping through `arrays` or `slices`, the block being looped through will be access to the "global" context, as well as have four new variables available within that block:
 
-* `@first` [`bool`] - is this the first pass through the iteration?
-* `@last` [`bool`] - is this the last pass through the iteration?
-* `@index` [`int`] - the counter of where in the loop you are, starting with `0`.
-* `@value` - the current element in the array or slice that is being iterated over.
+- `@first` [`bool`] - is this the first pass through the iteration?
+- `@last` [`bool`] - is this the last pass through the iteration?
+- `@index` [`int`] - the counter of where in the loop you are, starting with `0`.
+- `@value` - the current element in the array or slice that is being iterated over.
 
 ```handlebars
 <ul>
   {{#each names}}
-    <li>{{ @index }} - {{ @value }}</li>
+    <li>{{@index}} - {{@value}}</li>
   {{/each}}
 </ul>
 ```
@@ -103,7 +108,7 @@ By using "block parameters" you can change the "key" of the element being access
 ```handlebars
 <ul>
   {{#each names as |name|}}
-    <li>{{ name }}</li>
+    <li>{{name}}</li>
   {{/each}}
 </ul>
 ```
@@ -122,15 +127,15 @@ To change both the key and the index name you can pass two "block parameters"; t
 
 Looping through `maps` using the `each` helper is also supported, and follows very similar guidelines to looping through `arrays`.
 
-* `@first` [`bool`] - is this the first pass through the iteration?
-* `@last` [`bool`] - is this the last pass through the iteration?
-* `@key` - the key of the pair being accessed.
-* `@value` - the value of the pair being accessed.
+- `@first` [`bool`] - is this the first pass through the iteration?
+- `@last` [`bool`] - is this the last pass through the iteration?
+- `@key` - the key of the pair being accessed.
+- `@value` - the value of the pair being accessed.
 
 ```handlebars
 <ul>
   {{#each users}}
-    <li>{{ @key }} - {{ @value }}</li>
+    <li>{{@key}} - {{@value}}</li>
   {{/each}}
 </ul>
 ```
@@ -140,7 +145,7 @@ By using "block parameters" you can change the "key" of the element being access
 ```handlebars
 <ul>
   {{#each users as |user|}}
-    <li>{{ @key }} - {{ user }}</li>
+    <li>{{@key}} - {{user}}</li>
   {{/each}}
 </ul>
 ```

@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/carlmjohnson/versioninfo"
 	. "github.com/pyros2097/gromer/handlebars"
 )
 
@@ -461,6 +462,14 @@ func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
 						justify-content: flex-start;
 					}
 
+					.flex-1 {
+						flex: 1;
+					}
+
+					.justify-end {
+						justify-content: flex-end;
+					}
+
 					.mr-4 {
 						margin-right: 1rem;
 					}
@@ -572,7 +581,7 @@ func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
 			<body>
 				<div class="flex flex-col">
 					<div class="flex w-full p-2 bg-gray-50 border-b border-gray-200 items-center justify-start">
-						<div class="flex mr-4 text-gray-700 text-2xl font-bold"> API Explorer </div>
+						<div class="flex mr-4 text-gray-700 text-2xl font-bold"> API Explorer</div>
 						<div class="text-xl">
 							<select id="api-select" class="form-select block">
 								{{#each routes as |route|}}
@@ -584,6 +593,9 @@ func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
 						</div>
 						<div class="flex ml-3 mr-3">
 							<button id="run" class="bg-gray-200 border border-gray-400 hover:bg-gray-200 focus:outline-none rounded-md text-gray-700 text-md font-bold pt-2 pb-2 pl-6 pr-6"> RUN </button>
+						</div>
+						<div class="flex flex-1 justify-end">
+							(commit {{ commit }})
 						</div>
 					</div>
 					<div class="flex">
@@ -783,6 +795,7 @@ func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
 			</body>
 		</html>
 	`).Props(
+		"commit", versioninfo.Revision[0:7],
 		"routes", apiRoutes,
 		"apiData", template.HTML(string(apiData)),
 	).Render()

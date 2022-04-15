@@ -23,7 +23,7 @@ build:
 	go build -o main
 
 docker-build:
-	docker build -f ../example/Dockerfile  -t example-app:develop ../
+	docker build -f ../_example/Dockerfile  -t example-app:develop ../
 
 docker-run: export DATABASE_URL=postgres://postgres:demo@docker.for.mac.host.internal:5432/postgres?sslmode=disable
 docker-run:

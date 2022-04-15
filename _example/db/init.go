@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
-	"github.com/pyros2097/gromer/example/config"
+	"github.com/pyros2097/gromer/_example/config"
 )
 
 var Query *Queries

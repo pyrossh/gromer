@@ -4,8 +4,8 @@ import (
 	"context"
 
 	. "github.com/pyros2097/gromer"
-	_ "github.com/pyros2097/gromer/example/components"
-	"github.com/pyros2097/gromer/example/pages/api/todos"
+	_ "github.com/pyros2097/gromer/_example/components"
+	"github.com/pyros2097/gromer/_example/pages/api/todos"
 	. "github.com/pyros2097/gromer/handlebars"
 )
 

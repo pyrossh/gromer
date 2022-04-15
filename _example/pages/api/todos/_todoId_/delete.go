@@ -3,7 +3,7 @@ package todos_todoId_
 import (
 	"context"
 
-	"github.com/pyros2097/gromer/example/db"
+	"github.com/pyros2097/gromer/_example/db"
 )
 
 func DELETE(ctx context.Context, id string) (string, int, error) {

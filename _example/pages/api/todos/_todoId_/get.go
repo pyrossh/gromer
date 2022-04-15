@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pyros2097/gromer/example/db"
+	"github.com/pyros2097/gromer/_example/db"
 )
 
 type GetParams struct {

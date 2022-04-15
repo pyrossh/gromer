@@ -329,7 +329,7 @@ func WrapCache(h http.Handler) http.Handler {
 }
 
 func Static(router *mux.Router, path string, fs embed.FS) {
-	router.PathPrefix(path).Handler(http.StripPrefix(path, WrapCache(http.FileServer(http.FS(fs)))))
+	router.PathPrefix(path).Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
 }
 
 func Handle(router *mux.Router, method, route string, h interface{}) {

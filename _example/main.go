@@ -9,13 +9,13 @@ import (
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
 
-	"github.com/pyros2097/gromer/example/assets"
-	"github.com/pyros2097/gromer/example/components"
-	"github.com/pyros2097/gromer/example/pages"
-	"github.com/pyros2097/gromer/example/pages/about"
-	"github.com/pyros2097/gromer/example/pages/api/recover"
-	"github.com/pyros2097/gromer/example/pages/api/todos"
-	"github.com/pyros2097/gromer/example/pages/api/todos/_todoId_"
+	"github.com/pyros2097/gromer/_example/assets"
+	"github.com/pyros2097/gromer/_example/components"
+	"github.com/pyros2097/gromer/_example/pages"
+	"github.com/pyros2097/gromer/_example/pages/about"
+	"github.com/pyros2097/gromer/_example/pages/api/recover"
+	"github.com/pyros2097/gromer/_example/pages/api/todos"
+	"github.com/pyros2097/gromer/_example/pages/api/todos/_todoId_"
 	
 )
 
