@@ -32,13 +32,19 @@ var IsCloundRun bool
 func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
 	info, _ = debug.ReadBuildInfo()
-	zerolog.LevelFieldName = "severity"
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	log.Logger = log.Output(zerolog.ConsoleWriter{
-		Out:          os.Stdout,
-		NoColor:      IsCloundRun,
-		PartsExclude: []string{zerolog.TimestampFieldName},
-	})
+	if IsCloundRun {
+		zerolog.LevelFieldName = "severity"
+		zerolog.TimestampFieldName = "timestamp"
+		zerolog.TimeFieldFormat = time.RFC3339Nano
+	} else {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Logger = log.Output(zerolog.ConsoleWriter{
+			Out:          os.Stdout,
+			NoColor:      IsCloundRun,
+			PartsExclude: []string{zerolog.TimestampFieldName},
+		})
+	}
 }
 
 var RouteDefs []RouteDefinition
@@ -280,12 +286,12 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 				RespondError(w, 599, fmt.Errorf("panic: %+v\n %s", err, stack))
 			}
 		}()
+		startTime := time.Now()
 		logRespWriter := NewLogResponseWriter(w)
 		next.ServeHTTP(logRespWriter, r)
 		if IsCloundRun {
 			return
 		}
-		startTime := time.Now()
 		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 		if len(ip) > 0 && ip[0] == '[' {
 			ip = ip[1 : len(ip)-1]
@@ -295,7 +301,7 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 			logger = log.WithLevel(zerolog.ErrorLevel).Err(logRespWriter.err).Stack()
 		}
 		ua := useragent.Parse(r.UserAgent())
-		logger.Msgf("%s %d %.2f KB %3s %s %s", r.Method,
+		logger.Msgf("%s %d %.2f KB %s %s %s", r.Method,
 			logRespWriter.responseStatusCode,
 			float32(logRespWriter.responseContentLength)/1024.0,
 			time.Since(startTime).Round(time.Millisecond).String(), ua.Name, r.URL.Path)
