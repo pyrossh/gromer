@@ -47,7 +47,7 @@ func (t *Template) Parse() error {
 }
 
 // Exec the template using the content and return the results
-func (t *Template) Render() (HtmlContent, int, error) {
+func (t *Template) RenderWithStatus(status int) (HtmlContent, int, error) {
 	err := t.Parse()
 	if err != nil {
 		return HtmlContent("Server Erorr"), 500, errors.WithStack(err)
@@ -56,7 +56,7 @@ func (t *Template) Render() (HtmlContent, int, error) {
 	r := t.program.Accept(v)
 	switch rp := r.(type) {
 	case string:
-		return HtmlContent(rp), 200, nil
+		return HtmlContent(rp), status, nil
 	case error:
 		return HtmlContent("Server Erorr"), 500, rp
 	case nil:
@@ -64,6 +64,10 @@ func (t *Template) Render() (HtmlContent, int, error) {
 	default:
 		return HtmlContent("Server Erorr"), 500, errors.WithStack(errors.Errorf("unsupport eval return format %T: %+v", r, r))
 	}
+}
+
+func (t *Template) Render() (HtmlContent, int, error) {
+	return t.RenderWithStatus(200)
 }
 
 func (t *Template) Prop(key string, v any) *Template {

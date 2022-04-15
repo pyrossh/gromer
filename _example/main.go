@@ -11,6 +11,7 @@ import (
 
 	"github.com/pyros2097/gromer/_example/assets"
 	"github.com/pyros2097/gromer/_example/components"
+	"github.com/pyros2097/gromer/_example/pages/404"
 	"github.com/pyros2097/gromer/_example/pages"
 	"github.com/pyros2097/gromer/_example/pages/about"
 	"github.com/pyros2097/gromer/_example/pages/api/recover"
@@ -31,7 +32,9 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(gromer.CorsMiddleware)
 	r.Use(gromer.LogMiddleware)
-	r.NotFoundHandler = gromer.NotFoundHandler
+	
+	r.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
+	
 	gromer.Static(r, "/assets/", assets.FS)
 	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
 	gromer.Handle(r, "GET", "/", pages.GET)

@@ -22,6 +22,7 @@ require (
 	cloud.google.com/go/firestore v1.5.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/carlmjohnson/versioninfo v0.22.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -39,6 +40,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.16 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rs/xid v1.3.0 // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shurcooL/github_flavored_markdown v0.0.0-20210228213109-c3a9aa474629 // indirect
@@ -64,4 +66,5 @@ require (
 	google.golang.org/grpc v1.40.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	xojoc.pw/useragent v0.0.0-20200116211053-1ec61d55e8fe // indirect
 )

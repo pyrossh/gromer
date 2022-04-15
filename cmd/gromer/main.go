@@ -78,6 +78,7 @@ func lowerFirst(s string) string {
 
 func main() {
 	moduleName := ""
+	notFoundPkg := ""
 	pkgFlag := flag.String("pkg", "", "specify a package name")
 	flag.Parse()
 	if pkgFlag == nil || *pkgFlag == "" {
@@ -110,8 +111,13 @@ func main() {
 					return err
 				}
 				lines := strings.Split(string(data), "\n")
+				pkg := strings.Replace(""+lines[0], "package ", "", 1)
+				if strings.Contains(filesrc, "/404/") {
+					notFoundPkg = pkg
+					return nil
+				}
 				gromer.RouteDefs = append(gromer.RouteDefs, gromer.RouteDefinition{
-					Pkg:     strings.Replace(""+lines[0], "package ", "", 1),
+					Pkg:     pkg,
 					PkgPath: getRoute(method, route),
 					Method:  method,
 					Path:    rewritePath(path),
@@ -170,6 +176,7 @@ import (
 
 	"{{ moduleName }}/assets"
 	"{{ moduleName }}/components"
+	{{#if notFoundPkg}}"{{ moduleName }}/pages/404"{{/if}}
 	{{#each routeImports as |route| }}"{{ moduleName }}/pages{{ route.PkgPath }}"
 	{{/each}}
 )
@@ -184,7 +191,9 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(gromer.CorsMiddleware)
 	r.Use(gromer.LogMiddleware)
-	r.NotFoundHandler = gromer.NotFoundHandler
+	{{#if notFoundPkg}}
+	r.NotFoundHandler = gromer.StatusHandler({{ notFoundPkg }}.GET)
+	{{/if}}
 	gromer.Static(r, "/assets/", assets.FS)
 	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
 	{{#each routes as |route| }}gromer.Handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
@@ -200,6 +209,7 @@ func main() {
 		"routes", gromer.RouteDefs,
 		"routeImports", routeImports,
 		"componentNames", componentNames,
+		"notFoundPkg", notFoundPkg,
 		"tick", "`",
 	).Render()
 	if err != nil {

@@ -9,7 +9,7 @@ setup:
 generate: export DATABASE_URL=postgres://postgres:demo@127.0.0.1:5432/postgres?sslmode=disable
 generate:
 	sqlc generate -f db/sqlc.yaml
-	gromer -pkg github.com/pyros2097/gromer/example
+	gromer -pkg github.com/pyros2097/gromer/_example
 	dbmate migrate
 
 run: export PORT=3000

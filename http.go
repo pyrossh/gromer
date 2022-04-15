@@ -23,9 +23,21 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
+	"xojoc.pw/useragent"
 )
 
 var info *debug.BuildInfo
+var IsCloundRun bool
+
+func init() {
+	IsCloundRun = os.Getenv("K_REVISION") != ""
+	info, _ = debug.ReadBuildInfo()
+	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	log.Logger = log.Output(zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: zerolog.TimeFormatUnix,
+	})
+}
 
 var RouteDefs []RouteDefinition
 
@@ -82,15 +94,6 @@ func RegisterComponent(fn any, props ...string) {
 			return "", err
 		}
 		return template.HTML(s), nil
-	})
-}
-
-func init() {
-	info, _ = debug.ReadBuildInfo()
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	log.Logger = log.Output(zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: zerolog.TimeFormatUnix,
 	})
 }
 
@@ -275,6 +278,9 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 				RespondError(w, 599, fmt.Errorf("panic: %+v\n %s", err, stack))
 			}
 		}()
+		if IsCloundRun {
+			return
+		}
 		startTime := time.Now()
 		logRespWriter := NewLogResponseWriter(w)
 		next.ServeHTTP(logRespWriter, r)
@@ -286,21 +292,27 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 		if logRespWriter.err != nil {
 			logger = log.WithLevel(zerolog.ErrorLevel).Err(logRespWriter.err).Stack()
 		}
-		logger.
-			Str("method", r.Method).
-			Str("url", r.URL.String()).
-			Int("header_size", int(headerSize(r.Header))).
-			Int64("body_size", r.ContentLength).
-			Str("host", r.Host).
-			// Str("agent", r.UserAgent()).
-			Str("referer", r.Referer()).
-			Str("proto", r.Proto).
-			Str("remote_ip", ip).
-			Int("status", logRespWriter.responseStatusCode).
-			Int("resp_header_size", logRespWriter.responseHeaderSize).
-			Int("resp_body_size", logRespWriter.responseContentLength).
-			Str("latency", time.Since(startTime).String()).
-			Msg("")
+		ua := useragent.Parse(r.UserAgent())
+		logger.Msgf("%s %d %.2f KB %3s %s %s", r.Method,
+			logRespWriter.responseStatusCode,
+			float32(logRespWriter.responseContentLength)/1024.0,
+			time.Since(startTime).Round(time.Millisecond).String(), ua.Name, r.URL.Path)
+
+		// logger.
+		// 	Str("method", r.Method).
+		// 	Str("url", r.URL.String()).
+		// 	Int("header_size", int(headerSize(r.Header))).
+		// 	Int64("body_size", r.ContentLength).
+		// 	Str("host", r.Host).
+		// 	// Str("agent", r.UserAgent()).
+		// 	Str("referer", r.Referer()).
+		// 	Str("proto", r.Proto).
+		// 	Str("remote_ip", ip).
+		// 	Int("status", logRespWriter.responseStatusCode).
+		// 	Int("resp_header_size", logRespWriter.responseHeaderSize).
+		// 	Int("resp_body_size", logRespWriter.responseContentLength).
+		// 	Str("latency", time.Since(startTime).String()).
+		// 	Msgf("")
 	})
 })
 
@@ -317,9 +329,24 @@ func CorsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-var NotFoundHandler = LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	RespondError(w, 404, fmt.Errorf("path '%s' not found", r.URL.String()))
-}))
+func StatusHandler(h interface{}) http.Handler {
+	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
+		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(ctx)})
+		response := values[0].Interface()
+		responseStatus := values[1].Interface().(int)
+		responseError := values[2].Interface()
+		if responseError != nil {
+			RespondError(w, responseStatus, responseError.(error))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+
+		// This has to be at end always
+		w.WriteHeader(responseStatus)
+		w.Write([]byte(response.(handlebars.HtmlContent)))
+	})).(http.Handler)
+}
 
 func WrapCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -329,7 +356,7 @@ func WrapCache(h http.Handler) http.Handler {
 }
 
 func Static(router *mux.Router, path string, fs embed.FS) {
-	router.PathPrefix(path).Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
+	router.PathPrefix(path).Handler(http.StripPrefix(path, WrapCache(http.FileServer(http.FS(fs)))))
 }
 
 func Handle(router *mux.Router, method, route string, h interface{}) {
