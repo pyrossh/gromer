@@ -19,6 +19,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/hirosassa/zerodriver"
 	"github.com/pyros2097/gromer/handlebars"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -33,11 +34,14 @@ func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
 	info, _ = debug.ReadBuildInfo()
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	log.Logger = log.Output(zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: zerolog.TimeFormatUnix,
-		NoColor:    IsCloundRun,
-	})
+	if IsCloundRun {
+		log.Logger = log.Output(zerodriver.NewProductionLogger())
+	} else {
+		log.Logger = log.Output(zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: zerolog.TimeFormatUnix,
+		})
+	}
 }
 
 var RouteDefs []RouteDefinition
