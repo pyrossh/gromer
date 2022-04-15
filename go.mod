@@ -7,7 +7,6 @@ require (
 	github.com/carlmjohnson/versioninfo v0.22.1
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gorilla/mux v1.8.0
-	github.com/hirosassa/zerodriver v0.1.1
 	github.com/imdario/mergo v0.3.12
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.1
