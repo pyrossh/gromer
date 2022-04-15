@@ -278,12 +278,12 @@ var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 				RespondError(w, 599, fmt.Errorf("panic: %+v\n %s", err, stack))
 			}
 		}()
+		logRespWriter := NewLogResponseWriter(w)
+		next.ServeHTTP(logRespWriter, r)
 		if IsCloundRun {
 			return
 		}
 		startTime := time.Now()
-		logRespWriter := NewLogResponseWriter(w)
-		next.ServeHTTP(logRespWriter, r)
 		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 		if len(ip) > 0 && ip[0] == '[' {
 			ip = ip[1 : len(ip)-1]
