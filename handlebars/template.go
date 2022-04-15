@@ -8,6 +8,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+var stylesCss = CssContent("")
+
+type CssContent string
 type HtmlContent string
 
 // Template represents an input and helpers to be used
@@ -92,4 +95,13 @@ func Html(tpl string) *Template {
 
 func HtmlErr(status int, err error) (HtmlContent, int, error) {
 	return HtmlContent("ErrorPage/AccessDeniedPage/NotFoundPage based on status code"), status, err
+}
+
+func Css(v string) CssContent {
+	stylesCss += CssContent(v)
+	return CssContent(v)
+}
+
+func GetStyles() CssContent {
+	return stylesCss
 }

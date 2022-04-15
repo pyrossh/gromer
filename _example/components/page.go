@@ -25,9 +25,10 @@ func Page(props PageProps) *Template {
 					<meta content="pyros.sh, gromer" name="keywords" />
 					<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
 					<link rel="icon" href="/assets/icon.png" />
-					<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css" />
-					<script src="https://unpkg.com/htmx.org@1.7.0"></script>
-					<script src="/assets/alpine.js" defer=""></script>
+					<link rel="stylesheet" href="/assets/css/bulma@0.9.3.css" />
+					<link rel="stylesheet" href="/styles.css" />
+					<script src="/assets/js/htmx@1.7.0.js"></script>
+					<script src="/assets/js/alpinejs@3.9.6.js" defer=""></script>
 			</head>
 			<body>
 			{{ props.Children }}

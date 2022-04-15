@@ -232,6 +232,13 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		w.Write([]byte(v))
 		return
 	}
+	if v, ok := response.(handlebars.CssContent); ok {
+		w.Header().Set("Content-Type", "text/css")
+		// This has to be at end always
+		w.WriteHeader(responseStatus)
+		w.Write([]byte(v))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
@@ -373,4 +380,8 @@ func Handle(router *mux.Router, method, route string, h interface{}) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 		PerformRequest(route, h, ctx, w, r)
 	}).Methods(method, "OPTIONS")
+}
+
+func Styles(c context.Context) (handlebars.CssContent, int, error) {
+	return handlebars.GetStyles(), 200, nil
 }

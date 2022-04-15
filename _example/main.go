@@ -30,21 +30,27 @@ func init() {
 func main() {
 	port := os.Getenv("PORT")
 	r := mux.NewRouter()
-	r.Use(gromer.CorsMiddleware)
 	r.Use(gromer.LogMiddleware)
 	
 	r.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
 	
 	gromer.Static(r, "/assets/", assets.FS)
+	gromer.Handle(r, "GET", "/styles.css", gromer.Styles)
 	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
 	gromer.Handle(r, "GET", "/", pages.GET)
 	gromer.Handle(r, "GET", "/about", about.GET)
-	gromer.Handle(r, "GET", "/api/recover", recover.GET)
-	gromer.Handle(r, "GET", "/api/todos", todos.GET)
-	gromer.Handle(r, "POST", "/api/todos", todos.POST)
-	gromer.Handle(r, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
-	gromer.Handle(r, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
-	gromer.Handle(r, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
+	
+
+	apiRouter := r.NewRoute().Subrouter()
+	apiRouter.Use(gromer.CorsMiddleware)
+	gromer.Handle(apiRouter, "GET", "/api/recover", recover.GET)
+	gromer.Handle(apiRouter, "GET", "/api/todos", todos.GET)
+	gromer.Handle(apiRouter, "POST", "/api/todos", todos.POST)
+	gromer.Handle(apiRouter, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
+	gromer.Handle(apiRouter, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
+	gromer.Handle(apiRouter, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
+	
+	
 	
 	log.Info().Msg("http server listening on http://localhost:"+port)
 	srv := server.New(r, nil)

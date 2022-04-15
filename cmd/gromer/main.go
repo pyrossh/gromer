@@ -131,8 +131,15 @@ func main() {
 	sort.Slice(gromer.RouteDefs, func(i, j int) bool {
 		return gromer.RouteDefs[i].Path < gromer.RouteDefs[j].Path
 	})
+	pageRoutes := []gromer.RouteDefinition{}
+	apiRoutes := []gromer.RouteDefinition{}
 	for _, r := range gromer.RouteDefs {
 		fmt.Printf("%-6s %s %-6s\n", r.Method, r.Path, r.PkgPath)
+		if strings.Contains(r.Path, "/api/") {
+			apiRoutes = append(apiRoutes, r)
+		} else {
+			pageRoutes = append(pageRoutes, r)
+		}
 	}
 	err = handlebars.GlobalHelpers.Add("title", func(v string) string {
 		return strings.Title(strings.ToLower(v))
@@ -189,15 +196,22 @@ func init() {
 func main() {
 	port := os.Getenv("PORT")
 	r := mux.NewRouter()
-	r.Use(gromer.CorsMiddleware)
 	r.Use(gromer.LogMiddleware)
 	{{#if notFoundPkg}}
 	r.NotFoundHandler = gromer.StatusHandler({{ notFoundPkg }}.GET)
 	{{/if}}
 	gromer.Static(r, "/assets/", assets.FS)
+	gromer.Handle(r, "GET", "/styles.css", gromer.Styles)
 	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
-	{{#each routes as |route| }}gromer.Handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
+	{{#each pageRoutes as |route| }}gromer.Handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
+
+	apiRouter := r.NewRoute().Subrouter()
+	apiRouter.Use(gromer.CorsMiddleware)
+	{{#each apiRoutes as |route| }}gromer.Handle(apiRouter, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
+	{{/each}}
+	
+	
 	log.Info().Msg("http server listening on http://localhost:"+port)
 	srv := server.New(r, nil)
 	if err := srv.ListenAndServe(":"+port); err != nil {
@@ -206,7 +220,8 @@ func main() {
 }
 `).Props(
 		"moduleName", moduleName,
-		"routes", gromer.RouteDefs,
+		"pageRoutes", pageRoutes,
+		"apiRoutes", apiRoutes,
 		"routeImports", routeImports,
 		"componentNames", componentNames,
 		"notFoundPkg", notFoundPkg,
