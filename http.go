@@ -2,6 +2,7 @@ package gromer
 
 import (
 	"context"
+	"crypto/md5"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -372,7 +374,7 @@ func StatusHandler(h interface{}) http.Handler {
 
 func WrapCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=2592000")
+		w.Header().Set("Cache-Control", "public, max-age=2592000") // perma cache for 1 month
 		h.ServeHTTP(w, r)
 	})
 }
@@ -399,4 +401,33 @@ func GetUrl(ctx context.Context) *url.URL {
 
 func GetHeader(ctx context.Context) http.Header {
 	return ctx.Value("header").(http.Header)
+}
+
+var sumCache = sync.Map{}
+
+func getSum(k string, cb func() [16]byte) string {
+	if v, ok := sumCache.Load(k); ok {
+		return v.(string)
+	}
+	sum := fmt.Sprintf("%x", cb())
+	sumCache.Store(k, sum)
+	return sum
+}
+
+func GetAssetUrl(fs embed.FS, path string) string {
+	sum := getSum(path, func() [16]byte {
+		data, err := fs.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		return md5.Sum(data)
+	})
+	return fmt.Sprintf("/assets/%s?hash=%s", path, sum)
+}
+
+func GetStylesUrl() string {
+	sum := getSum("styles.css", func() [16]byte {
+		return md5.Sum([]byte(handlebars.GetStyles()))
+	})
+	return fmt.Sprintf("/styles.css?hash=%s", sum)
 }

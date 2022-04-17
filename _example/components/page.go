@@ -3,6 +3,8 @@ package components
 import (
 	"html/template"
 
+	"github.com/pyros2097/gromer"
+	"github.com/pyros2097/gromer/_example/assets"
 	. "github.com/pyros2097/gromer/handlebars"
 )
 
@@ -25,14 +27,19 @@ func Page(props PageProps) *Template {
 					<meta content="pyros.sh, gromer" name="keywords" />
 					<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
 					<link rel="icon" href="/assets/icon.png" />
-					<link rel="stylesheet" href="/assets/css/bulma@0.9.3.css" />
-					<link rel="stylesheet" href="/styles.css" />
-					<script src="/assets/js/htmx@1.7.0.js"></script>
-					<script src="/assets/js/alpinejs@3.9.6.js" defer=""></script>
+					<link rel="stylesheet" href="{{ bulmaCssUrl }}" />
+					<link rel="stylesheet" href="{{ stylesCssUrl }}" />
+					<script src="{{ htmxJsUrl }}"></script>
+					<script src="{{ alpineJsUrl }}" defer=""></script>
 			</head>
 			<body>
 			{{ props.Children }}
 			</body>
 		</html>
-	`)
+	`).Props(
+		"bulmaCssUrl", gromer.GetAssetUrl(assets.FS, "css/bulma@0.9.3.css"),
+		"stylesCssUrl", gromer.GetStylesUrl(),
+		"htmxJsUrl", gromer.GetAssetUrl(assets.FS, "js/htmx@1.7.0.js"),
+		"alpineJsUrl", gromer.GetAssetUrl(assets.FS, "js/alpinejs@3.9.6.js"),
+	)
 }
