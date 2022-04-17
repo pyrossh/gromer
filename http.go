@@ -81,6 +81,7 @@ func RegisterComponent(fn any, props ...string) {
 			for i := 0; i < structType.NumField(); i++ {
 				if f := rv.Field(i); f.CanSet() {
 					jsonName := structType.Field(i).Tag.Get("json")
+					defaultValue := structType.Field(i).Tag.Get("default")
 					if jsonName == "children" {
 						s, err := help.Block()
 						if err != nil {
@@ -88,7 +89,12 @@ func RegisterComponent(fn any, props ...string) {
 						}
 						f.Set(reflect.ValueOf(template.HTML(s)))
 					} else {
-						f.Set(reflect.ValueOf(help.Context.Get(jsonName)))
+						v := help.Context.Get(jsonName)
+						if v == nil {
+							f.Set(reflect.ValueOf(defaultValue))
+						} else {
+							f.Set(reflect.ValueOf(v))
+						}
 					}
 				}
 			}
