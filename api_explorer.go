@@ -1,32 +1,34 @@
 package gromer
 
 import (
-	"context"
 	"encoding/json"
 	"html/template"
+	"net/http"
 	"strings"
 
 	"github.com/carlmjohnson/versioninfo"
+	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer/assets"
 	. "github.com/pyros2097/gromer/handlebars"
 )
 
-func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
-	cmcss, _ := assets.FS.ReadFile("css/codemirror@5.63.1.css")
-	stylescss, _ := assets.FS.ReadFile("css/styles.css")
-	cmjs, _ := assets.FS.ReadFile("js/codemirror@5.63.1.min.js")
-	cmjsjs, _ := assets.FS.ReadFile("js/codemirror-javascript@5.63.1.js")
-	apiRoutes := []RouteDefinition{}
-	for _, v := range RouteDefs {
-		if strings.Contains(v.Path, "/api/") {
-			apiRoutes = append(apiRoutes, v)
+func ApiExplorerRoute(router *mux.Router, path string) {
+	router.Path(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cmcss, _ := assets.FS.ReadFile("css/codemirror@5.63.1.css")
+		stylescss, _ := assets.FS.ReadFile("css/styles.css")
+		cmjs, _ := assets.FS.ReadFile("js/codemirror@5.63.1.min.js")
+		cmjsjs, _ := assets.FS.ReadFile("js/codemirror-javascript@5.63.1.js")
+		apiRoutes := []RouteDefinition{}
+		for _, v := range RouteDefs {
+			if strings.Contains(v.Path, "/api/") {
+				apiRoutes = append(apiRoutes, v)
+			}
 		}
-	}
-	apiData, err := json.Marshal(apiRoutes)
-	if err != nil {
-		return HtmlErr(400, err)
-	}
-	return Html(`
+		apiData, err := json.Marshal(apiRoutes)
+		if err != nil {
+			RespondError(w, 500, err)
+		}
+		status, err := Html(`
 		<!DOCTYPE html>
 		<html lang="en">
 			<head>
@@ -260,10 +262,14 @@ func ApiExplorer(ctx context.Context) (HtmlContent, int, error) {
 			</body>
 		</html>
 	`).Props(
-		"commit", versioninfo.Revision[0:7],
-		"routes", apiRoutes,
-		"apiData", template.HTML(string(apiData)),
-		"css", template.HTML(string(cmcss)+"\n\n"+string(stylescss)),
-		"js", template.HTML(string(cmjs)+"\n\n"+string(cmjsjs)),
-	).Render()
+			"commit", versioninfo.Revision[0:7],
+			"routes", apiRoutes,
+			"apiData", template.HTML(string(apiData)),
+			"css", template.HTML(string(cmcss)+"\n\n"+string(stylescss)),
+			"js", template.HTML(string(cmjs)+"\n\n"+string(cmjsjs)),
+		).RenderWriter(w)
+		if err != nil {
+			RespondError(w, status, err)
+		}
+	})
 }

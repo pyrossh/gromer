@@ -29,19 +29,23 @@ func init() {
 
 func main() {
 	port := os.Getenv("PORT")
-	r := mux.NewRouter()
-	r.Use(gromer.LogMiddleware)
+	baseRouter := mux.NewRouter()
+	baseRouter.Use(gromer.LogMiddleware)
 	
-	r.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
+	baseRouter.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
 	
-	gromer.Static(r, "/assets/", assets.FS)
-	gromer.Handle(r, "GET", "/styles.css", gromer.Styles)
-	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
-	gromer.Handle(r, "GET", "/", pages.GET)
-	gromer.Handle(r, "GET", "/about", about.GET)
+	staticRouter := baseRouter.NewRoute().Subrouter()
+	staticRouter.Use(gromer.CacheMiddleware)
+	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
+	gromer.StylesRoute(staticRouter, "/styles.css")
+
+	pageRouter := baseRouter.NewRoute().Subrouter()
+	gromer.ApiExplorerRoute(pageRouter, "/explorer")
+	gromer.Handle(pageRouter, "GET", "/", pages.GET)
+	gromer.Handle(pageRouter, "GET", "/about", about.GET)
 	
 
-	apiRouter := r.NewRoute().Subrouter()
+	apiRouter := baseRouter.NewRoute().Subrouter()
 	apiRouter.Use(gromer.CorsMiddleware)
 	gromer.Handle(apiRouter, "GET", "/api/recover", recover.GET)
 	gromer.Handle(apiRouter, "GET", "/api/todos", todos.GET)
@@ -53,7 +57,7 @@ func main() {
 	
 	
 	log.Info().Msg("http server listening on http://localhost:"+port)
-	srv := server.New(r, nil)
+	srv := server.New(baseRouter, nil)
 	if err := srv.ListenAndServe(":"+port); err != nil {
 		log.Fatal().Stack().Err(err).Msg("failed to listen")
 	}

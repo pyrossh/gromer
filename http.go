@@ -269,6 +269,7 @@ func headerSize(h http.Header) int64 {
 
 type LogResponseWriter struct {
 	http.ResponseWriter
+	startTime             time.Time
 	responseStatusCode    int
 	responseContentLength int
 	responseHeaderSize    int
@@ -276,7 +277,7 @@ type LogResponseWriter struct {
 }
 
 func NewLogResponseWriter(w http.ResponseWriter) *LogResponseWriter {
-	return &LogResponseWriter{ResponseWriter: w}
+	return &LogResponseWriter{ResponseWriter: w, startTime: time.Now()}
 }
 
 func (w *LogResponseWriter) WriteHeader(code int) {
@@ -294,51 +295,54 @@ func (w *LogResponseWriter) SetError(err error) {
 	w.err = err
 }
 
-var LogMiddleware = mux.MiddlewareFunc(func(next http.Handler) http.Handler {
+func (w *LogResponseWriter) LogRequest(r *http.Request) {
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if len(ip) > 0 && ip[0] == '[' {
+		ip = ip[1 : len(ip)-1]
+	}
+	logger := log.WithLevel(zerolog.InfoLevel)
+	if w.err != nil {
+		stack := string(debug.Stack())
+		logger = log.WithLevel(zerolog.ErrorLevel).Err(w.err).Str("stack", stack).Stack()
+	}
+	ua := useragent.Parse(r.UserAgent())
+	logger.Msgf("%s %d %.2f KB %s %s %s", r.Method,
+		w.responseStatusCode,
+		float32(w.responseContentLength)/1024.0,
+		time.Since(w.startTime).Round(time.Millisecond).String(), ua.Name, r.URL.Path)
+	// logger.
+	// 	Str("method", r.Method).
+	// 	Str("url", r.URL.String()).
+	// 	Int("header_size", int(headerSize(r.Header))).
+	// 	Int64("body_size", r.ContentLength).
+	// 	Str("host", r.Host).
+	// 	// Str("agent", r.UserAgent()).
+	// 	Str("referer", r.Referer()).
+	// 	Str("proto", r.Proto).
+	// 	Str("remote_ip", ip).
+	// 	Int("status", logRespWriter.responseStatusCode).
+	// 	Int("resp_header_size", logRespWriter.responseHeaderSize).
+	// 	Int("resp_body_size", logRespWriter.responseContentLength).
+	// 	Str("latency", time.Since(startTime).String()).
+	// 	Msgf("")
+}
+
+func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logRespWriter := NewLogResponseWriter(w)
 		defer func() {
 			if err := recover(); err != nil {
-				stack := string(debug.Stack())
-				RespondError(w, 599, fmt.Errorf("panic: %+v\n %s", err, stack))
+				RespondError(logRespWriter, 599, fmt.Errorf("%+v", err))
+				logRespWriter.LogRequest(r)
 			}
 		}()
-		startTime := time.Now()
-		logRespWriter := NewLogResponseWriter(w)
 		next.ServeHTTP(logRespWriter, r)
 		if IsCloundRun {
 			return
 		}
-		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		if len(ip) > 0 && ip[0] == '[' {
-			ip = ip[1 : len(ip)-1]
-		}
-		logger := log.WithLevel(zerolog.InfoLevel)
-		if logRespWriter.err != nil {
-			logger = log.WithLevel(zerolog.ErrorLevel).Err(logRespWriter.err).Stack()
-		}
-		ua := useragent.Parse(r.UserAgent())
-		logger.Msgf("%s %d %.2f KB %s %s %s", r.Method,
-			logRespWriter.responseStatusCode,
-			float32(logRespWriter.responseContentLength)/1024.0,
-			time.Since(startTime).Round(time.Millisecond).String(), ua.Name, r.URL.Path)
-
-		// logger.
-		// 	Str("method", r.Method).
-		// 	Str("url", r.URL.String()).
-		// 	Int("header_size", int(headerSize(r.Header))).
-		// 	Int64("body_size", r.ContentLength).
-		// 	Str("host", r.Host).
-		// 	// Str("agent", r.UserAgent()).
-		// 	Str("referer", r.Referer()).
-		// 	Str("proto", r.Proto).
-		// 	Str("remote_ip", ip).
-		// 	Int("status", logRespWriter.responseStatusCode).
-		// 	Int("resp_header_size", logRespWriter.responseHeaderSize).
-		// 	Int("resp_body_size", logRespWriter.responseContentLength).
-		// 	Str("latency", time.Since(startTime).String()).
-		// 	Msgf("")
+		logRespWriter.LogRequest(r)
 	})
-})
+}
 
 func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -349,6 +353,13 @@ func CorsMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(200)
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func CacheMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=2592000") // perma cache for 1 month
 		next.ServeHTTP(w, r)
 	})
 }
@@ -366,21 +377,22 @@ func StatusHandler(h interface{}) http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html")
 
-		// This has to be at end always
+		// This has to be at end always after headers are set
 		w.WriteHeader(responseStatus)
 		w.Write([]byte(response.(handlebars.HtmlContent)))
 	})).(http.Handler)
 }
 
-func WrapCache(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=2592000") // perma cache for 1 month
-		h.ServeHTTP(w, r)
-	})
+func StaticRoute(router *mux.Router, path string, fs embed.FS) {
+	router.Path(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
 }
 
-func Static(router *mux.Router, path string, fs embed.FS) {
-	router.PathPrefix(path).Handler(http.StripPrefix(path, WrapCache(http.FileServer(http.FS(fs)))))
+func StylesRoute(router *mux.Router, path string) {
+	router.Path(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		w.WriteHeader(200)
+		w.Write([]byte(handlebars.GetStyles()))
+	})
 }
 
 func Handle(router *mux.Router, method, route string, h interface{}) {
@@ -389,10 +401,6 @@ func Handle(router *mux.Router, method, route string, h interface{}) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 		PerformRequest(route, h, ctx, w, r)
 	}).Methods(method, "OPTIONS")
-}
-
-func Styles(c context.Context) (handlebars.CssContent, int, error) {
-	return handlebars.GetStyles(), 200, nil
 }
 
 func GetUrl(ctx context.Context) *url.URL {

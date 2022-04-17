@@ -2,6 +2,8 @@ package handlebars
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/aymerick/raymond/ast"
 	"github.com/aymerick/raymond/parser"
@@ -71,6 +73,18 @@ func (t *Template) RenderWithStatus(status int) (HtmlContent, int, error) {
 
 func (t *Template) Render() (HtmlContent, int, error) {
 	return t.RenderWithStatus(200)
+}
+
+func (t *Template) RenderWriter(w io.Writer) (int, error) {
+	s, status, err := t.Render()
+	if err != nil {
+		return status, err
+	}
+	if v, ok := w.(http.ResponseWriter); ok {
+		v.WriteHeader(status)
+	}
+	w.Write([]byte(s))
+	return 200, nil
 }
 
 func (t *Template) Prop(key string, v any) *Template {

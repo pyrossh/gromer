@@ -195,25 +195,29 @@ func init() {
 
 func main() {
 	port := os.Getenv("PORT")
-	r := mux.NewRouter()
-	r.Use(gromer.LogMiddleware)
+	baseRouter := mux.NewRouter()
+	baseRouter.Use(gromer.LogMiddleware)
 	{{#if notFoundPkg}}
-	r.NotFoundHandler = gromer.StatusHandler({{ notFoundPkg }}.GET)
+	baseRouter.NotFoundHandler = gromer.StatusHandler({{ notFoundPkg }}.GET)
 	{{/if}}
-	gromer.Static(r, "/assets/", assets.FS)
-	gromer.Handle(r, "GET", "/styles.css", gromer.Styles)
-	gromer.Handle(r, "GET", "/api", gromer.ApiExplorer)
-	{{#each pageRoutes as |route| }}gromer.Handle(r, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
+	staticRouter := baseRouter.NewRoute().Subrouter()
+	staticRouter.Use(gromer.CacheMiddleware)
+	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
+	gromer.StylesRoute(staticRouter, "/styles.css")
+
+	pageRouter := baseRouter.NewRoute().Subrouter()
+	gromer.ApiExplorerRoute(pageRouter, "/explorer")
+	{{#each pageRoutes as |route| }}gromer.Handle(pageRouter, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
 
-	apiRouter := r.NewRoute().Subrouter()
+	apiRouter := baseRouter.NewRoute().Subrouter()
 	apiRouter.Use(gromer.CorsMiddleware)
 	{{#each apiRoutes as |route| }}gromer.Handle(apiRouter, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
 	
 	
 	log.Info().Msg("http server listening on http://localhost:"+port)
-	srv := server.New(r, nil)
+	srv := server.New(baseRouter, nil)
 	if err := srv.ListenAndServe(":"+port); err != nil {
 		log.Fatal().Stack().Err(err).Msg("failed to listen")
 	}
