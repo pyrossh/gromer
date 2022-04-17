@@ -384,7 +384,7 @@ func StatusHandler(h interface{}) http.Handler {
 }
 
 func StaticRoute(router *mux.Router, path string, fs embed.FS) {
-	router.Path(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
+	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
 }
 
 func StylesRoute(router *mux.Router, path string) {
