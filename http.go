@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"regexp"
@@ -58,13 +59,13 @@ type RouteDefinition struct {
 	Params     interface{} `json:"params"`
 }
 
-func GetFunctionName(temp interface{}) string {
+func getFunctionName(temp interface{}) string {
 	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name()), ".")
 	return strs[len(strs)-1]
 }
 
 func RegisterComponent(fn any, props ...string) {
-	name := GetFunctionName(fn)
+	name := getFunctionName(fn)
 	fnType := reflect.TypeOf(fn)
 	fnValue := reflect.ValueOf(fn)
 	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
@@ -384,4 +385,12 @@ func Handle(router *mux.Router, method, route string, h interface{}) {
 
 func Styles(c context.Context) (handlebars.CssContent, int, error) {
 	return handlebars.GetStyles(), 200, nil
+}
+
+func GetUrl(ctx context.Context) *url.URL {
+	return ctx.Value("url").(*url.URL)
+}
+
+func GetHeader(ctx context.Context) http.Header {
+	return ctx.Value("header").(http.Header)
 }
