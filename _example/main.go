@@ -17,6 +17,8 @@ import (
 	"github.com/pyros2097/gromer/_example/pages/api/recover"
 	"github.com/pyros2097/gromer/_example/pages/api/todos"
 	"github.com/pyros2097/gromer/_example/pages/api/todos/_todoId_"
+	"github.com/pyros2097/gromer/_example/pages/api/todos/_todoId_/complete"
+	"github.com/pyros2097/gromer/_example/pages/todos"
 	
 )
 
@@ -43,6 +45,8 @@ func main() {
 	gromer.ApiExplorerRoute(pageRouter, "/explorer")
 	gromer.Handle(pageRouter, "GET", "/", pages.GET)
 	gromer.Handle(pageRouter, "GET", "/about", about.GET)
+	gromer.Handle(pageRouter, "GET", "/todos", todos_page.GET)
+	gromer.Handle(pageRouter, "POST", "/todos", todos_page.POST)
 	
 
 	apiRouter := baseRouter.NewRoute().Subrouter()
@@ -52,7 +56,7 @@ func main() {
 	gromer.Handle(apiRouter, "POST", "/api/todos", todos.POST)
 	gromer.Handle(apiRouter, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
 	gromer.Handle(apiRouter, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
-	gromer.Handle(apiRouter, "PUT", "/api/todos/{todoId}", todos_todoId_.PUT)
+	gromer.Handle(apiRouter, "POST", "/api/todos/{todoId}/complete", todos_complete.POST)
 	
 	
 	

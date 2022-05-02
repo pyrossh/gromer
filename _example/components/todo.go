@@ -11,16 +11,12 @@ type TodoProps struct {
 
 func Todo(props TodoProps) *Template {
 	return Html(`
-		<tr>
-			<td>{{ props.Todo.ID }}</td>
-			<td>Book1</td>
-			<td>Author1</td>
-			<td>
-					<button class="button is-primary">Edit</button>
-			</td>
-			<td>
-					<button hx-swap="delete" class="button is-danger" hx-delete="/api/todos/{{ props.Todo.ID }}">Delete</button>
-			</td>
-		</tr>
+		<li id="todo-{{ props.Todo.ID }}" {{#if props.Todo.Completed }} class="completed" {{/if}}>
+			<div class="view">
+				<input class="toggle" hx-post="/api/todos/{{ props.Todo.ID }}/complete" type="checkbox" {{#if props.Todo.Completed }} checked="" {{/if}} hx-target="#todo-{{ props.Todo.ID }}" hx-swap="outerHTML">
+				<label hx-get="/todos/edit/{{ props.Todo.ID }}" hx-target="#todo-{{ props.Todo.ID }}" hx-swap="outerHTML">{{ props.Todo.Text }}</label>
+				<button class="destroy" hx-delete="/api/todos/{{ props.Todo.ID }}" hx-target="#todo-{{ props.Todo.ID }}" hx-swap="delete"></button>
+			</div>
+		</li>
 	`)
 }

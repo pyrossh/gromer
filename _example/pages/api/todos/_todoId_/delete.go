@@ -7,7 +7,7 @@ import (
 )
 
 func DELETE(ctx context.Context, id string) (string, int, error) {
-	_, status, err := GET(ctx, id, GetParams{})
+	_, status, err := GET(ctx, id)
 	if err != nil {
 		return "", status, err
 	}

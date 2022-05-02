@@ -179,6 +179,9 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 			log.Fatal().Msgf("router '%s' func final param should be a struct", route)
 		}
 		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
+			// r.ParseForm()
+			// r.PostForm
+			// if r.Header.Set("Content-Type") == ""
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())
 			if err != nil {
 				RespondError(w, 400, err)

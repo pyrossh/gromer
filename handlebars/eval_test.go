@@ -48,13 +48,14 @@ func Test_Eval_Map_Call_Key(t *testing.T) {
 		"b": "B",
 	}
 	ctx.Set("letters", data)
-	input := `
-	{{letters.a}}|{{letters.b}}
-	`
-
-	s, err := Render(input, ctx)
+	s, _, err := Html(`
+		{{letters.a}}|{{letters.b}}
+	`).Props(
+		"a", "A",
+		"b", "B",
+	).Render()
 	r.NoError(err)
-	r.Equal("A|B", strings.TrimSpace(s))
+	r.Equal("A|B", strings.TrimSpace(string(s)))
 }
 
 func Test_Eval_Calls_on_Pointers(t *testing.T) {

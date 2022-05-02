@@ -23,13 +23,14 @@ func Page(props PageProps) *Template {
 					<meta content="utf-8" http-equiv="encoding" />
 					<title>{{ props.Title }}</title>
 					<meta name="description" content="{{ props.Title }}" />
-					<meta name="author" content="pyros.sh" />
-					<meta content="pyros.sh, gromer" name="keywords" />
+					<meta name="author" content="pyrossh" />
+					<meta name="keywords" content="pyros.sh, pyrossh, gromer"  />
 					<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-					<link rel="icon" href="/assets/icon.png" />
-					<link rel="stylesheet" href="{{ bulmaCssUrl }}" />
+					<link rel="icon" href="{{ iconUrl }}" />
+					<link rel="stylesheet" href="{{ todoCssUrl }}" />
 					<link rel="stylesheet" href="{{ stylesCssUrl }}" />
 					<script src="{{ htmxJsUrl }}"></script>
+					<script src="{{ htmxJsonUrl }}"></script>
 					<script src="{{ alpineJsUrl }}" defer=""></script>
 			</head>
 			<body>
@@ -37,9 +38,11 @@ func Page(props PageProps) *Template {
 			</body>
 		</html>
 	`).Props(
-		"bulmaCssUrl", gromer.GetAssetUrl(assets.FS, "css/bulma@0.9.3.css"),
+		"iconUrl", gromer.GetAssetUrl(assets.FS, "images/icon.png"),
+		"todoCssUrl", gromer.GetAssetUrl(assets.FS, "css/todo.css"),
 		"stylesCssUrl", gromer.GetStylesUrl(),
 		"htmxJsUrl", gromer.GetAssetUrl(assets.FS, "js/htmx@1.7.0.js"),
+		"htmxJsonUrl", gromer.GetAssetUrl(assets.FS, "js/htmx.json-enc.js"),
 		"alpineJsUrl", gromer.GetAssetUrl(assets.FS, "js/alpinejs@3.9.6.js"),
 	)
 }

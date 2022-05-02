@@ -5,9 +5,6 @@ import (
 )
 
 var _ = Css(`
-	header {
-		background: yellow;
-	}
 `)
 
 func Header() *Template {
