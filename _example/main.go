@@ -2,8 +2,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer"
 	"github.com/rs/zerolog/log"
@@ -11,26 +9,23 @@ import (
 
 	"github.com/pyros2097/gromer/_example/assets"
 	"github.com/pyros2097/gromer/_example/components"
+	"github.com/pyros2097/gromer/_example/containers"
 	"github.com/pyros2097/gromer/_example/pages/404"
 	"github.com/pyros2097/gromer/_example/pages"
 	"github.com/pyros2097/gromer/_example/pages/about"
-	"github.com/pyros2097/gromer/_example/pages/api/recover"
-	"github.com/pyros2097/gromer/_example/pages/api/todos"
-	"github.com/pyros2097/gromer/_example/pages/api/todos/_todoId_"
-	"github.com/pyros2097/gromer/_example/pages/api/todos/_todoId_/complete"
-	"github.com/pyros2097/gromer/_example/pages/todos"
 	
 )
 
 func init() {
-	gromer.RegisterComponent(components.Header)
 	gromer.RegisterComponent(components.Page)
 	gromer.RegisterComponent(components.Todo)
+	
+	gromer.RegisterContainer(containers.TodoCount)
+	gromer.RegisterContainer(containers.TodoList)
 	
 }
 
 func main() {
-	port := os.Getenv("PORT")
 	baseRouter := mux.NewRouter()
 	baseRouter.Use(gromer.LogMiddleware)
 	
@@ -44,25 +39,18 @@ func main() {
 	pageRouter := baseRouter.NewRoute().Subrouter()
 	gromer.ApiExplorerRoute(pageRouter, "/explorer")
 	gromer.Handle(pageRouter, "GET", "/", pages.GET)
+	gromer.Handle(pageRouter, "POST", "/", pages.POST)
 	gromer.Handle(pageRouter, "GET", "/about", about.GET)
-	gromer.Handle(pageRouter, "GET", "/todos", todos_page.GET)
-	gromer.Handle(pageRouter, "POST", "/todos", todos_page.POST)
 	
 
 	apiRouter := baseRouter.NewRoute().Subrouter()
 	apiRouter.Use(gromer.CorsMiddleware)
-	gromer.Handle(apiRouter, "GET", "/api/recover", recover.GET)
-	gromer.Handle(apiRouter, "GET", "/api/todos", todos.GET)
-	gromer.Handle(apiRouter, "POST", "/api/todos", todos.POST)
-	gromer.Handle(apiRouter, "DELETE", "/api/todos/{todoId}", todos_todoId_.DELETE)
-	gromer.Handle(apiRouter, "GET", "/api/todos/{todoId}", todos_todoId_.GET)
-	gromer.Handle(apiRouter, "POST", "/api/todos/{todoId}/complete", todos_complete.POST)
 	
 	
 	
-	log.Info().Msg("http server listening on http://localhost:"+port)
+	log.Info().Msg("http server listening on http://localhost:3000")
 	srv := server.New(baseRouter, nil)
-	if err := srv.ListenAndServe(":"+port); err != nil {
+	if err := srv.ListenAndServe(":3000"); err != nil {
 		log.Fatal().Stack().Err(err).Msg("failed to listen")
 	}
 }

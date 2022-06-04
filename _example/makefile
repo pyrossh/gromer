@@ -5,7 +5,6 @@ setup:
 update:
 	gromer -pkg github.com/pyros2097/gromer/_example
 
-run: export PORT=3000
 run:
 	gow run main.go
 

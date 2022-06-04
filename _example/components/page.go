@@ -30,7 +30,6 @@ func Page(props PageProps) *Template {
 					<link rel="stylesheet" href="{{ todoCssUrl }}" />
 					<link rel="stylesheet" href="{{ stylesCssUrl }}" />
 					<script src="{{ htmxJsUrl }}"></script>
-					<script src="{{ htmxJsonUrl }}"></script>
 					<script src="{{ alpineJsUrl }}" defer=""></script>
 			</head>
 			<body>
@@ -42,7 +41,6 @@ func Page(props PageProps) *Template {
 		"todoCssUrl", gromer.GetAssetUrl(assets.FS, "css/todo.css"),
 		"stylesCssUrl", gromer.GetStylesUrl(),
 		"htmxJsUrl", gromer.GetAssetUrl(assets.FS, "js/htmx@1.7.0.js"),
-		"htmxJsonUrl", gromer.GetAssetUrl(assets.FS, "js/htmx.json-enc.js"),
 		"alpineJsUrl", gromer.GetAssetUrl(assets.FS, "js/alpinejs@3.9.6.js"),
 	)
 }

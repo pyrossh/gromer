@@ -111,6 +111,10 @@ func HtmlErr(status int, err error) (HtmlContent, int, error) {
 	return HtmlContent("ErrorPage/AccessDeniedPage/NotFoundPage based on status code"), status, err
 }
 
+func HtmlEmpty() (HtmlContent, int, error) {
+	return Html("").Render()
+}
+
 func Css(v string) CssContent {
 	stylesCss += CssContent(v)
 	return CssContent(v)

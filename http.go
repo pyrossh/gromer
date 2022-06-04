@@ -114,6 +114,57 @@ func RegisterComponent(fn any, props ...string) {
 	})
 }
 
+func RegisterContainer(fn any, props ...string) {
+	name := getFunctionName(fn)
+	fnType := reflect.TypeOf(fn)
+	fnValue := reflect.ValueOf(fn)
+	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
+		args := []reflect.Value{reflect.ValueOf(context.TODO())}
+		var props any
+		if fnType.NumIn() > 1 {
+			structType := fnType.In(1)
+			instance := reflect.New(structType)
+			if structType.Kind() != reflect.Struct {
+				log.Fatal().Msgf("component '%s' props should be a struct", name)
+			}
+			rv := instance.Elem()
+			for i := 0; i < structType.NumField(); i++ {
+				if f := rv.Field(i); f.CanSet() {
+					jsonName := structType.Field(i).Tag.Get("json")
+					defaultValue := structType.Field(i).Tag.Get("default")
+					if jsonName == "children" {
+						s, err := help.Block()
+						if err != nil {
+							return "", err
+						}
+						f.Set(reflect.ValueOf(template.HTML(s)))
+					} else {
+						v := help.Context.Get(jsonName)
+						if v == nil {
+							f.Set(reflect.ValueOf(defaultValue))
+						} else {
+							f.Set(reflect.ValueOf(v))
+						}
+					}
+				}
+			}
+			args = append(args, rv)
+			props = rv.Interface()
+		}
+		res := fnValue.Call(args)
+		tpl := res[0].Interface().(*handlebars.Template)
+		// if res[1].Interface() != nil {
+		// show error in component
+		// }
+		tpl.Context.Set("props", props)
+		s, _, err := tpl.Render()
+		if err != nil {
+			return "", err
+		}
+		return template.HTML(s), nil
+	})
+}
+
 func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status) // always write status last
@@ -178,21 +229,24 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		if structType.Kind() != reflect.Struct {
 			log.Fatal().Msgf("router '%s' func final param should be a struct", route)
 		}
-		if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
-			// r.ParseForm()
-			// r.PostForm
-			// if r.Header.Set("Content-Type") == ""
-			err := json.NewDecoder(r.Body).Decode(instance.Interface())
+		method := r.Method
+		contentType := r.Header.Get("Content-Type")
+		if method == "GET" || ((method == "POST" || method == "PUT" || method == "PATCH") && contentType == "application/x-www-form-urlencoded") {
+			err := r.ParseForm()
 			if err != nil {
 				RespondError(w, 400, err)
 				return
 			}
-		} else if r.Method == "GET" {
 			rv := instance.Elem()
 			for i := 0; i < structType.NumField(); i++ {
 				if f := rv.Field(i); f.CanSet() {
 					jsonName := structType.Field(i).Tag.Get("json")
-					jsonValue := r.URL.Query().Get(jsonName)
+					jsonValue := ""
+					if method == "GET" {
+						jsonValue = r.URL.Query().Get(jsonName)
+					} else {
+						jsonValue = r.Form.Get(jsonName)
+					}
 					if f.Kind() == reflect.String {
 						f.SetString(jsonValue)
 					} else if f.Kind() == reflect.Int64 || f.Kind() == reflect.Int32 || f.Kind() == reflect.Int {
@@ -222,10 +276,19 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 							f.Set(reflect.ValueOf(v))
 						}
 					} else {
-						log.Fatal().Msgf("Uknown query param: '%s' '%s'", jsonName, jsonValue)
+						log.Fatal().Msgf("Uknown form param: '%s' '%s'", jsonName, jsonValue)
 					}
 				}
 			}
+		} else if (method == "POST" || method == "PUT" || method == "PATCH") && contentType == "application/json" {
+			err := json.NewDecoder(r.Body).Decode(instance.Interface())
+			if err != nil {
+				RespondError(w, 400, err)
+				return
+			}
+		} else {
+			RespondError(w, 400, fmt.Errorf("Illegal Content-Type tag found %s", contentType))
+			return
 		}
 		args = append(args, instance.Elem())
 	}
