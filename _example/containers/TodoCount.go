@@ -9,6 +9,14 @@ import (
 )
 
 var _ = Css(`
+	.todo-count {
+		float: left;
+		text-align: left;
+	}
+
+	.todo-count strong {
+		font-weight: 300;
+	}
 `)
 
 type TodoCountProps struct {

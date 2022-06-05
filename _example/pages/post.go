@@ -25,13 +25,16 @@ func POST(ctx context.Context, params PostParams) (HtmlContent, int, error) {
 			return HtmlErr(500, err)
 		}
 		for _, t := range allTodos {
-			_, err := todos.DeleteTodo(ctx, t.ID)
-			if err != nil {
-				return HtmlErr(500, err)
+			if t.Completed {
+				_, err := todos.DeleteTodo(ctx, t.ID)
+				if err != nil {
+					return HtmlErr(500, err)
+				}
 			}
 		}
 		return Html(`
-			{{#TodoList id="todo-list"}}{{/TodoList}}
+			{{#TodoList id="todo-list" page=1 filter="all"}}{{/TodoList}}
+			{{#TodoCount filter="all" page=1}}{{/TodoCount}}
 		`).Render()
 	} else if params.Intent == "create" {
 		todo, err := todos.CreateTodo(ctx, params.Text)
