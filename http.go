@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/handlebars"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -48,9 +49,14 @@ func init() {
 			PartsExclude: []string{zerolog.TimestampFieldName},
 		})
 	}
+	handlebars.GlobalHelpers.Add("GetStylesUrl", GetStylesUrl)
+	handlebars.GlobalHelpers.Add("GetAssetUrl", GetAssetUrl)
+	handlebars.GlobalHelpers.Add("GetAlpineJsUrl", GetAlpineJsUrl)
+	handlebars.GlobalHelpers.Add("GetHtmxJsUrl", GetHtmxJsUrl)
 }
 
 var RouteDefs []RouteDefinition
+var appAssets embed.FS
 
 type RouteDefinition struct {
 	Pkg        string      `json:"pkg"`
@@ -64,6 +70,10 @@ type RouteDefinition struct {
 func getFunctionName(temp interface{}) string {
 	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name()), ".")
 	return strs[len(strs)-1]
+}
+
+func RegisterAssets(fs embed.FS) {
+	appAssets = fs
 }
 
 func RegisterComponent(fn any, props ...string) {
@@ -449,8 +459,12 @@ func StatusHandler(h interface{}) http.Handler {
 	})).(http.Handler)
 }
 
-func StaticRoute(router *mux.Router, path string, fs embed.FS) {
-	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
+func StaticRoute(router *mux.Router, path string) {
+	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(appAssets))))
+}
+
+func GromerRoute(router *mux.Router, path string) {
+	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(assets.FS))))
 }
 
 func StylesRoute(router *mux.Router, path string) {
@@ -488,15 +502,23 @@ func getSum(k string, cb func() [16]byte) string {
 	return sum
 }
 
-func GetAssetUrl(fs embed.FS, path string) string {
+func GetAssetUrl(path string) string {
 	sum := getSum(path, func() [16]byte {
-		data, err := fs.ReadFile(path)
+		data, err := appAssets.ReadFile(path)
 		if err != nil {
 			panic(err)
 		}
 		return md5.Sum(data)
 	})
 	return fmt.Sprintf("/assets/%s?hash=%s", path, sum)
+}
+
+func GetHtmxJsUrl() string {
+	return "/gromer/js/htmx@1.7.0.js"
+}
+
+func GetAlpineJsUrl() string {
+	return "/gromer/js/alpinejs@3.9.6.js"
 }
 
 func GetStylesUrl() string {

@@ -22,7 +22,7 @@ func init() {
 	
 	gromer.RegisterContainer(containers.TodoCount)
 	gromer.RegisterContainer(containers.TodoList)
-	
+	gromer.RegisterAssets(assets.FS)
 }
 
 func main() {
@@ -33,7 +33,8 @@ func main() {
 	
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
-	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
+	gromer.GromerRoute(staticRouter, "/gromer/")
+	gromer.StaticRoute(staticRouter, "/assets/")
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()

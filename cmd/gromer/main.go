@@ -199,6 +199,7 @@ func init() {
 	{{/each}}
 	{{#each containerNames as |name| }}gromer.RegisterContainer(containers.{{ name }})
 	{{/each}}
+	gromer.RegisterAssets(assets.FS)
 }
 
 func main() {
@@ -209,7 +210,8 @@ func main() {
 	{{/if}}
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
-	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
+	gromer.GromerRoute(staticRouter, "/gromer/")
+	gromer.StaticRoute(staticRouter, "/assets/")
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()

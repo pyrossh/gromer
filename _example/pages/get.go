@@ -47,6 +47,15 @@ var _ = Css(`
 	}
 `)
 
+// var (
+// 	Container = Css(`
+// 		background: #fff;
+// 		margin: 130px 0 40px 0;
+// 		position: relative;
+// 		box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 25px 50px 0 rgba(0, 0, 0, 0.1);
+// 	`)
+// )
+
 type GetParams struct {
 	Page   int    `json:"page"`
 	Filter string `json:"filter"`
