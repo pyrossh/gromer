@@ -1,4 +1,4 @@
-package template
+package gsx
 
 import (
 	"github.com/alecthomas/participle/v2"
@@ -12,8 +12,8 @@ type Module struct {
 
 type Attribute struct {
 	Pos   lexer.Position
-	Key   string   `parser:"@\":\"? @Ident ( @\"-\" @Ident )*"`
-	Value *Literal `parser:"\"=\" @@"`
+	Key   string   `@":"? @Ident ( @"-" @Ident )*`
+	Value *Literal `"=" @@`
 }
 
 type KV struct {
@@ -31,11 +31,11 @@ type Literal struct {
 
 type Xml struct {
 	Pos        lexer.Position
-	Name       string       `parser:"\"<\"@Ident"`
-	Attributes []*Attribute `parser:"[ @@ { @@ } ] \">\""`
-	Children   []*Xml       `parser:"{ @@ }"`
-	Value      *Literal     `parser:"{ @@ }"` // Todo make this match with @String or Literal
-	Close      string       `parser:"\"<\"\"/\"@Ident\">\""`
+	Name       string       `"<" @Ident`
+	Attributes []*Attribute `[ @@ { @@ } ]">"`
+	Children   []*Xml       `{ @@ }`
+	Value      *Literal     `{ @@ }` // Todo make this match with @String or Literal
+	Close      string       `("<""/"@Ident">")?`
 }
 
 var xmlParser = participle.MustBuild(&Module{})

@@ -1,12 +1,10 @@
-package template
+package gsx
 
 import (
 	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
-
-	"github.com/alecthomas/repr"
 )
 
 type ComponentFunc struct {
@@ -14,9 +12,23 @@ type ComponentFunc struct {
 	Args []string
 }
 
-type Html func(string) string
+type Html map[string]interface{}
 
-var htmlTags = []string{"ul", "li", "span", "div"}
+func (h Html) Render(tpl string) string {
+	tree := &Module{}
+	err := xmlParser.ParseBytes(tpl, []byte(tpl), tree)
+	if err != nil {
+		panic(err)
+	}
+	o := ""
+	for _, n := range tree.Nodes {
+		v := render(n, h)
+		o += v
+	}
+	return o
+}
+
+var htmlTags = []string{"a", "abbr", "acronym", "address", "applet", "area", "article", "aside", "audio", "b", "base", "basefont", "bb", "bdo", "big", "blockquote", "body", "br /", "button", "canvas", "caption", "center", "cite", "code", "col", "colgroup", "command", "datagrid", "datalist", "dd", "del", "details", "dfn", "dialog", "dir", "div", "dl", "dt", "em", "embed", "eventsource", "fieldset", "figcaption", "figure", "font", "footer", "form", "frame", "frameset", "h1 to <h6>", "head", "header", "hgroup", "hr /", "html", "i", "iframe", "img", "input", "ins", "isindex", "kbd", "keygen", "label", "legend", "li", "link", "map", "mark", "menu", "meta", "meter", "nav", "noframes", "noscript", "object", "ol", "optgroup", "option", "output", "p", "param", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "script", "section", "select", "small", "source", "span", "strike", "strong", "style", "sub", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "time", "title", "tr", "track", "tt", "u", "ul", "var", "video", "wbr"}
 var compMap = map[string]ComponentFunc{}
 var funcMap = map[string]interface{}{}
 
@@ -71,7 +83,7 @@ func subsRef(ctx map[string]interface{}, ref string) interface{} {
 	return nil
 }
 
-func Render(x *Xml, ctx map[string]interface{}) string {
+func render(x *Xml, ctx map[string]interface{}) string {
 	space, _ := ctx["_space"].(string)
 	s := space + "<" + x.Name
 	if len(x.Attributes) > 0 {
@@ -86,7 +98,6 @@ func Render(x *Xml, ctx map[string]interface{}) string {
 				}
 			}
 			s += param.Key + `="` + strings.Join(values, "") + `"`
-			repr.Println(s)
 		} else if param.Value.Ref != "" {
 			s += param.Key + `="` + subsRef(ctx, param.Value.Ref).(string) + `"`
 		} else {
@@ -112,13 +123,13 @@ func Render(x *Xml, ctx map[string]interface{}) string {
 			for i := 0; i < v.Len(); i++ {
 				ctx["_space"] = space + "  "
 				ctx[ctxName] = v.Index(i).Interface()
-				s += Render(x.Children[0], ctx) + "\n"
+				s += render(x.Children[0], ctx) + "\n"
 			}
 		}
 	} else {
 		if comp, ok := compMap[x.Name]; ok {
 			ctx["_space"] = space + "  "
-			h := HtmlFunc(ctx)
+			h := Html(ctx)
 			args := []reflect.Value{reflect.ValueOf(h)}
 			for _, k := range comp.Args {
 				if v, ok := ctx[k]; ok {
@@ -143,27 +154,11 @@ func Render(x *Xml, ctx map[string]interface{}) string {
 		}
 		for _, c := range x.Children {
 			ctx["_space"] = space + "  "
-			s += Render(c, ctx) + "\n"
+			s += render(c, ctx) + "\n"
 		}
 	}
 	s += space + "</" + x.Name + ">"
 	return s
-}
-
-func HtmlFunc(ctx map[string]interface{}) Html {
-	return func(tpl string) string {
-		tree := &Module{}
-		err := xmlParser.ParseBytes("filename", []byte(tpl), tree)
-		if err != nil {
-			panic(err)
-		}
-		o := ""
-		for _, n := range tree.Nodes {
-			v := Render(n, ctx)
-			o += v
-		}
-		return o
-	}
 }
 
 // <script>
