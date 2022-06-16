@@ -18,6 +18,7 @@ func Todo(h Html, todo *TodoData) string {
 			<div class="view">
 				<span>{todo.Text}</span>
 			</div>
+			{children}
 		</li>
 	`)
 }
@@ -39,7 +40,9 @@ func TestHtml(t *testing.T) {
 	actual := Html(ctx).Render(`
 		<ul id="todo-list" class="relative">	
 			<For key="todos" itemKey="todo">
-				<Todo key="todo"></Todo>
+				<Todo key="todo">
+					<div>"Todo123"</div>
+				</Todo>
 			</For>
 			<span>{WebsiteName}</span>
 		</ul>
@@ -48,6 +51,9 @@ func TestHtml(t *testing.T) {
   <For key="todos" itemKey="todo">
     <Todo key="todo">
       <li id="b1a7359c-ebb4-11ec-8ea0-0242ac120002" class="completed">
+              <div>
+        Todo123
+      </div>
         <div class="view">
           <span>
             My first todo

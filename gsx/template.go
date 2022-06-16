@@ -16,7 +16,7 @@ type Html map[string]interface{}
 
 func (h Html) Render(tpl string) string {
 	tree := &Module{}
-	err := xmlParser.ParseBytes(tpl, []byte(tpl), tree)
+	err := xmlParser.ParseBytes(tpl[0:10], []byte(tpl), tree)
 	if err != nil {
 		panic(err)
 	}
@@ -70,6 +70,20 @@ func getAttribute(k string, kvs []*Attribute) string {
 	return ""
 }
 
+func convert(ref string, i interface{}) interface{} {
+	switch iv := i.(type) {
+	case bool:
+		if strings.Contains(ref, "!") {
+			return !iv
+		} else {
+			return iv
+		}
+	case string:
+		return iv
+	}
+	return nil
+}
+
 func subsRef(ctx map[string]interface{}, ref string) interface{} {
 	if f, ok := funcMap[ref]; ok {
 		return f.(func() string)()
@@ -78,20 +92,11 @@ func subsRef(ctx map[string]interface{}, ref string) interface{} {
 		if len(parts) == 2 {
 			if v, ok := ctx[parts[0]]; ok {
 				i := reflect.ValueOf(v).Elem().FieldByName(parts[1]).Interface()
-				switch iv := i.(type) {
-				case bool:
-					if strings.Contains(ref, "!") {
-						return !iv
-					} else {
-						return iv
-					}
-				case string:
-					return iv
-				}
+				return convert(ref, i)
 			}
 		}
+		return convert(ref, ctx[ref])
 	}
-	return nil
 }
 
 func render(x *Xml, ctx map[string]interface{}) string {
@@ -122,6 +127,8 @@ func render(x *Xml, ctx map[string]interface{}) string {
 	if x.Value != nil {
 		if x.Value.Ref != "" {
 			s += space + "  " + subsRef(ctx, x.Value.Ref).(string) + "\n"
+		} else if x.Value.Str != "" {
+			s += space + "  " + strings.ReplaceAll(x.Value.Str, `"`, "") + "\n"
 		}
 	}
 	if x.Name == "For" {
@@ -150,6 +157,9 @@ func render(x *Xml, ctx map[string]interface{}) string {
 					args = append(args, reflect.ValueOf(v))
 				}
 			}
+			if len(x.Children) > 0 {
+				h["children"] = render(x.Children[0], h)
+			}
 			result := reflect.ValueOf(comp.Func).Call(args)
 			s += result[0].Interface().(string) + "\n"
 		} else {
@@ -162,10 +172,10 @@ func render(x *Xml, ctx map[string]interface{}) string {
 			if !found {
 				panic(fmt.Errorf("Comp not found %s", x.Name))
 			}
-		}
-		for _, c := range x.Children {
-			ctx["_space"] = space + "  "
-			s += render(c, ctx) + "\n"
+			for _, c := range x.Children {
+				ctx["_space"] = space + "  "
+				s += render(c, ctx) + "\n"
+			}
 		}
 	}
 	s += space + "</" + x.Name + ">"
