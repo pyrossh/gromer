@@ -7,16 +7,14 @@ import (
 )
 
 type TodoData struct {
-	ID   string
-	Text string
+	ID        string
+	Text      string
+	Completed bool
 }
 
-func Todo(data *TodoData) string {
-	ctx := map[string]interface{}{
-		"todo": data,
-	}
-	return Html(ctx, `
-		<li id={todo.ID} :class="{ 'completed': todo.Completed }">
+func Todo(html Html, todo *TodoData) string {
+	return html(`
+		<li id={todo.ID} class={{ completed: todo.Completed }}>
 			<div class="view">
 				<span>{todo.Text}</span>
 			</div>
@@ -30,17 +28,17 @@ func WebsiteName() string {
 
 func TestHtml(t *testing.T) {
 	r := require.New(t)
-	RegisterComponent(Todo)
+	RegisterComponent(Todo, "todo")
 	RegisterFunc(WebsiteName)
 	ctx := map[string]interface{}{
 		"_space": "",
 		"todos": []*TodoData{
-			{ID: "b1a7359c-ebb4-11ec-8ea0-0242ac120002", Text: "My first todo"},
+			{ID: "b1a7359c-ebb4-11ec-8ea0-0242ac120002", Text: "My first todo", Completed: true},
 		},
 	}
-	actual := Html(ctx, `
+	actual := HtmlFunc(ctx)(`
 		<ul id="todo-list" class="relative">
-			<For key="todos" name="todo">
+			<For key="todos" itemKey="todo">
 				<Todo key="todo"></Todo>
 			</For>
 			<span>{WebsiteName}</span>
