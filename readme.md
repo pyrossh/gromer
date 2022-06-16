@@ -3,7 +3,7 @@
 [![Version](https://badge.fury.io/gh/pyros2097%2Fgromer.svg)](https://github.com/pyros2097/gromer)
 
 **gromer** is a framework and cli to build web apps in golang.
-It uses a declarative syntax using inline handlebar templates for components and pages.
+It uses a declarative syntax using inline templates for components and pages.
 It also generates http handlers for your routes which follow a particular folder structure. Similar to other frameworks like nextjs, sveltekit.
 These handlers are also normal functions and can be imported in other packages directly. ((inspired by [Encore](https://encore.dev/)).
 More information on the templating syntax is given [here](https://github.com/pyrossh/gromer/blob/master/handlebars/README.md),
@@ -56,8 +56,8 @@ func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 		return HtmlErr(status, err)
 	}
 	return Html(`
-		{{#Page title="gromer example"}}
-			{{#Header}}{{/Header}}
+		<Page title="gromer example">
+			<Header></Header>
 			<section class="todoapp">
 					<section class="main">
 						<ul class="todo-list" id="todo-list">
@@ -68,7 +68,7 @@ func GET(ctx context.Context, params GetParams) (HtmlContent, int, error) {
 					</section>
 				{{/if}}
 			</section>
-		{{/Page}}
+		</Page>
 		`).
 		Prop("todos", todos).
 		Render()

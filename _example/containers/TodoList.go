@@ -5,7 +5,7 @@ import (
 
 	. "github.com/pyros2097/gromer"
 	"github.com/pyros2097/gromer/_example/services/todos"
-	. "github.com/pyros2097/gromer/handlebars"
+	. "github.com/pyros2097/gromer/gsx"
 )
 
 var _ = Css(`
@@ -135,20 +135,21 @@ type TodoListProps struct {
 	Filter string `json:"filter"`
 }
 
-func TodoList(ctx context.Context, props TodoListProps) (*Template, error) {
+func TodoList(h Html, ctx context.Context, props TodoListProps) (string, error) {
 	index := Default(props.Page, 1)
 	todos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
 		Filter: props.Filter,
 		Limit:  index,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return Html(`
+	h["todos"] = todos
+	return h.Render(`
 		<ul id="todo-list" class="relative">
-			{{#each todos as |todo|}}
-				{{#Todo todo=todo}}{{/Todo}}
-			{{/each}}
+			<For key="todos" itemKey="todo">
+				<Todo key="todo"></Todo>
+			</For>
 		</ul>
-	`).Prop("todos", todos), nil
+	`), nil
 }

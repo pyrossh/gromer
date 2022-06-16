@@ -3,11 +3,11 @@ package about
 import (
 	"context"
 
-	. "github.com/pyros2097/gromer/handlebars"
+	. "github.com/pyros2097/gromer/gsx"
 )
 
-func GET(c context.Context) (HtmlContent, int, error) {
-	return Html(`
+func GET(h Html, c context.Context) (string, int, error) {
+	return h.Render(`
 		{{#Page title="About me"}}
 			<div class="flex flex-col justify-center items-center">
 					{{#Header}}
@@ -16,5 +16,5 @@ func GET(c context.Context) (HtmlContent, int, error) {
 					<h1>About Me</h1>
 			</div>
 		{{/Page}}
-		`).Render()
+	`), 200, nil
 }

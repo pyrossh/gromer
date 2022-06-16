@@ -6,7 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,10 +19,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alecthomas/repr"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer/assets"
-	"github.com/pyros2097/gromer/handlebars"
+	"github.com/pyros2097/gromer/gsx"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -49,10 +49,10 @@ func init() {
 			PartsExclude: []string{zerolog.TimestampFieldName},
 		})
 	}
-	handlebars.GlobalHelpers.Add("GetStylesUrl", GetStylesUrl)
-	handlebars.GlobalHelpers.Add("GetAssetUrl", GetAssetUrl)
-	handlebars.GlobalHelpers.Add("GetAlpineJsUrl", GetAlpineJsUrl)
-	handlebars.GlobalHelpers.Add("GetHtmxJsUrl", GetHtmxJsUrl)
+	gsx.RegisterFunc(GetStylesUrl)
+	gsx.RegisterFunc(GetAssetUrl)
+	gsx.RegisterFunc(GetAlpineJsUrl)
+	gsx.RegisterFunc(GetHtmxJsUrl)
 }
 
 var RouteDefs []RouteDefinition
@@ -76,104 +76,104 @@ func RegisterAssets(fs embed.FS) {
 	appAssets = fs
 }
 
-func RegisterComponent(fn any, props ...string) {
-	name := getFunctionName(fn)
-	fnType := reflect.TypeOf(fn)
-	fnValue := reflect.ValueOf(fn)
-	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
-		args := []reflect.Value{}
-		var props any
-		if fnType.NumIn() > 0 {
-			structType := fnType.In(0)
-			instance := reflect.New(structType)
-			if structType.Kind() != reflect.Struct {
-				log.Fatal().Msgf("component '%s' props should be a struct", name)
-			}
-			rv := instance.Elem()
-			for i := 0; i < structType.NumField(); i++ {
-				if f := rv.Field(i); f.CanSet() {
-					jsonName := structType.Field(i).Tag.Get("json")
-					defaultValue := structType.Field(i).Tag.Get("default")
-					if jsonName == "children" {
-						s, err := help.Block()
-						if err != nil {
-							return "", err
-						}
-						f.Set(reflect.ValueOf(template.HTML(s)))
-					} else {
-						v := help.Context.Get(jsonName)
-						if v == nil {
-							f.Set(reflect.ValueOf(defaultValue))
-						} else {
-							f.Set(reflect.ValueOf(v))
-						}
-					}
-				}
-			}
-			args = append(args, rv)
-			props = rv.Interface()
-		}
-		res := fnValue.Call(args)
-		tpl := res[0].Interface().(*handlebars.Template)
-		tpl.Context.Set("props", props)
-		s, _, err := tpl.Render()
-		if err != nil {
-			return "", err
-		}
-		return template.HTML(s), nil
-	})
-}
+// func RegisterComponent(fn any, props ...string) {
+// 	name := getFunctionName(fn)
+// 	fnType := reflect.TypeOf(fn)
+// 	fnValue := reflect.ValueOf(fn)
+// 	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
+// 		args := []reflect.Value{}
+// 		var props any
+// 		if fnType.NumIn() > 0 {
+// 			structType := fnType.In(0)
+// 			instance := reflect.New(structType)
+// 			if structType.Kind() != reflect.Struct {
+// 				log.Fatal().Msgf("component '%s' props should be a struct", name)
+// 			}
+// 			rv := instance.Elem()
+// 			for i := 0; i < structType.NumField(); i++ {
+// 				if f := rv.Field(i); f.CanSet() {
+// 					jsonName := structType.Field(i).Tag.Get("json")
+// 					defaultValue := structType.Field(i).Tag.Get("default")
+// 					if jsonName == "children" {
+// 						s, err := help.Block()
+// 						if err != nil {
+// 							return "", err
+// 						}
+// 						f.Set(reflect.ValueOf(template.HTML(s)))
+// 					} else {
+// 						v := help.Context.Get(jsonName)
+// 						if v == nil {
+// 							f.Set(reflect.ValueOf(defaultValue))
+// 						} else {
+// 							f.Set(reflect.ValueOf(v))
+// 						}
+// 					}
+// 				}
+// 			}
+// 			args = append(args, rv)
+// 			props = rv.Interface()
+// 		}
+// 		res := fnValue.Call(args)
+// 		tpl := res[0].Interface().(*handlebars.Template)
+// 		tpl.Context.Set("props", props)
+// 		s, _, err := tpl.Render()
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		return template.HTML(s), nil
+// 	})
+// }
 
-func RegisterContainer(fn any, props ...string) {
-	name := getFunctionName(fn)
-	fnType := reflect.TypeOf(fn)
-	fnValue := reflect.ValueOf(fn)
-	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
-		args := []reflect.Value{reflect.ValueOf(context.TODO())}
-		var props any
-		if fnType.NumIn() > 1 {
-			structType := fnType.In(1)
-			instance := reflect.New(structType)
-			if structType.Kind() != reflect.Struct {
-				log.Fatal().Msgf("component '%s' props should be a struct", name)
-			}
-			rv := instance.Elem()
-			for i := 0; i < structType.NumField(); i++ {
-				if f := rv.Field(i); f.CanSet() {
-					jsonName := structType.Field(i).Tag.Get("json")
-					defaultValue := structType.Field(i).Tag.Get("default")
-					if jsonName == "children" {
-						s, err := help.Block()
-						if err != nil {
-							return "", err
-						}
-						f.Set(reflect.ValueOf(template.HTML(s)))
-					} else {
-						v := help.Context.Get(jsonName)
-						if v == nil {
-							f.Set(reflect.ValueOf(defaultValue))
-						} else {
-							f.Set(reflect.ValueOf(v))
-						}
-					}
-				}
-			}
-			args = append(args, rv)
-			props = rv.Interface()
-		}
-		res := fnValue.Call(args)
-		tpl := res[0].Interface().(*handlebars.Template)
-		// if res[1].Interface() != nil {
-		// show error in component
-		// }
-		tpl.Context.Set("props", props)
-		s, _, err := tpl.Render()
-		if err != nil {
-			return "", err
-		}
-		return template.HTML(s), nil
-	})
-}
+// func RegisterContainer(fn any, props ...string) {
+// 	name := getFunctionName(fn)
+// 	fnType := reflect.TypeOf(fn)
+// 	fnValue := reflect.ValueOf(fn)
+// 	// shandlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
+// 		args := []reflect.Value{reflect.ValueOf(context.TODO())}
+// 		var props any
+// 		if fnType.NumIn() > 1 {
+// 			structType := fnType.In(1)
+// 			instance := reflect.New(structType)
+// 			if structType.Kind() != reflect.Struct {
+// 				log.Fatal().Msgf("component '%s' props should be a struct", name)
+// 			}
+// 			rv := instance.Elem()
+// 			for i := 0; i < structType.NumField(); i++ {
+// 				if f := rv.Field(i); f.CanSet() {
+// 					jsonName := structType.Field(i).Tag.Get("json")
+// 					defaultValue := structType.Field(i).Tag.Get("default")
+// 					if jsonName == "children" {
+// 						s, err := help.Block()
+// 						if err != nil {
+// 							return "", err
+// 						}
+// 						f.Set(reflect.ValueOf(template.HTML(s)))
+// 					} else {
+// 						v := help.Context.Get(jsonName)
+// 						if v == nil {
+// 							f.Set(reflect.ValueOf(defaultValue))
+// 						} else {
+// 							f.Set(reflect.ValueOf(v))
+// 						}
+// 					}
+// 				}
+// 			}
+// 			args = append(args, rv)
+// 			props = rv.Interface()
+// 		}
+// 		res := fnValue.Call(args)
+// 		tpl := res[0].Interface().(*handlebars.Template)
+// 		// if res[1].Interface() != nil {
+// 		// show error in component
+// 		// }
+// 		tpl.Context.Set("props", props)
+// 		s, _, err := tpl.Render()
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		return template.HTML(s), nil
+// 	})
+// }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
@@ -208,7 +208,7 @@ func addRouteDef(method, route string, h interface{}) {
 	pathParams := GetRouteParams(route)
 	var body any = nil
 	funcType := reflect.TypeOf(h)
-	if funcType.NumIn() > len(pathParams)+1 {
+	if funcType.NumIn() > len(pathParams)+2 {
 		structType := funcType.In(funcType.NumIn() - 1)
 		instance := reflect.New(structType)
 		if structType.Kind() != reflect.Struct {
@@ -226,13 +226,15 @@ func addRouteDef(method, route string, h interface{}) {
 
 func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) {
 	params := GetRouteParams(route)
-	args := []reflect.Value{reflect.ValueOf(ctx)}
+	htmlTemplate := gsx.Html(map[string]interface{}{})
+	args := []reflect.Value{reflect.ValueOf(htmlTemplate), reflect.ValueOf(ctx)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
 	vars := mux.Vars(r)
 	for _, k := range params {
 		args = append(args, reflect.ValueOf(vars[k]))
 	}
+	repr.Println(len(args), icount)
 	if len(args) != icount {
 		structType := funcType.In(icount - 1)
 		instance := reflect.New(structType)
@@ -310,20 +312,20 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		RespondError(w, responseStatus, responseError.(error))
 		return
 	}
-	if v, ok := response.(handlebars.HtmlContent); ok {
+	if v, ok := response.(string); ok {
 		w.Header().Set("Content-Type", "text/html")
 		// This has to be at end always
 		w.WriteHeader(responseStatus)
 		w.Write([]byte(v))
 		return
 	}
-	if v, ok := response.(handlebars.CssContent); ok {
-		w.Header().Set("Content-Type", "text/css")
-		// This has to be at end always
-		w.WriteHeader(responseStatus)
-		w.Write([]byte(v))
-		return
-	}
+	// if v, ok := response.(handlebars.CssContent); ok {
+	// 	w.Header().Set("Content-Type", "text/css")
+	// 	// This has to be at end always
+	// 	w.WriteHeader(responseStatus)
+	// 	w.Write([]byte(v))
+	// 	return
+	// }
 	w.Header().Set("Content-Type", "application/json")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
@@ -455,7 +457,7 @@ func StatusHandler(h interface{}) http.Handler {
 
 		// This has to be at end always after headers are set
 		w.WriteHeader(responseStatus)
-		w.Write([]byte(response.(handlebars.HtmlContent)))
+		w.Write([]byte(response.(string)))
 	})).(http.Handler)
 }
 
@@ -471,7 +473,7 @@ func StylesRoute(router *mux.Router, path string) {
 	router.Path(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css")
 		w.WriteHeader(200)
-		w.Write([]byte(handlebars.GetStyles()))
+		w.Write([]byte(gsx.GetStyles()))
 	})
 }
 
@@ -523,7 +525,7 @@ func GetAlpineJsUrl() string {
 
 func GetStylesUrl() string {
 	sum := getSum("styles.css", func() [16]byte {
-		return md5.Sum([]byte(handlebars.GetStyles()))
+		return md5.Sum([]byte(gsx.GetStyles()))
 	})
 	return fmt.Sprintf("/styles.css?hash=%s", sum)
 }

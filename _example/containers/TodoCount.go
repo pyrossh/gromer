@@ -3,9 +3,8 @@ package containers
 import (
 	"context"
 
-	. "github.com/pyros2097/gromer"
 	"github.com/pyros2097/gromer/_example/services/todos"
-	. "github.com/pyros2097/gromer/handlebars"
+	. "github.com/pyros2097/gromer/gsx"
 )
 
 var _ = Css(`
@@ -19,23 +18,18 @@ var _ = Css(`
 	}
 `)
 
-type TodoCountProps struct {
-	Page   int    `json:"page"`
-	Filter string `json:"filter"`
-}
-
-func TodoCount(ctx context.Context, props TodoCountProps) (*Template, error) {
-	index := Default(props.Page, 1)
+func TodoCount(h Html, ctx context.Context, filter string) (string, error) {
 	todos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
-		Filter: props.Filter,
-		Limit:  index,
+		Filter: filter,
+		Limit:  1000,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return Html(`
+	h["count"] = len(todos)
+	return h.Render(`
 		<span class="todo-count" id="todo-count" hx-swap-oob="true">
-			<strong>{{ count }}</strong> item left
+			<strong>{count}</strong> item left
 		</span>
-	`).Prop("count", len(todos)), nil
+	`), nil
 }

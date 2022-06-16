@@ -50,6 +50,17 @@ func RegisterFunc(f interface{}) {
 	funcMap[name] = f
 }
 
+var styles = ""
+
+func Css(v string) string {
+	styles += v
+	return v
+}
+
+func GetStyles() string {
+	return styles
+}
+
 func getAttribute(k string, kvs []*Attribute) string {
 	for _, param := range kvs {
 		if param.Key == k {

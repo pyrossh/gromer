@@ -1,9 +1,7 @@
 package components
 
 import (
-	"html/template"
-
-	. "github.com/pyros2097/gromer/handlebars"
+	. "github.com/pyros2097/gromer/gsx"
 )
 
 var _ = Css(`
@@ -219,31 +217,26 @@ var _ = Css(`
 	}
 `)
 
-type PageProps struct {
-	Title    string        `json:"title"`
-	Children template.HTML `json:"children"`
-}
-
-func Page(props PageProps) *Template {
-	return Html(`
+func Page(h Html, title string) string {
+	return h.Render(`
 		<!DOCTYPE html>
 		<html lang="en">
 			<head>
 					<meta charset="UTF-8" />
 					<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 					<meta content="utf-8" http-equiv="encoding" />
-					<title>{{ props.Title }}</title>
-					<meta name="description" content="{{ props.Title }}" />
+					<title>{title}</title>
+					<meta name="description" content="{title}" />
 					<meta name="author" content="pyrossh" />
 					<meta name="keywords" content="pyros.sh, pyrossh, gromer"  />
 					<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-					<link rel="icon" href="{{ GetAssetUrl "images/icon.png" }}" />
-					<link rel="stylesheet" href="{{ GetStylesUrl }}" />
-					<script src="{{ GetAlpineJsUrl }}"></script>
-					<script src="{{ GetHtmxJsUrl }}" defer=""></script>
+					<link rel="icon" href="{GetAssetUrl "images/icon.png"}" />
+					<link rel="stylesheet" href="{GetStylesUrl}" />
+					<script src="{GetAlpineJsUrl}"></script>
+					<script src="{GetHtmxJsUrl}" defer=""></script>
 			</head>
 			<body>
-			{{ props.Children }}
+			{children}
 			</body>
 		</html>
 	`)

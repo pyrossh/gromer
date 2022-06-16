@@ -13,15 +13,16 @@ import (
 	"github.com/pyros2097/gromer/_example/pages/404"
 	"github.com/pyros2097/gromer/_example/pages"
 	"github.com/pyros2097/gromer/_example/pages/about"
+	"github.com/pyros2097/gromer/gsx"
 	
 )
 
 func init() {
-	gromer.RegisterComponent(components.Page)
-	gromer.RegisterComponent(components.Todo)
+	gsx.RegisterComponent(components.Page)
+	gsx.RegisterComponent(components.Todo)
 	
-	gromer.RegisterContainer(containers.TodoCount)
-	gromer.RegisterContainer(containers.TodoList)
+	gsx.RegisterComponent(containers.TodoCount)
+	gsx.RegisterComponent(containers.TodoList)
 	gromer.RegisterAssets(assets.FS)
 }
 
@@ -38,7 +39,7 @@ func main() {
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()
-	gromer.ApiExplorerRoute(pageRouter, "/explorer")
+	// gromer.ApiExplorerRoute(pageRouter, "/explorer")
 	gromer.Handle(pageRouter, "GET", "/", pages.GET)
 	gromer.Handle(pageRouter, "POST", "/", pages.POST)
 	gromer.Handle(pageRouter, "GET", "/about", about.GET)
