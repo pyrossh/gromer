@@ -54,11 +54,11 @@ func TestHtml(t *testing.T) {
 			</div>
 			<div>
 				Test
-				<button>click</button>
+				<button>{WebsiteName}</button>
 			</div>
 		</div>
 	`).String()
-	expected := "<div><div>123<todo key=\"todo\"><li id=\"todo-b1a7359c-ebb4-11ec-8ea0-0242ac120002\" class=\"{ completed: todo.Completed }\"><div class=\"view\"><span>{todo.Text}</span></div><div class=\"container\"><h2>Title</h2><h3>Sub title</h3></div><div class=\"count\"><span>{todo.Completed}</span></div></li></todo></div><div>Test<button>click</button></div></div>"
+	expected := "<div><div>123<todo key=\"todo\"><li id=\"todo-b1a7359c-ebb4-11ec-8ea0-0242ac120002\" class=\"completed\"><div class=\"view\"><span>My first todo</span></div><div class=\"container\"><h2>Title</h2><h3>Sub title</h3></div><div class=\"count\"><span>true</span></div></li></todo></div><div>Test<button>My Website</button></div></div>"
 	// 	actual := Html(ctx).Render(`
 	// 		<ul id="todo-list" class="relative">
 	// 			<For key="todos" itemKey="todo">

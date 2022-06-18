@@ -220,6 +220,24 @@ func main() {
 }
 ```
 
-# TODO:
+## TODO:
 Add inline css formatting
 ADd inline html formatting
+
+## Ideas:
+```js
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.store('todos', {
+        		list: [],
+						count: 0,
+        })
+    })
+</script>
+
+// Send patches in all Post API's instead of data
+[
+	{ "op": "add", "path": "/todos/list-", "value": { "id": "123", "text": "123" } },
+  { "op": "replace", "path": "/todos/count", "value": 1 } ,
+]
+```

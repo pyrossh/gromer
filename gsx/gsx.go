@@ -2,13 +2,13 @@ package gsx
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
 
-	"github.com/alecthomas/repr"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -23,6 +23,7 @@ var (
 	compMap  = map[string]ComponentFunc{}
 	funcMap  = map[string]interface{}{}
 	styles   = ""
+	refRegex = regexp.MustCompile(`{(.*?)}`)
 )
 
 type (
@@ -105,7 +106,7 @@ func convert(ref string, i interface{}) interface{} {
 	return nil
 }
 
-func subsRef(ctx map[string]interface{}, ref string) interface{} {
+func getRefValue(ctx map[string]interface{}, ref string) interface{} {
 	if f, ok := funcMap[ref]; ok {
 		return f.(func() string)()
 	} else {
@@ -118,6 +119,20 @@ func subsRef(ctx map[string]interface{}, ref string) interface{} {
 		}
 		return convert(ref, ctx[ref])
 	}
+}
+
+func removeBrackets(v string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(v, "{", ""), "}", "")
+}
+
+func substituteString(ctx map[string]interface{}, v string) string {
+	found := refRegex.FindString(v)
+	if found != "" {
+		varName := removeBrackets(found)
+		varValue := fmt.Sprintf("%v", getRefValue(ctx, varName))
+		return strings.ReplaceAll(v, found, varValue)
+	}
+	return v
 }
 
 func populateChildren(n, replaceNode1 *html.Node) {
@@ -150,32 +165,34 @@ func populateChildren(n, replaceNode1 *html.Node) {
 
 func populate(ctx Html, n *html.Node) {
 	if n.Type == html.TextNode {
-		// if n.Data != "" {
-		// }
+		if n.Data != "" && strings.Contains(n.Data, "{") && n.Data != "{children}" {
+			n.Data = substituteString(ctx, n.Data)
+		}
 	} else if n.Type == html.ElementNode {
-		repr.Println("dd", n.Data)
 		for i, at := range n.Attr {
-			// if len(param.Value.KV) != 0 {
-			// 	values := []string{}
-			// 	for _, kv := range param.Value.KV {
-			// 		if subsRef(ctx, kv.Value) == true {
-			// 			values = append(values, kv.Key)
-			// 		}
-			// 	}
 			if at.Val != "" && strings.Contains(at.Val, "{") {
 				if at.Key == "class" {
-					repr.Println(at)
-				} else {
-					re := regexp.MustCompile(`{(.*?)}`)
-					found := re.FindString(at.Val)
-					if found != "" {
-						varName := strings.ReplaceAll(strings.ReplaceAll(found, "{", ""), "}", "")
-						varValue := subsRef(ctx, varName).(string)
-						n.Attr[i] = html.Attribute{
-							Namespace: at.Namespace,
-							Key:       at.Key,
-							Val:       strings.ReplaceAll(at.Val, found, varValue),
+					classes := ""
+					kvstrings := strings.Split(strings.TrimSpace(removeBrackets(at.Val)), ",")
+					for _, kv := range kvstrings {
+						kvarray := strings.Split(kv, ":")
+						k := strings.TrimSpace(kvarray[0])
+						v := strings.TrimSpace(kvarray[1])
+						varValue := getRefValue(ctx, v)
+						if varValue.(bool) {
+							classes += k
 						}
+					}
+					n.Attr[i] = html.Attribute{
+						Namespace: at.Namespace,
+						Key:       at.Key,
+						Val:       classes,
+					}
+				} else {
+					n.Attr[i] = html.Attribute{
+						Namespace: at.Namespace,
+						Key:       at.Key,
+						Val:       substituteString(ctx, at.Val),
 					}
 				}
 			}
@@ -193,10 +210,6 @@ func populate(ctx Html, n *html.Node) {
 			}
 			result := reflect.ValueOf(comp.Func).Call(args)
 			compNode := result[0].Interface().(Node)
-			// html.Render(os.Stdout, componentNode)
-			// println("")
-			// html.Render(os.Stdout, n)
-			// println("")
 			if n.FirstChild != nil {
 				newChild := &html.Node{}
 				*newChild = *n.FirstChild
@@ -213,13 +226,6 @@ func populate(ctx Html, n *html.Node) {
 }
 
 // func render(x *Xml, ctx map[string]interface{}) string {
-// 	if x.Value != nil {
-// 		if x.Value.Ref != "" {
-// 			s += space + "  " + subsRef(ctx, x.Value.Ref).(string) + "\n"
-// 		} else if x.Value.Str != "" {
-// 			s += space + "  " + strings.ReplaceAll(x.Value.Str, `"`, "") + "\n"
-// 		}
-// 	}
 // 	if x.Name == "For" {
 // 		ctxKey := getAttribute("key", x.Attributes)
 // 		ctxName := getAttribute("itemKey", x.Attributes)
@@ -233,38 +239,5 @@ func populate(ctx Html, n *html.Node) {
 // 				s += render(x.Children[0], ctx) + "\n"
 // 			}
 // 		}
-// 	} else {
-// 		if comp, ok := compMap[x.Name]; ok {
-// 		} else {
-// 			found := false
-// 			for _, t := range htmlTags {
-// 				if t == x.Name {
-// 					found = true
-// 				}
-// 			}
-// 			if !found {
-// 				panic(fmt.Errorf("Comp not found %s", x.Name))
-// 			}
-// 			for _, c := range x.Children {
-// 				ctx["_space"] = space + "  "
-// 				s += render(c, ctx) + "\n"
-// 			}
-// 		}
 // 	}
-// 	s += space + "</" + x.Name + ">"
-// 	return s
 // }
-
-// <script>
-//     document.addEventListener('alpine:init', () => {
-//         Alpine.store('todos', {
-//         		list: [],
-//						count: 0,
-//         })
-//     })
-// </script>
-
-// patch: {
-// 	{ "op": "add", "path": "/todos/list", "value": { "id": "123", "text": "123" } },
-// }
-//
