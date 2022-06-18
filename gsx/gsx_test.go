@@ -103,17 +103,17 @@ func TestFor(t *testing.T) {
 			<ol x-for="todo in todos">
 				<li id="todo-1" class="completed">
 					<div class="view"><span>My first todo</span><span>My first todo</span></div>
-					<div class="todo-panel"><span>&lt;nil&gt;</span><span>&lt;nil&gt;</span></div>
+					<div class="todo-panel"><span>My first todo</span><span>true</span></div>
 					<div class="count"><span>true</span><span>true</span></div>
 				</li>
 				<li id="todo-2" class="">
 					<div class="view"><span>My second todo</span><span>My second todo</span></div>
-					<div class="todo-panel"><span>&lt;nil&gt;</span><span>&lt;nil&gt;</span></div>
+					<div class="todo-panel"><span>My second todo</span><span>false</span></div>
 					<div class="count"><span>false</span><span>false</span></div>
 				</li>
 				<li id="todo-3" class="">
 					<div class="view"><span>My third todo</span><span>My third todo</span></div>
-					<div class="todo-panel"><span>&lt;nil&gt;</span><span>&lt;nil&gt;</span></div>
+					<div class="todo-panel"><span>My third todo</span><span>false</span></div>
 					<div class="count"><span>false</span><span>false</span></div>
 				</li>
 			</ol>

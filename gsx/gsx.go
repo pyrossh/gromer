@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/alecthomas/repr"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -296,7 +295,9 @@ func populateComponent(ctx Html, comp ComponentFunc, n *html.Node, remove bool) 
 		if n.FirstChild != nil && remove {
 			n.RemoveChild(n.FirstChild)
 		}
-		repr.Println(compNode.String(), compNode.FirstChild.Data)
+		if !remove {
+			populate(ctx, newChild)
+		}
 		populateChildren(compNode.FirstChild, newChild)
 	}
 	return compNode.Node
