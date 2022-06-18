@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/alecthomas/repr"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -178,6 +179,29 @@ func populateChildren(n, replaceNode1 *html.Node) {
 	}
 }
 
+func cloneNode(n *html.Node) *html.Node {
+	attrs := []html.Attribute{}
+	for _, v := range n.Attr {
+		attrs = append(attrs, html.Attribute{
+			Key: v.Key,
+			Val: v.Val,
+		})
+	}
+	newNode := &html.Node{
+		Type:     n.Type,
+		Data:     n.Data,
+		DataAtom: n.DataAtom,
+		Attr:     attrs,
+	}
+	if n.FirstChild != nil {
+		newNode.FirstChild = cloneNode(n.FirstChild)
+	}
+	if n.NextSibling != nil {
+		newNode.NextSibling = cloneNode(n.NextSibling)
+	}
+	return newNode
+}
+
 func populate(ctx Html, n *html.Node) {
 	if n.Type == html.TextNode {
 		if n.Data != "" && strings.Contains(n.Data, "{") && n.Data != "{children}" {
@@ -185,7 +209,33 @@ func populate(ctx Html, n *html.Node) {
 		}
 	} else if n.Type == html.ElementNode {
 		for i, at := range n.Attr {
-			if at.Val != "" && strings.Contains(at.Val, "{") {
+			if at.Key == "x-for" {
+				xfor := getAttribute("x-for", n.Attr)
+				arr := strings.Split(xfor, " in ")
+				ctxItemKey := arr[0]
+				ctxKey := arr[1]
+				data := ctx[ctxKey]
+				switch reflect.TypeOf(data).Kind() {
+				case reflect.Slice:
+					v := reflect.ValueOf(data)
+					firstChild := cloneNode(n.FirstChild)
+					n.RemoveChild(n.FirstChild)
+					for i := 0; i < v.Len(); i++ {
+						compCtx := map[string]interface{}{
+							ctxItemKey: v.Index(i).Interface(),
+						}
+						itemChild := cloneNode(firstChild)
+						itemChild.Parent = nil
+						if comp, ok := compMap[itemChild.Data]; ok {
+							newNode := populateComponent(compCtx, comp, itemChild, false)
+							n.AppendChild(newNode)
+						} else {
+							n.AppendChild(itemChild)
+							populate(compCtx, itemChild)
+						}
+					}
+				}
+			} else if at.Val != "" && strings.Contains(at.Val, "{") {
 				if at.Key == "class" {
 					classes := ""
 					kvstrings := strings.Split(strings.TrimSpace(removeBrackets(at.Val)), ",")
@@ -213,26 +263,8 @@ func populate(ctx Html, n *html.Node) {
 			}
 		}
 		if comp, ok := compMap[n.Data]; ok {
-			h := Html(ctx)
-			args := []reflect.Value{reflect.ValueOf(h)}
-			for _, arg := range comp.Args {
-				if v, ok := ctx[arg]; ok {
-					args = append(args, reflect.ValueOf(v))
-				} else {
-					v := getAttribute(arg, n.Attr)
-					args = append(args, reflect.ValueOf(v))
-				}
-			}
-			result := reflect.ValueOf(comp.Func).Call(args)
-			compNode := result[0].Interface().(Node)
-			if n.FirstChild != nil {
-				newChild := &html.Node{}
-				*newChild = *n.FirstChild
-				newChild.Parent = nil
-				n.RemoveChild(n.FirstChild)
-				populateChildren(compNode.FirstChild, newChild)
-				n.AppendChild(compNode.Node)
-			}
+			newNode := populateComponent(ctx, comp, n, true)
+			n.AppendChild(newNode)
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			populate(ctx, c)
@@ -240,19 +272,32 @@ func populate(ctx Html, n *html.Node) {
 	}
 }
 
-// func render(x *Xml, ctx map[string]interface{}) string {
-// 	if x.Name == "For" {
-// 		ctxKey := getAttribute("key", x.Attributes)
-// 		ctxName := getAttribute("itemKey", x.Attributes)
-// 		data := ctx[ctxKey]
-// 		switch reflect.TypeOf(data).Kind() {
-// 		case reflect.Slice:
-// 			v := reflect.ValueOf(data)
-// 			for i := 0; i < v.Len(); i++ {
-// 				ctx["_space"] = space + "  "
-// 				ctx[ctxName] = v.Index(i).Interface()
-// 				s += render(x.Children[0], ctx) + "\n"
-// 			}
-// 		}
-// 	}
-// }
+func renderComponent(ctx Html, comp ComponentFunc, n *html.Node) Node {
+	h := Html(ctx)
+	args := []reflect.Value{reflect.ValueOf(h)}
+	for _, arg := range comp.Args {
+		if v, ok := ctx[arg]; ok {
+			args = append(args, reflect.ValueOf(v))
+		} else {
+			v := getAttribute(arg, n.Attr)
+			args = append(args, reflect.ValueOf(v))
+		}
+	}
+	result := reflect.ValueOf(comp.Func).Call(args)
+	compNode := result[0].Interface().(Node)
+	return compNode
+}
+
+func populateComponent(ctx Html, comp ComponentFunc, n *html.Node, remove bool) *html.Node {
+	compNode := renderComponent(ctx, comp, n)
+	if n.FirstChild != nil {
+		newChild := cloneNode(n.FirstChild)
+		newChild.Parent = nil
+		if n.FirstChild != nil && remove {
+			n.RemoveChild(n.FirstChild)
+		}
+		repr.Println(compNode.String(), compNode.FirstChild.Data)
+		populateChildren(compNode.FirstChild, newChild)
+	}
+	return compNode.Node
+}
