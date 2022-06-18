@@ -38,7 +38,7 @@ type (
 )
 
 func (h Html) Render(tpl string) Node {
-	newTpl := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(tpl, "\n", ""), "\r", ""), "\t", "")
+	newTpl := stripWhitespace(tpl)
 	doc, err := html.ParseFragment(bytes.NewBuffer([]byte(newTpl)), contextNode)
 	if err != nil {
 		panic(err)
@@ -57,7 +57,21 @@ func (n Node) String() string {
 	return b.String()
 }
 
-func RegisterComponent(name string, f interface{}, args ...string) {
+func stripWhitespace(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(s, "\n", ""), "\r", ""), "\t", "")
+}
+
+func assertName(t, name string) {
+	for _, v := range htmlTags {
+		if name == v {
+			panic(fmt.Sprintf("%s '%s' name cannot be the same as a html tag", t, name))
+		}
+	}
+}
+
+func RegisterComponent(f interface{}, args ...string) {
+	name := strings.ToLower(getFunctionName(f))
+	assertName("component", name)
 	compMap[name] = ComponentFunc{
 		Func: f,
 		Args: args,
@@ -66,6 +80,7 @@ func RegisterComponent(name string, f interface{}, args ...string) {
 
 func RegisterFunc(f interface{}) {
 	name := getFunctionName(f)
+	assertName("function", name)
 	funcMap[name] = f
 }
 
