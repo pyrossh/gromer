@@ -18,7 +18,6 @@ import (
 )
 
 func init() {
-	gsx.RegisterComponent(components.Page, "title")
 	gsx.RegisterComponent(components.Todo, "todo")
 	
 	gsx.RegisterComponent(containers.TodoCount, "filter")

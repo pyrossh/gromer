@@ -127,17 +127,17 @@ var _ = Css(`
 
 `)
 
-func TodoList(ctx Context, page int, filter string) (*Node, error) {
+func TodoList(c Context, page int, filter string) (*Node, error) {
 	index := Default(page, 1)
-	todos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
+	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 		Filter: filter,
 		Limit:  index,
 	})
 	if err != nil {
 		return nil, err
 	}
-	ctx.Set("todos", todos)
-	return ctx.Render(`
+	c.Set("todos", todos)
+	return c.Render(`
 		<ul id="todo-list" class="relative" x-for="todo in todos">
 			<Todo />
 		</ul>

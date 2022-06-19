@@ -16,16 +16,16 @@ var _ = Css(`
 	}
 `)
 
-func TodoCount(ctx Context, filter string) (*Node, error) {
-	todos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
+func TodoCount(c Context, filter string) (*Node, error) {
+	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 		Filter: filter,
 		Limit:  1000,
 	})
 	if err != nil {
 		return nil, err
 	}
-	ctx.Set("count", len(todos))
-	return ctx.Render(`
+	c.Set("count", len(todos))
+	return c.Render(`
 		<span class="todo-count" id="todo-count" hx-swap-oob="true">
 			<strong>{count}</strong> item left
 		</span>

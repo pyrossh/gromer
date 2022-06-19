@@ -14,9 +14,9 @@ type PostParams struct {
 	Text   string `json:"text"`
 }
 
-func POST(ctx Context, params PostParams) (*Node, int, error) {
+func POST(c Context, params PostParams) (*Node, int, error) {
 	if params.Intent == "clear_completed" {
-		allTodos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
+		allTodos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 			Filter: "all",
 			Limit:  1000,
 		})
@@ -25,46 +25,46 @@ func POST(ctx Context, params PostParams) (*Node, int, error) {
 		}
 		for _, t := range allTodos {
 			if t.Completed {
-				_, err := todos.DeleteTodo(ctx, t.ID)
+				_, err := todos.DeleteTodo(c, t.ID)
 				if err != nil {
 					return nil, 500, err
 				}
 			}
 		}
-		return ctx.Render(`
+		return c.Render(`
 			<TodoList id="todo-list" filter="all" page="1"></TodoList>
 			<TodoCount filter="all" page="1"></TodoCount>
 		`), 200, nil
 	} else if params.Intent == "create" {
-		todo, err := todos.CreateTodo(ctx, params.Text)
+		todo, err := todos.CreateTodo(c, params.Text)
 		if err != nil {
 			return nil, 500, err
 		}
-		ctx.Set("todo", todo)
-		return ctx.Render(`
+		c.Set("todo", todo)
+		return c.Render(`
 			<Todo todo=todo></Todo>
 			<TodoCount filter="all" page="1"></TodoCount>
 		`), 200, nil
 	} else if params.Intent == "delete" {
-		_, err := todos.DeleteTodo(ctx, params.ID)
+		_, err := todos.DeleteTodo(c, params.ID)
 		if err != nil {
 			return nil, 500, err
 		}
 		return nil, 200, nil
 	} else if params.Intent == "complete" {
-		todo, err := todos.GetTodo(ctx, params.ID)
+		todo, err := todos.GetTodo(c, params.ID)
 		if err != nil {
 			return nil, 500, err
 		}
-		_, err = todos.UpdateTodo(ctx, params.ID, todos.UpdateTodoParams{
+		_, err = todos.UpdateTodo(c, params.ID, todos.UpdateTodoParams{
 			Text:      todo.Text,
 			Completed: !todo.Completed,
 		})
 		if err != nil {
 			return nil, 500, err
 		}
-		ctx.Set("todo", todo)
-		return ctx.Render(`
+		c.Set("todo", todo)
+		return c.Render(`
 			{{#Todo todo=todo}}{{/Todo}}
 		`), 200, nil
 	}

@@ -8,8 +8,8 @@ import (
 var _ = Css(`
 `)
 
-func Todo(ctx Context, todo *todos.Todo) *Node {
-	return ctx.Render(`
+func Todo(c Context, todo *todos.Todo) *Node {
+	return c.Render(`
 		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
 			<div class="view">
 				<form  hx-target="#todo-{todo.ID}" hx-swap="outerHTML">
