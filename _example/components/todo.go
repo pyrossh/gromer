@@ -8,14 +8,14 @@ import (
 var _ = Css(`
 `)
 
-func Todo(h Html, todo *todos.Todo) string {
-	return h.Render(`
-		<li id="todo-{todo.ID}" class={{ completed: todo.Completed }}>
+func Todo(ctx Context, todo *todos.Todo) *Node {
+	return ctx.Render(`
+		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
 			<div class="view">
 				<form  hx-target="#todo-{todo.ID}" hx-swap="outerHTML">
 					<input type="hidden" name="intent" value="complete" />
 					<input type="hidden" name="id" value="{todo.ID}" />
-					<input hx-post="/" class="checkbox" type="checkbox" checked={{ completed: todo.Completed }} />
+					<input hx-post="/" class="checkbox" type="checkbox" checked="{ completed: todo.Completed }" />
 				</form>
 				<label>{todo.Text}</label>
 				<form hx-post="/" hx-target="#todo-{todo.ID}" hx-swap="delete">

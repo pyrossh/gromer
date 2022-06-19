@@ -2,6 +2,7 @@ package gsx
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"reflect"
@@ -9,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/alecthomas/repr"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -31,29 +33,92 @@ type (
 		Func interface{}
 		Args []string
 	}
-	Html map[string]interface{}
+	link struct {
+		Rel  string
+		Href string
+		Type string
+		As   string
+	}
+	Context struct {
+		context.Context
+		data    map[string]interface{}
+		metas   map[string]string
+		links   map[string]link
+		scripts map[string]bool
+	}
 	Node struct {
-		*html.Node
+		html.Node
 	}
 )
 
-func (h Html) Render(tpl string) Node {
+func NewContext(c context.Context) Context {
+	return Context{Context: c, data: map[string]interface{}{}, metas: map[string]string{}, links: map[string]link{}, scripts: map[string]bool{}}
+}
+
+func (h Context) Get(k string) interface{} {
+	return h.data[k]
+}
+
+func (h Context) Set(k string, v interface{}) {
+	h.data[k] = v
+}
+
+func (h Context) Meta(k, v string) {
+	h.metas[k] = v
+}
+
+func (h Context) Link(rel, href, t, as string) {
+	h.links[href] = link{rel, href, t, as}
+}
+
+func (h Context) Script(src string, sdefer bool) {
+	h.scripts[src] = sdefer
+}
+
+func (h Context) Render(tpl string) *Node {
 	newTpl := stripWhitespace(tpl)
 	doc, err := html.ParseFragment(bytes.NewBuffer([]byte(newTpl)), contextNode)
 	if err != nil {
 		panic(err)
 	}
 	populate(h, doc[0])
-	return Node{doc[0]}
+	return &Node{*doc[0]}
 }
 
-func (n Node) Write(w io.Writer) error {
-	return html.Render(w, n.Node)
+func (n *Node) Write(ctx Context, w io.Writer) {
+	w.Write([]byte(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">`))
+	w.Write([]byte(`<meta http-equiv="Content-Type" content="text/html;charset=utf-8"><meta content="utf-8" http-equiv="encoding">`))
+	w.Write([]byte(`<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">`))
+	for k, v := range ctx.metas {
+		w.Write([]byte(fmt.Sprintf(`<meta name="%s" content="%s">`, k, v)))
+	}
+	for k, v := range ctx.metas {
+		if k == "title" {
+			w.Write([]byte(fmt.Sprintf(`<title>%s</title>`, v)))
+		}
+	}
+	for _, v := range ctx.links {
+		if v.Type != "" || v.As != "" {
+			w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s" type="%s" as="%s">`, v.Rel, v.Href, v.Type, v.As)))
+		} else {
+			w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s">`, v.Rel, v.Href)))
+		}
+	}
+	for src, sdefer := range ctx.scripts {
+		if sdefer {
+			w.Write([]byte(fmt.Sprintf(`<script src="%s" defer="true"></script>`, src)))
+		} else {
+			w.Write([]byte(fmt.Sprintf(`<script src="%s"></script>`, src)))
+		}
+	}
+	w.Write([]byte(`</head><body>`))
+	html.Render(w, &n.Node)
+	w.Write([]byte(`</body></html>`))
 }
 
-func (n Node) String() string {
+func (n *Node) String() string {
 	b := bytes.NewBuffer(nil)
-	html.Render(b, n.Node)
+	html.Render(b, &n.Node)
 	return b.String()
 }
 
@@ -121,18 +186,18 @@ func convert(ref string, i interface{}) interface{} {
 	return nil
 }
 
-func getRefValue(ctx map[string]interface{}, ref string) interface{} {
+func getRefValue(ctx Context, ref string) interface{} {
 	if f, ok := funcMap[ref]; ok {
 		return f.(func() string)()
 	} else {
 		parts := strings.Split(strings.ReplaceAll(ref, "!", ""), ".")
 		if len(parts) == 2 {
-			if v, ok := ctx[parts[0]]; ok {
+			if v, ok := ctx.data[parts[0]]; ok {
 				i := reflect.ValueOf(v).Elem().FieldByName(parts[1]).Interface()
 				return convert(ref, i)
 			}
 		}
-		return convert(ref, ctx[ref])
+		return convert(ref, ctx.data[ref])
 	}
 }
 
@@ -140,7 +205,7 @@ func removeBrackets(v string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(v, "{", ""), "}", "")
 }
 
-func substituteString(ctx map[string]interface{}, v string) string {
+func substituteString(ctx Context, v string) string {
 	found := refRegex.FindString(v)
 	if found != "" {
 		varName := removeBrackets(found)
@@ -201,7 +266,7 @@ func cloneNode(n *html.Node) *html.Node {
 	return newNode
 }
 
-func populate(ctx Html, n *html.Node) {
+func populate(ctx Context, n *html.Node) {
 	if n.Type == html.TextNode {
 		if n.Data != "" && strings.Contains(n.Data, "{") && n.Data != "{children}" {
 			n.Data = substituteString(ctx, n.Data)
@@ -213,15 +278,28 @@ func populate(ctx Html, n *html.Node) {
 				arr := strings.Split(xfor, " in ")
 				ctxItemKey := arr[0]
 				ctxKey := arr[1]
-				data := ctx[ctxKey]
+				data := ctx.data[ctxKey]
 				switch reflect.TypeOf(data).Kind() {
 				case reflect.Slice:
 					v := reflect.ValueOf(data)
+					if v.Len() == 0 {
+						if n.FirstChild != nil {
+							n.RemoveChild(n.FirstChild)
+						}
+						continue
+					}
+					repr.Println("AAAAAAA", n.Data)
+					if n.FirstChild == nil {
+						continue
+					}
 					firstChild := cloneNode(n.FirstChild)
 					n.RemoveChild(n.FirstChild)
 					for i := 0; i < v.Len(); i++ {
-						compCtx := map[string]interface{}{
-							ctxItemKey: v.Index(i).Interface(),
+						compCtx := Context{
+							Context: ctx.Context,
+							data: map[string]interface{}{
+								ctxItemKey: v.Index(i).Interface(),
+							},
 						}
 						itemChild := cloneNode(firstChild)
 						itemChild.Parent = nil
@@ -261,21 +339,20 @@ func populate(ctx Html, n *html.Node) {
 				}
 			}
 		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			populate(ctx, c)
+		}
 		if comp, ok := compMap[n.Data]; ok {
 			newNode := populateComponent(ctx, comp, n, true)
 			n.AppendChild(newNode)
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			populate(ctx, c)
-		}
 	}
 }
 
-func renderComponent(ctx Html, comp ComponentFunc, n *html.Node) Node {
-	h := Html(ctx)
-	args := []reflect.Value{reflect.ValueOf(h)}
+func renderComponent(ctx Context, comp ComponentFunc, n *html.Node) *Node {
+	args := []reflect.Value{reflect.ValueOf(ctx)}
 	for _, arg := range comp.Args {
-		if v, ok := ctx[arg]; ok {
+		if v, ok := ctx.data[arg]; ok {
 			args = append(args, reflect.ValueOf(v))
 		} else {
 			v := getAttribute(arg, n.Attr)
@@ -283,11 +360,11 @@ func renderComponent(ctx Html, comp ComponentFunc, n *html.Node) Node {
 		}
 	}
 	result := reflect.ValueOf(comp.Func).Call(args)
-	compNode := result[0].Interface().(Node)
+	compNode := result[0].Interface().(*Node)
 	return compNode
 }
 
-func populateComponent(ctx Html, comp ComponentFunc, n *html.Node, remove bool) *html.Node {
+func populateComponent(ctx Context, comp ComponentFunc, n *html.Node, remove bool) *html.Node {
 	compNode := renderComponent(ctx, comp, n)
 	if n.FirstChild != nil {
 		newChild := cloneNode(n.FirstChild)
@@ -298,7 +375,9 @@ func populateComponent(ctx Html, comp ComponentFunc, n *html.Node, remove bool) 
 		if !remove {
 			populate(ctx, newChild)
 		}
-		populateChildren(compNode.FirstChild, newChild)
+		if compNode.FirstChild != nil {
+			populateChildren(compNode.FirstChild, newChild)
+		}
 	}
-	return compNode.Node
+	return &compNode.Node
 }

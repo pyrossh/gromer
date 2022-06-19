@@ -1,8 +1,6 @@
 package containers
 
 import (
-	"context"
-
 	"github.com/pyros2097/gromer/_example/services/todos"
 	. "github.com/pyros2097/gromer/gsx"
 )
@@ -18,16 +16,16 @@ var _ = Css(`
 	}
 `)
 
-func TodoCount(h Html, ctx context.Context, filter string) (string, error) {
+func TodoCount(ctx Context, filter string) (*Node, error) {
 	todos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
 		Filter: filter,
 		Limit:  1000,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	h["count"] = len(todos)
-	return h.Render(`
+	ctx.Set("count", len(todos))
+	return ctx.Render(`
 		<span class="todo-count" id="todo-count" hx-swap-oob="true">
 			<strong>{count}</strong> item left
 		</span>

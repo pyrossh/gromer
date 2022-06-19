@@ -10,19 +10,19 @@ import (
 	"github.com/pyros2097/gromer/_example/assets"
 	"github.com/pyros2097/gromer/_example/components"
 	"github.com/pyros2097/gromer/_example/containers"
-	"github.com/pyros2097/gromer/_example/pages/404"
-	"github.com/pyros2097/gromer/_example/pages"
-	"github.com/pyros2097/gromer/_example/pages/about"
+	"github.com/pyros2097/gromer/_example/routes/404"
+	"github.com/pyros2097/gromer/_example/routes"
+	"github.com/pyros2097/gromer/_example/routes/about"
 	"github.com/pyros2097/gromer/gsx"
 	
 )
 
 func init() {
-	gsx.RegisterComponent(components.Page)
-	gsx.RegisterComponent(components.Todo)
+	gsx.RegisterComponent(components.Page, "title")
+	gsx.RegisterComponent(components.Todo, "todo")
 	
-	gsx.RegisterComponent(containers.TodoCount)
-	gsx.RegisterComponent(containers.TodoList)
+	gsx.RegisterComponent(containers.TodoCount, "filter")
+	gsx.RegisterComponent(containers.TodoList, "page", "filter")
 	gromer.RegisterAssets(assets.FS)
 }
 
@@ -40,8 +40,8 @@ func main() {
 
 	pageRouter := baseRouter.NewRoute().Subrouter()
 	// gromer.ApiExplorerRoute(pageRouter, "/explorer")
-	gromer.Handle(pageRouter, "GET", "/", pages.GET)
-	gromer.Handle(pageRouter, "POST", "/", pages.POST)
+	gromer.Handle(pageRouter, "GET", "/", routes.GET)
+	gromer.Handle(pageRouter, "POST", "/", routes.POST)
 	gromer.Handle(pageRouter, "GET", "/about", about.GET)
 	
 

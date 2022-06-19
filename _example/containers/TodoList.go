@@ -1,8 +1,6 @@
 package containers
 
 import (
-	"context"
-
 	. "github.com/pyros2097/gromer"
 	"github.com/pyros2097/gromer/_example/services/todos"
 	. "github.com/pyros2097/gromer/gsx"
@@ -129,27 +127,19 @@ var _ = Css(`
 
 `)
 
-type TodoListProps struct {
-	ID     string `json:"id"`
-	Page   int    `json:"page"`
-	Filter string `json:"filter"`
-}
-
-func TodoList(h Html, ctx context.Context, props TodoListProps) (string, error) {
-	index := Default(props.Page, 1)
+func TodoList(ctx Context, page int, filter string) (*Node, error) {
+	index := Default(page, 1)
 	todos, err := todos.GetAllTodo(ctx, todos.GetAllTodoParams{
-		Filter: props.Filter,
+		Filter: filter,
 		Limit:  index,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	h["todos"] = todos
-	return h.Render(`
-		<ul id="todo-list" class="relative">
-			<For key="todos" itemKey="todo">
-				<Todo key="todo"></Todo>
-			</For>
+	ctx.Set("todos", todos)
+	return ctx.Render(`
+		<ul id="todo-list" class="relative" x-for="todo in todos">
+			<Todo />
 		</ul>
 	`), nil
 }

@@ -12,7 +12,7 @@ type TodoData struct {
 	Completed bool
 }
 
-func Todo(h Html, todo *TodoData) Node {
+func Todo(h Context, todo *TodoData) *Node {
 	return h.Render(`
 		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
 			<div class="view">
@@ -28,6 +28,14 @@ func Todo(h Html, todo *TodoData) Node {
 	`)
 }
 
+func TodoList(ctx Context, todos []*TodoData) (*Node, error) {
+	return ctx.Render(`
+		<ul id="todo-list" class="relative" x-for="todo in todos">
+			<Todo />
+		</ul>
+	`), nil
+}
+
 func WebsiteName() string {
 	return "My Website"
 }
@@ -36,9 +44,11 @@ func TestComponent(t *testing.T) {
 	r := require.New(t)
 	RegisterComponent(Todo, "todo")
 	RegisterFunc(WebsiteName)
-	h := Html(map[string]interface{}{
-		"todo": &TodoData{ID: "4", Text: "My fourth todo", Completed: false},
-	})
+	h := Context{
+		data: map[string]interface{}{
+			"todo": &TodoData{ID: "4", Text: "My fourth todo", Completed: false},
+		},
+	}
 	actual := h.Render(`
 		<div>
 			<Todo>
@@ -67,13 +77,15 @@ func TestFor(t *testing.T) {
 	r := require.New(t)
 	RegisterComponent(Todo, "todo")
 	RegisterFunc(WebsiteName)
-	h := Html(map[string]interface{}{
-		"todos": []*TodoData{
-			{ID: "1", Text: "My first todo", Completed: true},
-			{ID: "2", Text: "My second todo", Completed: false},
-			{ID: "3", Text: "My third todo", Completed: false},
+	h := Context{
+		data: map[string]interface{}{
+			"todos": []*TodoData{
+				{ID: "1", Text: "My first todo", Completed: true},
+				{ID: "2", Text: "My second todo", Completed: false},
+				{ID: "3", Text: "My third todo", Completed: false},
+			},
 		},
-	})
+	}
 	actual := h.Render(`
 		<div>
 			<ul x-for="todo in todos" class="relative">
@@ -121,3 +133,65 @@ func TestFor(t *testing.T) {
 	`)
 	r.Equal(expected, actual)
 }
+
+func TestForComponent(t *testing.T) {
+	r := require.New(t)
+	RegisterComponent(Todo, "todo")
+	RegisterComponent(TodoList, "todos")
+	RegisterFunc(WebsiteName)
+	h := Context{
+		data: map[string]interface{}{
+			"todos": []*TodoData{
+				{ID: "1", Text: "My first todo", Completed: true},
+				{ID: "2", Text: "My second todo", Completed: false},
+				{ID: "3", Text: "My third todo", Completed: false},
+			},
+		},
+	}
+	actual := h.Render(`
+		<div>
+			<TodoList />
+		</div>
+	`).String()
+	expected := stripWhitespace(`
+		<div>
+			<ul id="todo-list" class="relative" x-for="todo in todos">
+				<li id="todo-1" class="completed">
+					<div class="view"><span>My first todo</span><span>My first todo</span></div>
+					<div class="todo-panel"><span>My first todo</span><span>true</span></div>
+					<div class="count"><span>true</span><span>true</span></div>
+				</li>
+				<li id="todo-2" class="">
+					<div class="view"><span>My second todo</span><span>My second todo</span></div>
+					<div class="todo-panel"><span>My second todo</span><span>false</span></div>
+					<div class="count"><span>false</span><span>false</span></div>
+				</li>
+				<li id="todo-3" class="">
+					<div class="view"><span>My third todo</span><span>My third todo</span></div>
+					<div class="todo-panel"><span>My third todo</span><span>false</span></div>
+					<div class="count"><span>false</span><span>false</span></div>
+				</li>
+			</ul>
+		</div>
+	`)
+	r.Equal(expected, actual)
+}
+
+// func TestPage(t *testing.T) {
+// 	r := require.New(t)
+// 	RegisterFunc(WebsiteName)
+// 	h := Context{
+// 		data: map[string]interface{}{},
+// 	}
+// 	actual := h.Render(`
+// 		<Page title="test">
+// 			<span>Hello</span>
+// 		</Page}>
+// 	`).String()
+// 	expected := stripWhitespace(`
+// 		<page title="test">
+// 			<meta charset="UTF-8"/>
+// 		</page>
+// 	`)
+// 	r.Equal(expected, actual)
+// }

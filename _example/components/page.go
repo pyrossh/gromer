@@ -217,9 +217,9 @@ var _ = Css(`
 	}
 `)
 
-func Page(h Html, title string) string {
-	return h.Render(`
-		<!DOCTYPE html>
+func Page(ctx Context, title string) *Node {
+	ctx.Set("title", title)
+	return ctx.Render(`
 		<html lang="en">
 			<head>
 					<meta charset="UTF-8" />
@@ -228,12 +228,8 @@ func Page(h Html, title string) string {
 					<title>{title}</title>
 					<meta name="description" content="{title}" />
 					<meta name="author" content="pyrossh" />
-					<meta name="keywords" content="pyros.sh, pyrossh, gromer"  />
+					<meta name="keywords" content="pyros.sh, pyrossh, gromer" />
 					<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-					<link rel="icon" href="{GetAssetUrl "images/icon.png"}" />
-					<link rel="stylesheet" href="{GetStylesUrl}" />
-					<script src="{GetAlpineJsUrl}"></script>
-					<script src="{GetHtmxJsUrl}" defer=""></script>
 			</head>
 			<body>
 			{children}

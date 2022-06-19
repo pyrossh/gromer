@@ -21,6 +21,7 @@ import (
 
 	"github.com/alecthomas/repr"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
@@ -224,10 +225,15 @@ func addRouteDef(method, route string, h interface{}) {
 	})
 }
 
-func PerformRequest(route string, h interface{}, ctx interface{}, w http.ResponseWriter, r *http.Request) {
+func PerformRequest(route string, h interface{}, ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	params := GetRouteParams(route)
-	htmlTemplate := gsx.Html(map[string]interface{}{})
-	args := []reflect.Value{reflect.ValueOf(htmlTemplate), reflect.ValueOf(ctx)}
+	renderContext := gsx.NewContext(ctx)
+	renderContext.Set("requestId", uuid.NewString())
+	renderContext.Link("rel", GetAssetUrl("images/icon.png"), "", "")
+	renderContext.Link("stylesheet", GetStylesUrl(), "", "")
+	renderContext.Script(GetAlpineJsUrl(), true)
+	renderContext.Script(GetHtmxJsUrl(), false)
+	args := []reflect.Value{reflect.ValueOf(renderContext)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
 	vars := mux.Vars(r)
@@ -312,11 +318,11 @@ func PerformRequest(route string, h interface{}, ctx interface{}, w http.Respons
 		RespondError(w, responseStatus, responseError.(error))
 		return
 	}
-	if v, ok := response.(string); ok {
+	if v, ok := response.(*gsx.Node); ok {
 		w.Header().Set("Content-Type", "text/html")
 		// This has to be at end always
 		w.WriteHeader(responseStatus)
-		w.Write([]byte(v))
+		v.Write(renderContext, w)
 		return
 	}
 	// if v, ok := response.(handlebars.CssContent); ok {
@@ -445,7 +451,7 @@ func CacheMiddleware(next http.Handler) http.Handler {
 func StatusHandler(h interface{}) http.Handler {
 	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(ctx)})
+		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(map[string]interface{}{}), reflect.ValueOf(ctx)})
 		response := values[0].Interface()
 		responseStatus := values[1].Interface().(int)
 		responseError := values[2].Interface()
@@ -457,7 +463,7 @@ func StatusHandler(h interface{}) http.Handler {
 
 		// This has to be at end always after headers are set
 		w.WriteHeader(responseStatus)
-		w.Write([]byte(response.(string)))
+		response.(*gsx.Node).Write(gsx.NewContext(r.Context()), w)
 	})).(http.Handler)
 }
 
