@@ -134,20 +134,9 @@ func main() {
 		return gromer.RouteDefs[i].Path < gromer.RouteDefs[j].Path
 	})
 	pageRoutes := []gromer.RouteDefinition{}
-	apiRoutes := []gromer.RouteDefinition{}
 	for _, r := range gromer.RouteDefs {
 		fmt.Printf("%-6s %s %-6s\n", r.Method, r.Path, r.PkgPath)
-		if strings.Contains(r.Path, "/api/") {
-			apiRoutes = append(apiRoutes, r)
-		} else {
-			pageRoutes = append(pageRoutes, r)
-		}
-	}
-	err = velvet.Helpers.Add("title", func(v string) string {
-		return strings.Title(strings.ToLower(v))
-	})
-	if err != nil {
-		log.Fatal(err)
+		pageRoutes = append(pageRoutes, r)
 	}
 	hasRouteMap := map[string]bool{}
 	routeImports := []gromer.RouteDefinition{}
@@ -182,7 +171,6 @@ func main() {
 	ctx := velvet.NewContext()
 	ctx.Set("moduleName", moduleName)
 	ctx.Set("pageRoutes", pageRoutes)
-	ctx.Set("apiRoutes", apiRoutes)
 	ctx.Set("routeImports", routeImports)
 	ctx.Set("componentNames", componentNames)
 	ctx.Set("containerNames", containerNames)
@@ -217,8 +205,7 @@ func init() {
 func main() {
 	baseRouter := mux.NewRouter()
 	baseRouter.Use(gromer.LogMiddleware)
-	{{#if notFoundPkg}}
-	baseRouter.NotFoundHandler = gromer.StatusHandler({{ notFoundPkg }}.GET)
+	{{#if notFoundPkg}}baseRouter.NotFoundHandler = gromer.StatusHandler({{ notFoundPkg }}.GET)
 	{{/if}}
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
@@ -230,12 +217,6 @@ func main() {
 	{{#each pageRoutes as |route| }}gromer.Handle(pageRouter, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
 
-	apiRouter := baseRouter.NewRoute().Subrouter()
-	apiRouter.Use(gromer.CorsMiddleware)
-	{{#each apiRoutes as |route| }}gromer.Handle(apiRouter, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
-	{{/each}}
-	
-	
 	log.Info().Msg("http server listening on http://localhost:3000")
 	srv := server.New(baseRouter, nil)
 	if err := srv.ListenAndServe(":3000"); err != nil {

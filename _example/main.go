@@ -30,7 +30,6 @@ func init() {
 func main() {
 	baseRouter := mux.NewRouter()
 	baseRouter.Use(gromer.LogMiddleware)
-	
 	baseRouter.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
 	
 	staticRouter := baseRouter.NewRoute().Subrouter()
@@ -43,12 +42,6 @@ func main() {
 	gromer.Handle(pageRouter, "GET", "/", routes.GET)
 	gromer.Handle(pageRouter, "POST", "/", routes.POST)
 	gromer.Handle(pageRouter, "GET", "/about", about.GET)
-	
-
-	apiRouter := baseRouter.NewRoute().Subrouter()
-	apiRouter.Use(gromer.CorsMiddleware)
-	
-	
 	
 	log.Info().Msg("http server listening on http://localhost:3000")
 	srv := server.New(baseRouter, nil)

@@ -13,4 +13,6 @@ This example demonstrates gromer with a simple web app.
 make setup
 make update
 make dev
+make build
+make run
 ```
