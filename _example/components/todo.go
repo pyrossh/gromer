@@ -8,6 +8,8 @@ import (
 var _ = Css(`
 `)
 
+// <Checkbox hx-post="/" value="{todo.Completed}" />
+
 func Todo(c Context, todo *todos.Todo) *Node {
 	return c.Render(`
 		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
@@ -15,7 +17,7 @@ func Todo(c Context, todo *todos.Todo) *Node {
 				<form  hx-target="#todo-{todo.ID}" hx-swap="outerHTML">
 					<input type="hidden" name="intent" value="complete" />
 					<input type="hidden" name="id" value="{todo.ID}" />
-					<input hx-post="/" class="checkbox" type="checkbox" checked="{ completed: todo.Completed }" />
+					<input class="checkbox" type="checkbox" checked="{value}" />
 				</form>
 				<label>{todo.Text}</label>
 				<form hx-post="/" hx-target="#todo-{todo.ID}" hx-swap="delete">
@@ -27,5 +29,3 @@ func Todo(c Context, todo *todos.Todo) *Node {
 		</li>
 	`)
 }
-
-// <!-- <label hx-get="/todos/edit/{todo.ID}" hx-target="#todo-{todo.ID}" hx-swap="outerHTML">{{ props.Todo.Text }}</label> -->

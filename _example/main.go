@@ -19,6 +19,7 @@ import (
 
 func init() {
 	gsx.RegisterComponent(components.Todo, "todo")
+	gsx.RegisterComponent(components.Checkbox, "value")
 	
 	gsx.RegisterComponent(containers.TodoCount, "filter")
 	gsx.RegisterComponent(containers.TodoList, "page", "filter")

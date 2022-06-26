@@ -19,7 +19,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alecthomas/repr"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -77,105 +76,6 @@ func RegisterAssets(fs embed.FS) {
 	appAssets = fs
 }
 
-// func RegisterComponent(fn any, props ...string) {
-// 	name := getFunctionName(fn)
-// 	fnType := reflect.TypeOf(fn)
-// 	fnValue := reflect.ValueOf(fn)
-// 	handlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
-// 		args := []reflect.Value{}
-// 		var props any
-// 		if fnType.NumIn() > 0 {
-// 			structType := fnType.In(0)
-// 			instance := reflect.New(structType)
-// 			if structType.Kind() != reflect.Struct {
-// 				log.Fatal().Msgf("component '%s' props should be a struct", name)
-// 			}
-// 			rv := instance.Elem()
-// 			for i := 0; i < structType.NumField(); i++ {
-// 				if f := rv.Field(i); f.CanSet() {
-// 					jsonName := structType.Field(i).Tag.Get("json")
-// 					defaultValue := structType.Field(i).Tag.Get("default")
-// 					if jsonName == "children" {
-// 						s, err := help.Block()
-// 						if err != nil {
-// 							return "", err
-// 						}
-// 						f.Set(reflect.ValueOf(template.HTML(s)))
-// 					} else {
-// 						v := help.Context.Get(jsonName)
-// 						if v == nil {
-// 							f.Set(reflect.ValueOf(defaultValue))
-// 						} else {
-// 							f.Set(reflect.ValueOf(v))
-// 						}
-// 					}
-// 				}
-// 			}
-// 			args = append(args, rv)
-// 			props = rv.Interface()
-// 		}
-// 		res := fnValue.Call(args)
-// 		tpl := res[0].Interface().(*handlebars.Template)
-// 		tpl.Context.Set("props", props)
-// 		s, _, err := tpl.Render()
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 		return template.HTML(s), nil
-// 	})
-// }
-
-// func RegisterContainer(fn any, props ...string) {
-// 	name := getFunctionName(fn)
-// 	fnType := reflect.TypeOf(fn)
-// 	fnValue := reflect.ValueOf(fn)
-// 	// shandlebars.GlobalHelpers.Add(name, func(help handlebars.HelperContext) (template.HTML, error) {
-// 		args := []reflect.Value{reflect.ValueOf(context.TODO())}
-// 		var props any
-// 		if fnType.NumIn() > 1 {
-// 			structType := fnType.In(1)
-// 			instance := reflect.New(structType)
-// 			if structType.Kind() != reflect.Struct {
-// 				log.Fatal().Msgf("component '%s' props should be a struct", name)
-// 			}
-// 			rv := instance.Elem()
-// 			for i := 0; i < structType.NumField(); i++ {
-// 				if f := rv.Field(i); f.CanSet() {
-// 					jsonName := structType.Field(i).Tag.Get("json")
-// 					defaultValue := structType.Field(i).Tag.Get("default")
-// 					if jsonName == "children" {
-// 						s, err := help.Block()
-// 						if err != nil {
-// 							return "", err
-// 						}
-// 						f.Set(reflect.ValueOf(template.HTML(s)))
-// 					} else {
-// 						v := help.Context.Get(jsonName)
-// 						if v == nil {
-// 							f.Set(reflect.ValueOf(defaultValue))
-// 						} else {
-// 							f.Set(reflect.ValueOf(v))
-// 						}
-// 					}
-// 				}
-// 			}
-// 			args = append(args, rv)
-// 			props = rv.Interface()
-// 		}
-// 		res := fnValue.Call(args)
-// 		tpl := res[0].Interface().(*handlebars.Template)
-// 		// if res[1].Interface() != nil {
-// 		// show error in component
-// 		// }
-// 		tpl.Context.Set("props", props)
-// 		s, _, err := tpl.Render()
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 		return template.HTML(s), nil
-// 	})
-// }
-
 func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status) // always write status last
@@ -227,7 +127,7 @@ func addRouteDef(method, route string, h interface{}) {
 
 func PerformRequest(route string, h interface{}, ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	params := GetRouteParams(route)
-	renderContext := gsx.NewContext(ctx)
+	renderContext := gsx.NewContext(ctx, r.Header.Get("HX-Request") == "true")
 	renderContext.Set("requestId", uuid.NewString())
 	renderContext.Link("rel", GetAssetUrl("images/icon.png"), "", "")
 	renderContext.Link("stylesheet", GetStylesUrl(), "", "")
@@ -240,7 +140,6 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 	for _, k := range params {
 		args = append(args, reflect.ValueOf(vars[k]))
 	}
-	repr.Println(len(args), icount)
 	if len(args) != icount {
 		structType := funcType.In(icount - 1)
 		instance := reflect.New(structType)
@@ -308,6 +207,7 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 			RespondError(w, 400, fmt.Errorf("Illegal Content-Type tag found %s", contentType))
 			return
 		}
+		renderContext.Set("params", instance.Elem().Interface())
 		args = append(args, instance.Elem())
 	}
 	values := reflect.ValueOf(h).Call(args)
@@ -387,6 +287,7 @@ func (w *LogResponseWriter) LogRequest(r *http.Request) {
 	logger := log.WithLevel(zerolog.InfoLevel)
 	if w.err != nil {
 		stack := string(debug.Stack())
+		println(stack)
 		logger = log.WithLevel(zerolog.ErrorLevel).Err(w.err).Str("stack", stack).Stack()
 	}
 	ua := useragent.Parse(r.UserAgent())
@@ -451,7 +352,8 @@ func CacheMiddleware(next http.Handler) http.Handler {
 func StatusHandler(h interface{}) http.Handler {
 	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(map[string]interface{}{}), reflect.ValueOf(ctx)})
+		renderContext := gsx.NewContext(ctx, r.Header.Get("HX-Request") == "true")
+		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(renderContext)})
 		response := values[0].Interface()
 		responseStatus := values[1].Interface().(int)
 		responseError := values[2].Interface()
@@ -463,7 +365,7 @@ func StatusHandler(h interface{}) http.Handler {
 
 		// This has to be at end always after headers are set
 		w.WriteHeader(responseStatus)
-		response.(*gsx.Node).Write(gsx.NewContext(r.Context()), w)
+		response.(*gsx.Node).Write(renderContext, w)
 	})).(http.Handler)
 }
 

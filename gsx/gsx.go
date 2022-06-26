@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
-	"github.com/alecthomas/repr"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -41,18 +41,19 @@ type (
 	}
 	Context struct {
 		context.Context
-		data    map[string]interface{}
-		metas   map[string]string
-		links   map[string]link
-		scripts map[string]bool
+		hxRequest bool
+		data      map[string]interface{}
+		metas     map[string]string
+		links     map[string]link
+		scripts   map[string]bool
 	}
 	Node struct {
 		html.Node
 	}
 )
 
-func NewContext(c context.Context) Context {
-	return Context{Context: c, data: map[string]interface{}{}, metas: map[string]string{}, links: map[string]link{}, scripts: map[string]bool{}}
+func NewContext(c context.Context, hxRequest bool) Context {
+	return Context{Context: c, hxRequest: hxRequest, data: map[string]interface{}{}, metas: map[string]string{}, links: map[string]link{}, scripts: map[string]bool{}}
 }
 
 func (h Context) Get(k string) interface{} {
@@ -86,34 +87,38 @@ func (h Context) Render(tpl string) *Node {
 }
 
 func (n *Node) Write(ctx Context, w io.Writer) {
-	w.Write([]byte(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">`))
-	w.Write([]byte(`<meta http-equiv="Content-Type" content="text/html;charset=utf-8"><meta content="utf-8" http-equiv="encoding">`))
-	w.Write([]byte(`<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">`))
-	for k, v := range ctx.metas {
-		w.Write([]byte(fmt.Sprintf(`<meta name="%s" content="%s">`, k, v)))
-	}
-	for k, v := range ctx.metas {
-		if k == "title" {
-			w.Write([]byte(fmt.Sprintf(`<title>%s</title>`, v)))
+	if !ctx.hxRequest {
+		w.Write([]byte(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">`))
+		w.Write([]byte(`<meta http-equiv="Content-Type" content="text/html;charset=utf-8"><meta content="utf-8" http-equiv="encoding">`))
+		w.Write([]byte(`<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">`))
+		for k, v := range ctx.metas {
+			w.Write([]byte(fmt.Sprintf(`<meta name="%s" content="%s">`, k, v)))
 		}
-	}
-	for _, v := range ctx.links {
-		if v.Type != "" || v.As != "" {
-			w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s" type="%s" as="%s">`, v.Rel, v.Href, v.Type, v.As)))
-		} else {
-			w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s">`, v.Rel, v.Href)))
+		for k, v := range ctx.metas {
+			if k == "title" {
+				w.Write([]byte(fmt.Sprintf(`<title>%s</title>`, v)))
+			}
 		}
-	}
-	for src, sdefer := range ctx.scripts {
-		if sdefer {
-			w.Write([]byte(fmt.Sprintf(`<script src="%s" defer="true"></script>`, src)))
-		} else {
-			w.Write([]byte(fmt.Sprintf(`<script src="%s"></script>`, src)))
+		for _, v := range ctx.links {
+			if v.Type != "" || v.As != "" {
+				w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s" type="%s" as="%s">`, v.Rel, v.Href, v.Type, v.As)))
+			} else {
+				w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s">`, v.Rel, v.Href)))
+			}
 		}
+		for src, sdefer := range ctx.scripts {
+			if sdefer {
+				w.Write([]byte(fmt.Sprintf(`<script src="%s" defer="true"></script>`, src)))
+			} else {
+				w.Write([]byte(fmt.Sprintf(`<script src="%s"></script>`, src)))
+			}
+		}
+		w.Write([]byte(`</head><body>`))
 	}
-	w.Write([]byte(`</head><body>`))
 	html.Render(w, &n.Node)
-	w.Write([]byte(`</body></html>`))
+	if !ctx.hxRequest {
+		w.Write([]byte(`</body></html>`))
+	}
 }
 
 func (n *Node) String() string {
@@ -180,10 +185,13 @@ func convert(ref string, i interface{}) interface{} {
 		} else {
 			return iv
 		}
+	case int:
+		return iv
 	case string:
 		return iv
+	default:
+		return iv
 	}
-	return nil
 }
 
 func getRefValue(ctx Context, ref string) interface{} {
@@ -193,8 +201,14 @@ func getRefValue(ctx Context, ref string) interface{} {
 		parts := strings.Split(strings.ReplaceAll(ref, "!", ""), ".")
 		if len(parts) == 2 {
 			if v, ok := ctx.data[parts[0]]; ok {
-				i := reflect.ValueOf(v).Elem().FieldByName(parts[1]).Interface()
-				return convert(ref, i)
+				a := reflect.ValueOf(v)
+				if a.Kind() == reflect.Ptr {
+					i := a.Elem().FieldByName(parts[1]).Interface()
+					return convert(ref, i)
+				} else {
+					i := a.FieldByName(parts[1]).Interface()
+					return convert(ref, i)
+				}
 			}
 		}
 		return convert(ref, ctx.data[ref])
@@ -288,7 +302,6 @@ func populate(ctx Context, n *html.Node) {
 						}
 						continue
 					}
-					repr.Println("AAAAAAA", n.Data)
 					if n.FirstChild == nil {
 						continue
 					}
@@ -351,12 +364,23 @@ func populate(ctx Context, n *html.Node) {
 
 func renderComponent(ctx Context, comp ComponentFunc, n *html.Node) *Node {
 	args := []reflect.Value{reflect.ValueOf(ctx)}
-	for _, arg := range comp.Args {
+	funcType := reflect.TypeOf(comp.Func)
+	for i, arg := range comp.Args {
 		if v, ok := ctx.data[arg]; ok {
 			args = append(args, reflect.ValueOf(v))
 		} else {
 			v := getAttribute(arg, n.Attr)
-			args = append(args, reflect.ValueOf(v))
+			t := funcType.In(i + 1)
+			switch t.Kind() {
+			case reflect.Int:
+				value, _ := strconv.Atoi(v)
+				args = append(args, reflect.ValueOf(value))
+			case reflect.Bool:
+				value, _ := strconv.ParseBool(v)
+				args = append(args, reflect.ValueOf(value))
+			default:
+				args = append(args, reflect.ValueOf(v))
+			}
 		}
 	}
 	result := reflect.ValueOf(comp.Func).Call(args)

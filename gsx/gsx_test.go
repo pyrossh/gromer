@@ -15,12 +15,12 @@ type TodoData struct {
 func Todo(h Context, todo *TodoData) *Node {
 	return h.Render(`
 		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
-			<div class="view">
+			<div class="upper">
 				<span>{todo.Text}</span>
 				<span>{todo.Text}</span>
 			</div>
 			{children}
-			<div class="count">
+			<div class="bottom">
 				<span>{todo.Completed}</span>
 				<span>{todo.Completed}</span>
 			</div>
@@ -33,6 +33,14 @@ func TodoList(ctx Context, todos []*TodoData) (*Node, error) {
 		<ul id="todo-list" class="relative" x-for="todo in todos">
 			<Todo />
 		</ul>
+	`), nil
+}
+
+func TodoCount(ctx Context, count int) (*Node, error) {
+	return ctx.Render(`
+		<span id="todo-count" class="todo-count" hx-swap-oob="true">
+			<strong>{count}</strong> item left
+		</span>
 	`), nil
 }
 
@@ -57,6 +65,7 @@ func TestComponent(t *testing.T) {
 					<span>{todo.Completed}</span>
 				</div>
 			</Todo>
+			<Todo />
 		</div>
 	`).String()
 	expected := stripWhitespace(`
@@ -177,21 +186,24 @@ func TestForComponent(t *testing.T) {
 	r.Equal(expected, actual)
 }
 
-// func TestPage(t *testing.T) {
-// 	r := require.New(t)
-// 	RegisterFunc(WebsiteName)
-// 	h := Context{
-// 		data: map[string]interface{}{},
-// 	}
-// 	actual := h.Render(`
-// 		<Page title="test">
-// 			<span>Hello</span>
-// 		</Page}>
-// 	`).String()
-// 	expected := stripWhitespace(`
-// 		<page title="test">
-// 			<meta charset="UTF-8"/>
-// 		</page>
-// 	`)
-// 	r.Equal(expected, actual)
-// }
+func TestMultipleComonent(t *testing.T) {
+	r := require.New(t)
+	RegisterComponent(Todo, "todo")
+	RegisterComponent(TodoCount, "count")
+	h := Context{
+		data: map[string]interface{}{
+			"todo": &TodoData{
+				ID:        "3",
+				Text:      "My third todo",
+				Completed: false,
+			},
+		},
+	}
+	actual := h.Render(`
+			<Todo />
+			<TodoCount />
+	`).String()
+	expected := stripWhitespace(`
+	`)
+	r.Equal(expected, actual)
+}

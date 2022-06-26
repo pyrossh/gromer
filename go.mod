@@ -3,9 +3,9 @@ module github.com/pyros2097/gromer
 go 1.18
 
 require (
-	github.com/alecthomas/repr v0.1.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/imdario/mergo v0.3.12
 	github.com/rs/zerolog v1.26.1
@@ -30,7 +30,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect

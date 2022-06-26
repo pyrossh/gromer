@@ -26,7 +26,7 @@ func TodoCount(c Context, filter string) (*Node, error) {
 	}
 	c.Set("count", len(todos))
 	return c.Render(`
-		<span class="todo-count" id="todo-count" hx-swap-oob="true">
+		<span id="todo-count" class="todo-count" hx-swap-oob="true">
 			<strong>{count}</strong> item left
 		</span>
 	`), nil
