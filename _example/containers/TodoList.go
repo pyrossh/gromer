@@ -6,6 +6,23 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
+func TodoList(c Context, page int, filter string) *Node {
+	index := Default(page, 1)
+	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
+		Filter: filter,
+		Limit:  index,
+	})
+	if err != nil {
+		return Error(c, err)
+	}
+	c.Set("todos", todos)
+	return c.Render(`
+		<ul id="todo-list" class="relative" x-for="todo in todos">
+			<Todo />
+		</ul>
+	`)
+}
+
 var _ = Css(`
 	.todo-list {
 		margin: 0;
@@ -96,22 +113,4 @@ var _ = Css(`
 			height: 40px;
 		}
 	}
-
 `)
-
-func TodoList(c Context, page int, filter string) (*Node, error) {
-	index := Default(page, 1)
-	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
-		Filter: filter,
-		Limit:  index,
-	})
-	if err != nil {
-		return nil, err
-	}
-	c.Set("todos", todos)
-	return c.Render(`
-		<ul id="todo-list" class="relative" x-for="todo in todos">
-			<Todo />
-		</ul>
-	`), nil
-}

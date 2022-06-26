@@ -5,6 +5,22 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
+func TodoCount(c Context, filter string) *Node {
+	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
+		Filter: filter,
+		Limit:  1000,
+	})
+	if err != nil {
+		return Error(c, err)
+	}
+	c.Set("count", len(todos))
+	return c.Render(`
+		<span id="todo-count" class="todo-count" hx-swap-oob="true">
+			<strong>{count}</strong> item left
+		</span>
+	`)
+}
+
 var _ = Css(`
 	.todo-count {
 		float: left;
@@ -15,19 +31,3 @@ var _ = Css(`
 		font-weight: 300;
 	}
 `)
-
-func TodoCount(c Context, filter string) (*Node, error) {
-	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
-		Filter: filter,
-		Limit:  1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	c.Set("count", len(todos))
-	return c.Render(`
-		<span id="todo-count" class="todo-count" hx-swap-oob="true">
-			<strong>{count}</strong> item left
-		</span>
-	`), nil
-}
