@@ -32,6 +32,7 @@ func main() {
 	
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
+	staticRouter.Use(gromer.CompressMiddleware)
 	gromer.StaticRoute(staticRouter, "/gromer/", gromer_assets.FS)
 	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
 	gromer.StylesRoute(staticRouter, "/styles.css")

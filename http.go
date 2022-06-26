@@ -19,14 +19,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/felixge/httpsnoop"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer/gsx"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
 	"xojoc.pw/useragent"
+)
+
+const (
+	gzipEncoding   = "gzip"
+	flateEncoding  = "deflate"
+	acceptEncoding = "Accept-Encoding"
 )
 
 var (
@@ -73,12 +81,14 @@ func getFunctionName(temp interface{}) string {
 func RespondError(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status) // always write status last
-	w.(*LogResponseWriter).SetError(err)
 	merror := map[string]interface{}{
 		"error": err.Error(),
 	}
 	if status >= 500 {
 		merror["error"] = "Internal Server Error"
+		stack := string(debug.Stack())
+		println(stack)
+		log.WithLevel(zerolog.ErrorLevel).Err(err).Bool("panic", status == 599).Str("stack", stack).Stack()
 	}
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if ok {
@@ -95,26 +105,6 @@ func GetRouteParams(route string) []string {
 		params = append(params, strings.Replace(strings.Replace(v, "}", "", 1), "{", "", 1))
 	}
 	return params
-}
-
-func addRouteDef(method, route string, h interface{}) {
-	pathParams := GetRouteParams(route)
-	var body any = nil
-	funcType := reflect.TypeOf(h)
-	if funcType.NumIn() > len(pathParams)+2 {
-		structType := funcType.In(funcType.NumIn() - 1)
-		instance := reflect.New(structType)
-		if structType.Kind() != reflect.Struct {
-			log.Fatal().Msgf("router  '%s' '%s' func final param should be a struct", method, route)
-		}
-		body = instance.Interface()
-	}
-	routeDefs = append(routeDefs, RouteDefinition{
-		Method:     method,
-		Path:       route,
-		PathParams: pathParams,
-		Params:     body,
-	})
 }
 
 func PerformRequest(route string, h interface{}, ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -224,107 +214,30 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 	w.Write(data)
 }
 
-type writeCounter int64
-
-func (wc *writeCounter) Write(p []byte) (n int, err error) {
-	*wc += writeCounter(len(p))
-	return len(p), nil
-}
-func headerSize(h http.Header) int64 {
-	var wc writeCounter
-	h.Write(&wc)
-	return int64(wc) + 2 // for CRLF
-}
-
-type LogResponseWriter struct {
-	http.ResponseWriter
-	startTime             time.Time
-	responseStatusCode    int
-	responseContentLength int
-	responseHeaderSize    int
-	err                   error
-}
-
-func NewLogResponseWriter(w http.ResponseWriter) *LogResponseWriter {
-	return &LogResponseWriter{ResponseWriter: w, startTime: time.Now()}
-}
-
-func (w *LogResponseWriter) WriteHeader(code int) {
-	w.ResponseWriter.WriteHeader(code)
-	w.responseStatusCode = code
-	w.responseHeaderSize = int(headerSize(w.Header()))
-}
-
-func (w *LogResponseWriter) Write(body []byte) (int, error) {
-	w.responseContentLength += len(body)
-	return w.ResponseWriter.Write(body)
-}
-
-func (w *LogResponseWriter) SetError(err error) {
-	w.err = err
-}
-
-func (w *LogResponseWriter) LogRequest(r *http.Request) {
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	if len(ip) > 0 && ip[0] == '[' {
-		ip = ip[1 : len(ip)-1]
-	}
-	logger := log.WithLevel(zerolog.InfoLevel)
-	if w.err != nil {
-		stack := string(debug.Stack())
-		println(stack)
-		logger = log.WithLevel(zerolog.ErrorLevel).Err(w.err).Str("stack", stack).Stack()
-	}
-	ua := useragent.Parse(r.UserAgent())
-	logger.Msgf("%s %d %.2f KB %s %s %s", r.Method,
-		w.responseStatusCode,
-		float32(w.responseContentLength)/1024.0,
-		time.Since(w.startTime).Round(time.Millisecond).String(), ua.Name, r.URL.Path)
-	// logger.
-	// 	Str("method", r.Method).
-	// 	Str("url", r.URL.String()).
-	// 	Int("header_size", int(headerSize(r.Header))).
-	// 	Int64("body_size", r.ContentLength).
-	// 	Str("host", r.Host).
-	// 	// Str("agent", r.UserAgent()).
-	// 	Str("referer", r.Referer()).
-	// 	Str("proto", r.Proto).
-	// 	Str("remote_ip", ip).
-	// 	Int("status", logRespWriter.responseStatusCode).
-	// 	Int("resp_header_size", logRespWriter.responseHeaderSize).
-	// 	Int("resp_body_size", logRespWriter.responseContentLength).
-	// 	Str("latency", time.Since(startTime).String()).
-	// 	Msgf("")
-}
-
 func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logRespWriter := NewLogResponseWriter(w)
 		defer func() {
 			if err := recover(); err != nil {
-				RespondError(logRespWriter, 599, fmt.Errorf("%+v", err))
-				logRespWriter.LogRequest(r)
+				RespondError(w, 599, fmt.Errorf("%+v", err))
 			}
 		}()
-		next.ServeHTTP(logRespWriter, r)
-		if IsCloundRun {
-			return
+		m := httpsnoop.CaptureMetrics(next, w, r)
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if len(ip) > 0 && ip[0] == '[' {
+			ip = ip[1 : len(ip)-1]
 		}
-		logRespWriter.LogRequest(r)
+		log.WithLevel(zerolog.InfoLevel).Msgf("%s %d %.2fkb %s %s %s", r.Method,
+			m.Code,
+			float64(m.Written)/1024.0,
+			m.Duration.Round(time.Millisecond).String(),
+			useragent.Parse(r.UserAgent()).Name,
+			r.URL.Path,
+		)
 	})
 }
 
-func CorsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(200)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+func CompressMiddleware(next http.Handler) http.Handler {
+	return handlers.CompressHandler(next)
 }
 
 func CacheMiddleware(next http.Handler) http.Handler {
@@ -367,7 +280,6 @@ func StylesRoute(router *mux.Router, path string) {
 }
 
 func Handle(router *mux.Router, method, route string, h interface{}) {
-	addRouteDef(method, route, h)
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 		PerformRequest(route, h, ctx, w, r)
