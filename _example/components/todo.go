@@ -5,11 +5,6 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
-var _ = Css(`
-`)
-
-// <Checkbox hx-post="/" value="{todo.Completed}" />
-
 func Todo(c Context, todo *todos.Todo) *Node {
 	return c.Render(`
 		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">

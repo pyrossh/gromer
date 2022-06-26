@@ -43,7 +43,7 @@ func getMethod(src string) string {
 	} else if strings.HasSuffix(src, "trace.go") {
 		return "TRACE"
 	} else {
-		panic(fmt.Sprintf("Uknown route found %s", src))
+		return ""
 	}
 }
 
@@ -93,14 +93,17 @@ func main() {
 	} else {
 		moduleName = *pkgFlag
 	}
-	err := filepath.Walk("pages",
+	err := filepath.Walk("routes",
 		func(filesrc string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			if !info.IsDir() {
-				route := strings.ReplaceAll(filesrc, "pages", "")
+				route := strings.ReplaceAll(filesrc, "routes", "")
 				method := getMethod(route)
+				if method == "" {
+					return nil
+				}
 				path := getRoute(method, route)
 				if path == "" { // for index page
 					path = "/"
@@ -191,21 +194,22 @@ package main
 import (
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer"
+	"github.com/pyros2097/gromer/gsx"
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
 
 	"{{ moduleName }}/assets"
 	"{{ moduleName }}/components"
 	"{{ moduleName }}/containers"
-	{{#if notFoundPkg}}"{{ moduleName }}/pages/404"{{/if}}
-	{{#each routeImports as |route| }}"{{ moduleName }}/pages{{ route.PkgPath }}"
+	{{#if notFoundPkg}}"{{ moduleName }}/routes/404"{{/if}}
+	{{#each routeImports as |route| }}"{{ moduleName }}/routes{{ route.PkgPath }}"
 	{{/each}}
 )
 
 func init() {
-	{{#each componentNames as |name| }}gromer.RegisterComponent(components.{{ name }})
+	{{#each componentNames as |name| }}gsx.RegisterComponent(components.{{ name }})
 	{{/each}}
-	{{#each containerNames as |name| }}gromer.RegisterContainer(containers.{{ name }})
+	{{#each containerNames as |name| }}gsx.RegisterComponent(containers.{{ name }})
 	{{/each}}
 	gromer.RegisterAssets(assets.FS)
 }
@@ -223,7 +227,6 @@ func main() {
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()
-	gromer.ApiExplorerRoute(pageRouter, "/explorer")
 	{{#each pageRoutes as |route| }}gromer.Handle(pageRouter, "{{ route.Method }}", "{{ route.Path }}", {{ route.Pkg }}.{{ route.Method }})
 	{{/each}}
 
