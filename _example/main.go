@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer"
+	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
@@ -20,11 +21,8 @@ import (
 func init() {
 	gsx.RegisterComponent(components.Todo, "todo")
 	gsx.RegisterComponent(components.Checkbox, "value")
-	
 	gsx.RegisterComponent(containers.TodoCount, "filter")
 	gsx.RegisterComponent(containers.TodoList, "page", "filter")
-	
-	gromer.RegisterAssets(assets.FS)
 }
 
 func main() {
@@ -34,8 +32,8 @@ func main() {
 	
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
-	gromer.GromerRoute(staticRouter, "/gromer/")
-	gromer.StaticRoute(staticRouter, "/assets/")
+	gromer.StaticRoute(staticRouter, "/gromer/", gromer_assets.FS)
+	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()

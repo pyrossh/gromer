@@ -182,6 +182,7 @@ package main
 import (
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer"
+	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/server"
@@ -196,10 +197,8 @@ import (
 
 func init() {
 	{{#each componentNames as |name| }}gsx.RegisterComponent(components.{{ name }})
+	{{/each}}{{#each containerNames as |name| }}gsx.RegisterComponent(containers.{{ name }})
 	{{/each}}
-	{{#each containerNames as |name| }}gsx.RegisterComponent(containers.{{ name }})
-	{{/each}}
-	gromer.RegisterAssets(assets.FS)
 }
 
 func main() {
@@ -209,8 +208,8 @@ func main() {
 	{{/if}}
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
-	gromer.GromerRoute(staticRouter, "/gromer/")
-	gromer.StaticRoute(staticRouter, "/assets/")
+	gromer.StaticRoute(staticRouter, "/gromer/", gromer_assets.FS)
+	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()

@@ -116,50 +116,50 @@ And then run the gromer cli command annd it will generate the route handlers in 
 package main
 
 import (
-  "github.com/gorilla/mux"
-  "github.com/pyros2097/gromer"
-  "github.com/rs/zerolog/log"
-  "gocloud.dev/server"
+	"github.com/gorilla/mux"
+	"github.com/pyros2097/gromer"
+	"github.com/pyros2097/gromer/assets"
+	"github.com/pyros2097/gromer/gsx"
+	"github.com/rs/zerolog/log"
+	"gocloud.dev/server"
 
-  "github.com/pyros2097/gromer/_example/assets"
-  "github.com/pyros2097/gromer/_example/components"
-  "github.com/pyros2097/gromer/_example/containers"
-  "github.com/pyros2097/gromer/_example/routes/404"
-  "github.com/pyros2097/gromer/_example/routes"
-  "github.com/pyros2097/gromer/_example/routes/about"
-  "github.com/pyros2097/gromer/gsx"
-
+	"github.com/pyros2097/gromer/_example/assets"
+	"github.com/pyros2097/gromer/_example/components"
+	"github.com/pyros2097/gromer/_example/containers"
+	"github.com/pyros2097/gromer/_example/routes/404"
+	"github.com/pyros2097/gromer/_example/routes"
+	"github.com/pyros2097/gromer/_example/routes/about"
+	
 )
 
 func init() {
-  gsx.RegisterComponent(components.Todo, "todo")
-  gsx.RegisterComponent(components.Checkbox, "value")
-
-  gsx.RegisterComponent(containers.TodoCount, "filter")
-  gsx.RegisterComponent(containers.TodoList, "page", "filter")
-  gromer.RegisterAssets(assets.FS)
+	gsx.RegisterComponent(components.Todo, "todo")
+	gsx.RegisterComponent(components.Checkbox, "value")
+	gsx.RegisterComponent(containers.TodoCount, "filter")
+	gsx.RegisterComponent(containers.TodoList, "page", "filter")
 }
 
 func main() {
-  baseRouter := mux.NewRouter()
-  baseRouter.Use(gromer.LogMiddleware)
-  baseRouter.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
+	baseRouter := mux.NewRouter()
+	baseRouter.Use(gromer.LogMiddleware)
+	baseRouter.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
+	
+	staticRouter := baseRouter.NewRoute().Subrouter()
+	staticRouter.Use(gromer.CacheMiddleware)
+	gromer.StaticRoute(staticRouter, "/gromer/", gromer_assets.FS)
+	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
+	gromer.StylesRoute(staticRouter, "/styles.css")
 
-  staticRouter := baseRouter.NewRoute().Subrouter()
-  staticRouter.Use(gromer.CacheMiddleware)
-  gromer.GromerRoute(staticRouter, "/gromer/")
-  gromer.StaticRoute(staticRouter, "/assets/")
-  gromer.StylesRoute(staticRouter, "/styles.css")
-
-  pageRouter := baseRouter.NewRoute().Subrouter()
-  gromer.Handle(pageRouter, "GET", "/", routes.GET)
-  gromer.Handle(pageRouter, "POST", "/", routes.POST)
-  gromer.Handle(pageRouter, "GET", "/about", about.GET)
-  log.Info().Msg("http server listening on http://localhost:3000")
-  srv := server.New(baseRouter, nil)
-  if err := srv.ListenAndServe(":3000"); err != nil {
-    log.Fatal().Stack().Err(err).Msg("failed to listen")
-  }
+	pageRouter := baseRouter.NewRoute().Subrouter()
+	gromer.Handle(pageRouter, "GET", "/", routes.GET)
+	gromer.Handle(pageRouter, "POST", "/", routes.POST)
+	gromer.Handle(pageRouter, "GET", "/about", about.GET)
+	
+	log.Info().Msg("http server listening on http://localhost:3000")
+	srv := server.New(baseRouter, nil)
+	if err := srv.ListenAndServe(":3000"); err != nil {
+		log.Fatal().Stack().Err(err).Msg("failed to listen")
+	}
 }
 ```
 

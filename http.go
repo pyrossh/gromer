@@ -22,7 +22,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -30,8 +29,21 @@ import (
 	"xojoc.pw/useragent"
 )
 
-var info *debug.BuildInfo
-var IsCloundRun bool
+var (
+	info            *debug.BuildInfo
+	IsCloundRun     bool
+	routeDefs       []RouteDefinition
+	pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
+)
+
+type RouteDefinition struct {
+	Pkg        string      `json:"pkg"`
+	PkgPath    string      `json:"pkgPath"`
+	Method     string      `json:"method"`
+	Path       string      `json:"path"`
+	PathParams []string    `json:"pathParams"`
+	Params     interface{} `json:"params"`
+}
 
 func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
@@ -51,29 +63,11 @@ func init() {
 	}
 	gsx.RegisterFunc(GetStylesUrl)
 	gsx.RegisterFunc(GetAssetUrl)
-	gsx.RegisterFunc(GetAlpineJsUrl)
-	gsx.RegisterFunc(GetHtmxJsUrl)
-}
-
-var RouteDefs []RouteDefinition
-var appAssets embed.FS
-
-type RouteDefinition struct {
-	Pkg        string      `json:"pkg"`
-	PkgPath    string      `json:"pkgPath"`
-	Method     string      `json:"method"`
-	Path       string      `json:"path"`
-	PathParams []string    `json:"pathParams"`
-	Params     interface{} `json:"params"`
 }
 
 func getFunctionName(temp interface{}) string {
 	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name()), ".")
 	return strs[len(strs)-1]
-}
-
-func RegisterAssets(fs embed.FS) {
-	appAssets = fs
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
@@ -93,8 +87,6 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 	data, _ := json.Marshal(merror)
 	w.Write(data)
 }
-
-var pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
 
 func GetRouteParams(route string) []string {
 	params := []string{}
@@ -117,7 +109,7 @@ func addRouteDef(method, route string, h interface{}) {
 		}
 		body = instance.Interface()
 	}
-	RouteDefs = append(RouteDefs, RouteDefinition{
+	routeDefs = append(routeDefs, RouteDefinition{
 		Method:     method,
 		Path:       route,
 		PathParams: pathParams,
@@ -129,10 +121,10 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 	params := GetRouteParams(route)
 	renderContext := gsx.NewContext(ctx, r.Header.Get("HX-Request") == "true")
 	renderContext.Set("requestId", uuid.NewString())
-	renderContext.Link("rel", GetAssetUrl("images/icon.png"), "", "")
 	renderContext.Link("stylesheet", GetStylesUrl(), "", "")
-	renderContext.Script(GetAlpineJsUrl(), true)
-	renderContext.Script(GetHtmxJsUrl(), false)
+	renderContext.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
+	renderContext.Script("/gromer/js/htmx@1.7.0.js", false)
+	renderContext.Script("/gromer/js/alpinejs@3.9.6.js", true)
 	args := []reflect.Value{reflect.ValueOf(renderContext)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
@@ -225,13 +217,6 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 		v.Write(renderContext, w)
 		return
 	}
-	// if v, ok := response.(handlebars.CssContent); ok {
-	// 	w.Header().Set("Content-Type", "text/css")
-	// 	// This has to be at end always
-	// 	w.WriteHeader(responseStatus)
-	// 	w.Write([]byte(v))
-	// 	return
-	// }
 	w.Header().Set("Content-Type", "application/json")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
@@ -369,12 +354,8 @@ func StatusHandler(h interface{}) http.Handler {
 	})).(http.Handler)
 }
 
-func StaticRoute(router *mux.Router, path string) {
-	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(appAssets))))
-}
-
-func GromerRoute(router *mux.Router, path string) {
-	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(assets.FS))))
+func StaticRoute(router *mux.Router, path string, fs embed.FS) {
+	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
 }
 
 func StylesRoute(router *mux.Router, path string) {
@@ -412,23 +393,15 @@ func getSum(k string, cb func() [16]byte) string {
 	return sum
 }
 
-func GetAssetUrl(path string) string {
+func GetAssetUrl(fs embed.FS, path string) string {
 	sum := getSum(path, func() [16]byte {
-		data, err := appAssets.ReadFile(path)
+		data, err := fs.ReadFile(path)
 		if err != nil {
 			panic(err)
 		}
 		return md5.Sum(data)
 	})
 	return fmt.Sprintf("/assets/%s?hash=%s", path, sum)
-}
-
-func GetHtmxJsUrl() string {
-	return "/gromer/js/htmx@1.7.0.js"
-}
-
-func GetAlpineJsUrl() string {
-	return "/gromer/js/alpinejs@3.9.6.js"
 }
 
 func GetStylesUrl() string {
