@@ -11,10 +11,6 @@ import (
 	"github.com/segmentio/go-camelcase"
 )
 
-type M map[string]interface{}
-type MS map[string]string
-type Arr []interface{}
-
 var Validator = validator.New()
 var ValidatorErrorMap = map[string]string{
 	"required": "is required",

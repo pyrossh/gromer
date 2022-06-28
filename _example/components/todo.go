@@ -5,7 +5,7 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
-func Todo(c Context, todo *todos.Todo) *Node {
+func Todo(c *Context, todo *todos.Todo) *Node {
 	return c.Render(`
 		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
 			<div class="view">

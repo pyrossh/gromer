@@ -5,7 +5,7 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
-func TodoCount(c Context, filter string) *Node {
+func TodoCount(c *Context, filter string) *Node {
 	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 		Filter: filter,
 		Limit:  1000,
@@ -20,14 +20,3 @@ func TodoCount(c Context, filter string) *Node {
 		</span>
 	`)
 }
-
-var _ = Css(`
-	.todo-count {
-		float: left;
-		text-align: left;
-	}
-
-	.todo-count strong {
-		font-weight: 300;
-	}
-`)

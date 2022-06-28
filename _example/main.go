@@ -38,9 +38,9 @@ func main() {
 	gromer.StylesRoute(staticRouter, "/styles.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()
-	gromer.Handle(pageRouter, "GET", "/", routes.GET)
-	gromer.Handle(pageRouter, "POST", "/", routes.POST)
-	gromer.Handle(pageRouter, "GET", "/about", about.GET)
+	gromer.Handle(pageRouter, "GET", "/", routes.GET, routes.Meta, routes.Styles)
+	gromer.Handle(pageRouter, "POST", "/", routes.POST, routes.Meta, routes.Styles)
+	gromer.Handle(pageRouter, "GET", "/about", about.GET, about.Meta, about.Styles)
 	
 	log.Info().Msg("http server listening on http://localhost:3000")
 	srv := server.New(baseRouter, nil)

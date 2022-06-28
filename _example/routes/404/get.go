@@ -4,8 +4,14 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
-func GET(c Context) (*Node, int, error) {
-	c.Meta("title", "Page Not Found")
+var (
+	Meta = M{
+		"title": "Page Not Found",
+	}
+	Styles = M{}
+)
+
+func GET(c *Context) (*Node, int, error) {
 	return c.Render(`
 		<main class="box center">
 			<h1>Page Not Found</h1>

@@ -4,9 +4,15 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
-func GET(c Context) (*Node, int, error) {
-	c.Meta("title", "About Gromer")
-	c.Meta("description", "About Gromer")
+var (
+	Meta = M{
+		"title":       "About Gromer",
+		"description": "About Gromer",
+	}
+	Styles = M{}
+)
+
+func GET(c *Context) (*Node, int, error) {
 	return c.Render(`
 		<div class="flex flex-col justify-center items-center">
 			A new link is here

@@ -14,7 +14,7 @@ type PostParams struct {
 	Text   string `json:"text"`
 }
 
-func POST(c Context, params PostParams) (*Node, int, error) {
+func POST(c *Context, params PostParams) (*Node, int, error) {
 	if params.Intent == "clear_completed" {
 		allTodos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 			Filter: "all",

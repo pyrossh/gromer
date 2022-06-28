@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
@@ -69,7 +70,6 @@ func init() {
 			PartsExclude: []string{zerolog.TimestampFieldName},
 		})
 	}
-	gsx.RegisterFunc(GetStylesUrl)
 	gsx.RegisterFunc(GetAssetUrl)
 }
 
@@ -86,9 +86,8 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 	}
 	if status >= 500 {
 		merror["error"] = "Internal Server Error"
-		stack := string(debug.Stack())
-		println(stack)
-		log.WithLevel(zerolog.ErrorLevel).Err(err).Bool("panic", status == 599).Str("stack", stack).Stack()
+		sterr, _ := err.(*errors.Error)
+		log.Error().Msg(err.Error() + "\n" + sterr.ErrorStack())
 	}
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if ok {
@@ -107,15 +106,9 @@ func GetRouteParams(route string) []string {
 	return params
 }
 
-func PerformRequest(route string, h interface{}, ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func PerformRequest(route string, h interface{}, c *gsx.Context, w http.ResponseWriter, r *http.Request) {
 	params := GetRouteParams(route)
-	renderContext := gsx.NewContext(ctx, r.Header.Get("HX-Request") == "true")
-	renderContext.Set("requestId", uuid.NewString())
-	renderContext.Link("stylesheet", GetStylesUrl(), "", "")
-	renderContext.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
-	renderContext.Script("/gromer/js/htmx@1.7.0.js", false)
-	renderContext.Script("/gromer/js/alpinejs@3.9.6.js", true)
-	args := []reflect.Value{reflect.ValueOf(renderContext)}
+	args := []reflect.Value{reflect.ValueOf(c)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
 	vars := mux.Vars(r)
@@ -189,7 +182,7 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 			RespondError(w, 400, fmt.Errorf("Illegal Content-Type tag found %s", contentType))
 			return
 		}
-		renderContext.Set("params", instance.Elem().Interface())
+		c.Set("params", instance.Elem().Interface())
 		args = append(args, instance.Elem())
 	}
 	values := reflect.ValueOf(h).Call(args)
@@ -200,25 +193,18 @@ func PerformRequest(route string, h interface{}, ctx context.Context, w http.Res
 		RespondError(w, responseStatus, responseError.(error))
 		return
 	}
-	if v, ok := response.(*gsx.Node); ok {
-		w.Header().Set("Content-Type", "text/html")
-		// This has to be at end always
-		w.WriteHeader(responseStatus)
-		v.Write(renderContext, w)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/html")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
-	data, _ := json.Marshal(response)
-	w.Write(data)
+	response.(*gsx.Node).Write(c, w)
 }
 
 func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				RespondError(w, 599, fmt.Errorf("%+v", err))
+				log.Error().Msgf("%s %d %s %s", r.Method, 599, useragent.Parse(r.UserAgent()).Name, r.URL.Path)
+				RespondError(w, 599, errors.Errorf(fmt.Sprintf("%+v", err)))
 			}
 		}()
 		m := httpsnoop.CaptureMetrics(next, w, r)
@@ -226,10 +212,7 @@ func LogMiddleware(next http.Handler) http.Handler {
 		if len(ip) > 0 && ip[0] == '[' {
 			ip = ip[1 : len(ip)-1]
 		}
-		log.WithLevel(zerolog.InfoLevel).Msgf("%s %d %.2fkb %s %s %s", r.Method,
-			m.Code,
-			float64(m.Written)/1024.0,
-			m.Duration.Round(time.Millisecond).String(),
+		log.Info().Msgf("%s %d %.2fkb %s %s %s", r.Method, m.Code, float64(m.Written)/1024.0, m.Duration.Round(time.Millisecond).String(),
 			useragent.Parse(r.UserAgent()).Name,
 			r.URL.Path,
 		)
@@ -273,16 +256,33 @@ func StaticRoute(router *mux.Router, path string, fs embed.FS) {
 
 func StylesRoute(router *mux.Router, path string) {
 	router.Path(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			RespondError(w, 400, err)
+			return
+		}
+		key := r.Form.Get("key")
 		w.Header().Set("Content-Type", "text/css")
 		w.WriteHeader(200)
-		w.Write([]byte(gsx.GetStyles()))
+		w.Write([]byte(gsx.GetStyles(key)))
 	})
 }
 
-func Handle(router *mux.Router, method, route string, h interface{}) {
+func Handle(router *mux.Router, method, route string, h interface{}, meta, styles gsx.M) {
+	key := getSum(route, func() [16]byte {
+		return md5.Sum([]byte(route))
+	})
+	gsx.SetClasses(key, styles)
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		PerformRequest(route, h, ctx, w, r)
+		newCtx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
+		c := gsx.NewContext(newCtx, r.Header.Get("HX-Request") == "true")
+		c.Set("requestId", uuid.NewString())
+		c.Link("stylesheet", GetStylesUrl(key), "", "")
+		c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
+		c.Script("/gromer/js/htmx@1.7.0.js", false)
+		c.Script("/gromer/js/alpinejs@3.9.6.js", true)
+		c.Meta(meta)
+		PerformRequest(route, h, c, w, r)
 	}).Methods(method, "OPTIONS")
 }
 
@@ -316,9 +316,9 @@ func GetAssetUrl(fs embed.FS, path string) string {
 	return fmt.Sprintf("/assets/%s?hash=%s", path, sum)
 }
 
-func GetStylesUrl() string {
+func GetStylesUrl(k string) string {
 	sum := getSum("styles.css", func() [16]byte {
-		return md5.Sum([]byte(gsx.GetStyles()))
+		return md5.Sum([]byte(gsx.GetStyles(k)))
 	})
-	return fmt.Sprintf("/styles.css?hash=%s", sum)
+	return fmt.Sprintf("/styles.css?key=%s&hash=%s", k, sum)
 }
