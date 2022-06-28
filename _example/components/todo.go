@@ -5,22 +5,38 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
+var TodoStyles = M{
+	"container": "border-t-2 border-gray-100 text-2xl",
+	"row":       "flex flex-row group",
+	"button-1":  "ml-4 text-gray-400",
+	"label":     "flex-1 min-w-0 flex items-center break-all ml-2 p-2 text-gray-800",
+	"striked":   "text-gray-500 line-through",
+	"button-2":  "mr-4 text-red-700 c-0 group-hover:opacity-100",
+	"unchecked": "text-gray-200",
+}
+
 func Todo(c *Context, todo *todos.Todo) *Node {
 	return c.Render(`
-		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
-			<div class="view">
-				<form  hx-target="#todo-{todo.ID}" hx-swap="outerHTML">
+		<div id="todo-{todo.ID}" class="todo">
+			<div class="row">
+				<form hx-post="/" hx-target="#todo-{todo.ID}" hx-swap="outerHTML">
 					<input type="hidden" name="intent" value="complete" />
 					<input type="hidden" name="id" value="{todo.ID}" />
-					<input class="checkbox" type="checkbox" checked="{value}" />
+					<button class="button-1">	
+						<img src="{ /assets/icons/unchecked.svg: !todo.Completed, /assets/icons/checked.svg: todo.Completed }" width="24" height="24" />
+					</button>
 				</form>
-				<label>{todo.Text}</label>
+				<label class="{ label: true, striked: todo.Completed }">
+					{todo.Text}
+				</label>
 				<form hx-post="/" hx-target="#todo-{todo.ID}" hx-swap="delete">
 					<input type="hidden" name="intent" value="delete" />
 					<input type="hidden" name="id" value="{todo.ID}" />
-					<button class="destroy"></button>
+					<button class="button-2">
+						<img src="/assets/icons/close.svg" width="24" height="24" />
+					</button>
 				</form>
 			</div>
-		</li>
+		</div>	
 	`)
 }

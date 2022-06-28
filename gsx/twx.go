@@ -238,77 +238,96 @@ var sizes = KeyValues{
 		"left":   "left",
 		"bottom": "bottom",
 		"right":  "right",
-		"minh":   "min-height",
-		"minw":   "min-width",
-		"maxh":   "max-height",
-		"maxw":   "max-width",
+		"min-h":  "min-height",
+		"min-w":  "min-width",
+		"max-h":  "max-height",
+		"max-w":  "max-width",
 	},
 	Values: MS{
-		"auto":  "auto",
-		"min":   "min-content",
-		"max":   "max-content",
-		"0":     "0px",
-		"1":     "0.25rem",
-		"2":     "0.5rem",
-		"3":     "0.75rem",
-		"4":     "1rem",
-		"5":     "1.25rem",
-		"6":     "1.5rem",
-		"7":     "1.75rem",
-		"8":     "2rem",
-		"9":     "2.25rem",
-		"10":    "2.5rem",
-		"11":    "2.75rem",
-		"12":    "3rem",
-		"14":    "3.5rem",
-		"16":    "4rem",
-		"20":    "5rem",
-		"24":    "6rem",
-		"28":    "7rem",
-		"32":    "8rem",
-		"36":    "9rem",
-		"40":    "10rem",
-		"44":    "11rem",
-		"48":    "12rem",
-		"52":    "13rem",
-		"56":    "14rem",
-		"60":    "15rem",
-		"64":    "16rem",
-		"72":    "18rem",
-		"80":    "20rem",
-		"96":    "24rem",
-		"px":    "1px",
-		"0.5":   "0.125rem",
-		"1.5":   "0.375rem",
-		"2.5":   "0.625rem",
-		"3.5":   "0.875rem",
-		"1/2":   "50%",
-		"1/3":   "33.33%",
-		"2/3":   "66.66%",
-		"1/4":   "25%",
-		"2/4":   "50%",
-		"3/4":   "75%",
-		"1/5":   "20%",
-		"2/5":   "40%",
-		"3/5":   "60%",
-		"4/5":   "80%",
-		"1/6":   "16.66%",
-		"2/6":   "33.33%",
-		"3/6":   "50%",
-		"4/6":   "66.66%",
-		"5/6":   "83.33%",
-		"1/12":  "8.33%",
-		"2/12":  "16.66%",
-		"3/12":  "25%",
-		"4/12":  "33.33%",
-		"5/12":  "41.66%",
-		"6/12":  "50%",
-		"7/12":  "58.33%",
-		"8/12":  "66.66%",
-		"9/12":  "75%",
-		"10/12": "83.33%",
-		"11/12": "91.66%",
-		"full":  "100%",
+		"auto":       "auto",
+		"min":        "min-content",
+		"max":        "max-content",
+		"fit":        "fit-content",
+		"0":          "0px",
+		"0.5":        "0.125rem",
+		"1":          "0.25rem",
+		"1.5":        "0.375rem",
+		"2":          "0.5rem",
+		"2.5":        "0.625rem",
+		"3":          "0.75rem",
+		"3.5":        "0.875rem",
+		"4":          "1rem",
+		"5":          "1.25rem",
+		"6":          "1.5rem",
+		"7":          "1.75rem",
+		"8":          "2rem",
+		"9":          "2.25rem",
+		"10":         "2.5rem",
+		"11":         "2.75rem",
+		"12":         "3rem",
+		"14":         "3.5rem",
+		"16":         "4rem",
+		"20":         "5rem",
+		"24":         "6rem",
+		"28":         "7rem",
+		"32":         "8rem",
+		"36":         "9rem",
+		"40":         "10rem",
+		"44":         "11rem",
+		"48":         "12rem",
+		"52":         "13rem",
+		"56":         "14rem",
+		"60":         "15rem",
+		"64":         "16rem",
+		"72":         "18rem",
+		"80":         "20rem",
+		"96":         "24rem",
+		"px":         "1px",
+		"1/2":        "50%",
+		"1/3":        "33.33%",
+		"2/3":        "66.66%",
+		"1/4":        "25%",
+		"2/4":        "50%",
+		"3/4":        "75%",
+		"1/5":        "20%",
+		"2/5":        "40%",
+		"3/5":        "60%",
+		"4/5":        "80%",
+		"1/6":        "16.66%",
+		"2/6":        "33.33%",
+		"3/6":        "50%",
+		"4/6":        "66.66%",
+		"5/6":        "83.33%",
+		"1/12":       "8.33%",
+		"2/12":       "16.66%",
+		"3/12":       "25%",
+		"4/12":       "33.33%",
+		"5/12":       "41.66%",
+		"6/12":       "50%",
+		"7/12":       "58.33%",
+		"8/12":       "66.66%",
+		"9/12":       "75%",
+		"10/12":      "83.33%",
+		"11/12":      "91.66%",
+		"full":       "100%",
+		"none":       "none",
+		"xs":         "20rem",
+		"sm":         "24rem",
+		"md":         "28rem",
+		"lg":         "32rem",
+		"xl":         "36rem",
+		"2xl":        "42rem",
+		"3xl":        "48rem",
+		"4xl":        "56rem",
+		"5xl":        "64rem",
+		"6xl":        "72rem",
+		"7xl":        "80rem",
+		"prose":      "65ch",
+		"screen-sm":  "640px",
+		"screen-md":  "768px",
+		"screen-lg":  "1024px",
+		"screen-xl":  "1280px",
+		"screen-2xl": "1536px",
 	},
 }
 
@@ -443,6 +462,27 @@ var twClassLookup = MS{
 	"ring-4":              "box-shadow:  0 0 0 calc(4px + 0px) rgba(59, 130, 246, 0.5);",
 	"ring-8":              "box-shadow:  0 0 0 calc(8px + 0px) rgba(59, 130, 246, 0.5);",
 	"ring":                "box-shadow:  0 0 0 calc(3px + 0px) rgba(59, 130, 246, 0.5);",
+	"invisible":           "visibility: hidden;",
+	"opacity-0":           "opacity: 0;",
+	"opacity-5":           "opacity: 0.05;",
+	"opacity-10":          "opacity: 0.1;",
+	"opacity-20":          "opacity: 0.2;",
+	"opacity-25":          "opacity: 0.25;",
+	"opacity-30":          "opacity: 0.3;",
+	"opacity-40":          "opacity: 0.4;",
+	"opacity-50":          "opacity: 0.5;",
+	"opacity-60":          "opacity: 0.6;",
+	"opacity-70":          "opacity: 0.7;",
+	"opacity-75":          "opacity: 0.75;",
+	"opacity-80":          "opacity: 0.8;",
+	"opacity-90":          "opacity: 0.9;",
+	"opacity-95":          "opacity: 0.95;",
+	"opacity-100":         "opacity: 1;",
+	"list-none":           "list-style-type: none;",
+	"list-disc":           "list-style-type: disc;",
+	"list-decimal":        "list-style-type: decimal;",
+	"min-h-screen":        "height: 100vh;",
+	"min-w-screen":        "width: 100vw;",
 }
 
 func init() {
@@ -472,6 +512,50 @@ func mapApply(obj KeyValues) {
 			}
 		}
 	}
+}
+
+func getClassName(parent, k string) string {
+	if parent != "" {
+		if k == "container" {
+			return "." + parent
+		} else {
+			return "." + parent + " ." + k
+		}
+	}
+	return "." + k
+}
+
+func computeCss(classMap M, parent string) string {
+	p := "\n"
+	for k, v := range classMap {
+		switch it := v.(type) {
+		case string:
+			p += getClassName(parent, k)
+			p += " {\n"
+			classes := strings.Split(it, " ")
+			for _, c := range classes {
+				if s, ok := twClassLookup[c]; ok {
+					p += "  " + s + "\n"
+				}
+			}
+			p += "}\n"
+			for _, c := range classes {
+				if strings.Contains(c, ":") {
+					arr := strings.Split(c, ":")
+					if arr[0] == "placeholder" {
+						p += "\n" + getClassName(parent, k) + "::placeholder" + " {\n"
+						if s, ok := twClassLookup[arr[1]]; ok {
+							p += "  " + s + "\n"
+						}
+						p += "}\n"
+					}
+				}
+			}
+		case M:
+			p += computeCss(it, k)
+		}
+	}
+	return p
 }
 
 var normalizeCss = `*, ::before, ::after { box-sizing: border-box; }
@@ -521,32 +605,6 @@ pre, code, kbd, samp { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco,
 img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical-align: middle; }
 img, video { max-width: 100%; height: auto; }
 [hidden] { display: none; }
-*, ::before, ::after { --tw-border-opacity: 1; border-color: rgba(229, 231, 235, var(--tw-border-opacity)); }`
-
-func computeCss(classMap M, parent string) string {
-	p := "\n"
-	for k, v := range classMap {
-		switch it := v.(type) {
-		case string:
-			if parent != "" {
-				if k == "container" {
-					p += "." + parent
-				} else {
-					p += "." + parent + " ." + k
-				}
-			} else {
-				p += "." + k
-			}
-			p += " {\n"
-			for _, c := range strings.Split(it, " ") {
-				if s, ok := twClassLookup[c]; ok {
-					p += "  " + s + "\n"
-				}
-			}
-			p += "}\n"
-		case M:
-			p += computeCss(it, k)
-		}
-	}
-	return p
-}
+*, ::before, ::after { --tw-border-opacity: 1; border-color: rgba(229, 231, 235, var(--tw-border-opacity)); }
+form { display: flex; }
+`

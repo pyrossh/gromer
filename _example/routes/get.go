@@ -14,10 +14,16 @@ var (
 	}
 
 	Styles = M{
-		"container":       "bg-gray-50 min-h-screen font-sans",
-		"todos-container": "container mx-auto flex flex-col items-center",
-		"title":           "text-opacity-20 text-red-900 text-8xl text-center",
-		"main":            "mt-8 shadow-xl w-full max-w-prose bg-white",
+		"bg":        "bg-gray-50 min-h-screen font-sans",
+		"container": "container mx-auto flex flex-col items-center",
+		"title":     "text-opacity-20 text-red-900 text-8xl text-center",
+		"main": M{
+			"container":  "mt-8 shadow-xl w-full max-w-prose bg-white",
+			"input-box":  "flex flex-row text-2xl h-16",
+			"button":     "ml-4 w-8 disabled",
+			"input-form": "flex flex-1",
+			"input":      "flex-1 min-w-0 p-2 placeholder:text-gray-300",
+		},
 		"bottom": M{
 			"container": "flex flex-row items-center flex-wrap sm:flex-nowrap p-2 font-light border-t-2 border-gray-100",
 			"row":       "flex-1 flex flex-row",
@@ -44,18 +50,21 @@ type GetParams struct {
 
 func GET(c *Context, params GetParams) (*Node, int, error) {
 	return c.Render(`
-		<div class="container">
-			<div class="todos-container">
+		<div class="bg">
+			<div class="container">
 				<header>
 					<h1 class="title">todos</h1>
-					<form hx-post="/" hx-target="#todo-list" hx-swap="afterbegin" _="on htmx:afterOnLoad set #text.value to ''">
-						<input type="hidden" name="intent" value="create" />
-						<input class="new-todo" id="text" name="text" placeholder="What needs to be done?" autofocus="false" autocomplete="off" />
-					</form>	
 				</header>
 				<main class="main">
-					<input class="toggle-all" id="toggle-all" type="checkbox" />
-					<label for="toggle-all">Mark all as complete</label>
+					<div class="input-box">
+						<button class="button">
+							<img src="/assets/icons/list.svg" width="24" height="24" />
+						</button>
+						<form class="input-form" hx-post="/" hx-target="#todo-list" hx-swap="afterbegin" _="on htmx:afterOnLoad set #text.value to ''">
+							<input type="hidden" name="intent" value="create" />
+							<input id="text" name="text" class="input" placeholder="What needs to be done?" autofocus="false" autocomplete="off">
+						</form>
+					</div>
 					<TodoList id="todo-list" page="{params.Page}" filter="{params.Filter}"></TodoList>
 					<div class="bottom">
 						<div class="section-1">

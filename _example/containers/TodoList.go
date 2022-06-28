@@ -6,6 +6,10 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
+var TodoListStyles = M{
+	"container": "list-none",
+}
+
 func TodoList(c *Context, page int, filter string) *Node {
 	index := Default(page, 1)
 	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
@@ -17,7 +21,7 @@ func TodoList(c *Context, page int, filter string) *Node {
 	}
 	c.Set("todos", todos)
 	return c.Render(`
-		<ul id="todo-list" class="relative" x-for="todo in todos">
+		<ul id="todo-list" class="todolist" x-for="todo in todos">
 			<Todo />
 		</ul>
 	`)

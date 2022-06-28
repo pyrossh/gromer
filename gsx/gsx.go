@@ -33,8 +33,9 @@ type (
 	MS            map[string]string
 	Arr           []interface{}
 	ComponentFunc struct {
-		Func interface{}
-		Args []string
+		Func    interface{}
+		Args    []string
+		Classes M
 	}
 	link struct {
 		Rel  string
@@ -161,16 +162,27 @@ func SetClasses(k string, m M) {
 	classesMap[k] = m
 }
 
-func GetStyles(k string) string {
+func GetPageStyles(k string) string {
 	return normalizeCss + "\n" + computeCss(classesMap[k], k)
 }
 
-func RegisterComponent(f interface{}, args ...string) {
+func GetComponentStyles() string {
+	css := ""
+	for k, v := range compMap {
+		if v.Classes != nil {
+			css += computeCss(v.Classes, k)
+		}
+	}
+	return css
+}
+
+func RegisterComponent(f interface{}, classes M, args ...string) {
 	name := strings.ToLower(getFunctionName(f))
 	assertName("component", name)
 	compMap[name] = ComponentFunc{
-		Func: f,
-		Args: args,
+		Func:    f,
+		Args:    args,
+		Classes: classes,
 	}
 }
 
@@ -212,7 +224,11 @@ func convert(ref string, i interface{}) interface{} {
 }
 
 func getRefValue(c *Context, ref string) interface{} {
-	if f, ok := funcMap[ref]; ok {
+	if ref == "true" {
+		return true
+	} else if ref == "false" {
+		return false
+	} else if f, ok := funcMap[ref]; ok {
 		return f.(func() string)()
 	} else {
 		parts := strings.Split(strings.ReplaceAll(ref, "!", ""), ".")
@@ -343,8 +359,8 @@ func populate(c *Context, n *html.Node) {
 					}
 				}
 			} else if at.Val != "" && strings.Contains(at.Val, "{") {
-				if at.Key == "class" {
-					classes := ""
+				if at.Key == "class" || at.Key == "src" {
+					classes := []string{}
 					kvstrings := strings.Split(strings.TrimSpace(removeBrackets(at.Val)), ",")
 					for _, kv := range kvstrings {
 						kvarray := strings.Split(kv, ":")
@@ -352,13 +368,13 @@ func populate(c *Context, n *html.Node) {
 						v := strings.TrimSpace(kvarray[1])
 						varValue := getRefValue(c, v)
 						if varValue.(bool) {
-							classes += k
+							classes = append(classes, k)
 						}
 					}
 					n.Attr[i] = html.Attribute{
 						Namespace: at.Namespace,
 						Key:       at.Key,
-						Val:       classes,
+						Val:       strings.Join(classes, " "),
 					}
 				} else {
 					n.Attr[i] = html.Attribute{

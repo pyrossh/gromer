@@ -19,10 +19,10 @@ import (
 )
 
 func init() {
-	gsx.RegisterComponent(components.Todo, "todo")
-	gsx.RegisterComponent(components.Checkbox, "value")
-	gsx.RegisterComponent(containers.TodoCount, "filter")
-	gsx.RegisterComponent(containers.TodoList, "page", "filter")
+	gsx.RegisterComponent(components.Todo, components.TodoStyles, "todo")
+	gsx.RegisterComponent(components.Checkbox, nil, "value")
+	gsx.RegisterComponent(containers.TodoCount, nil, "filter")
+	gsx.RegisterComponent(containers.TodoList, containers.TodoListStyles, "page", "filter")
 }
 
 func main() {
@@ -35,7 +35,8 @@ func main() {
 	staticRouter.Use(gromer.CompressMiddleware)
 	gromer.StaticRoute(staticRouter, "/gromer/", gromer_assets.FS)
 	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
-	gromer.StylesRoute(staticRouter, "/styles.css")
+	gromer.PageStylesRoute(staticRouter, "/styles.css")
+	gromer.ComponentStylesRoute(staticRouter, "/components.css")
 
 	pageRouter := baseRouter.NewRoute().Subrouter()
 	gromer.Handle(pageRouter, "GET", "/", routes.GET, routes.Meta, routes.Styles)

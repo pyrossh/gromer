@@ -6,7 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -29,6 +28,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
+	"github.com/segmentio/go-camelcase"
 	"xojoc.pw/useragent"
 )
 
@@ -201,20 +201,25 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 
 func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.Path
+		if r.URL.RawQuery != "" {
+			url += "?" + r.URL.RawQuery
+		}
+		// ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		// if len(ip) > 0 && ip[0] == '[' {
+		// 	ip = ip[1 : len(ip)-1]
+		// }
+		ua := useragent.Parse(r.UserAgent()).Name
 		defer func() {
 			if err := recover(); err != nil {
-				log.Error().Msgf("%s %d %s %s", r.Method, 599, useragent.Parse(r.UserAgent()).Name, r.URL.Path)
+				log.Error().Msgf("%s 599 %s %s", r.Method, ua, url)
 				RespondError(w, 599, errors.Errorf(fmt.Sprintf("%+v", err)))
 			}
 		}()
 		m := httpsnoop.CaptureMetrics(next, w, r)
-		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		if len(ip) > 0 && ip[0] == '[' {
-			ip = ip[1 : len(ip)-1]
-		}
 		log.Info().Msgf("%s %d %.2fkb %s %s %s", r.Method, m.Code, float64(m.Written)/1024.0, m.Duration.Round(time.Millisecond).String(),
-			useragent.Parse(r.UserAgent()).Name,
-			r.URL.Path,
+			ua,
+			url,
 		)
 	})
 }
@@ -254,8 +259,8 @@ func StaticRoute(router *mux.Router, path string, fs embed.FS) {
 	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
 }
 
-func StylesRoute(router *mux.Router, path string) {
-	router.Path(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func PageStylesRoute(router *mux.Router, route string) {
+	router.Path(route).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
 			RespondError(w, 400, err)
@@ -264,26 +269,33 @@ func StylesRoute(router *mux.Router, path string) {
 		key := r.Form.Get("key")
 		w.Header().Set("Content-Type", "text/css")
 		w.WriteHeader(200)
-		w.Write([]byte(gsx.GetStyles(key)))
+		w.Write([]byte(gsx.GetPageStyles(key)))
+	})
+}
+
+func ComponentStylesRoute(router *mux.Router, route string) {
+	router.Path(route).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		w.WriteHeader(200)
+		w.Write([]byte(gsx.GetComponentStyles()))
 	})
 }
 
 func Handle(router *mux.Router, method, route string, h interface{}, meta, styles gsx.M) {
-	key := getSum(route, func() [16]byte {
-		return md5.Sum([]byte(route))
-	})
+	key := camelcase.Camelcase(route)
 	gsx.SetClasses(key, styles)
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		newCtx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 		c := gsx.NewContext(newCtx, r.Header.Get("HX-Request") == "true")
 		c.Set("requestId", uuid.NewString())
-		c.Link("stylesheet", GetStylesUrl(key), "", "")
+		c.Link("stylesheet", GetPageStylesUrl(key), "", "")
+		c.Link("stylesheet", GetComponentsStylesUrl(), "", "")
 		c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
 		c.Script("/gromer/js/htmx@1.7.0.js", false)
 		c.Script("/gromer/js/alpinejs@3.9.6.js", true)
 		c.Meta(meta)
 		PerformRequest(route, h, c, w, r)
-	}).Methods(method, "OPTIONS")
+	}).Methods(method)
 }
 
 func GetUrl(ctx context.Context) *url.URL {
@@ -316,9 +328,16 @@ func GetAssetUrl(fs embed.FS, path string) string {
 	return fmt.Sprintf("/assets/%s?hash=%s", path, sum)
 }
 
-func GetStylesUrl(k string) string {
+func GetPageStylesUrl(k string) string {
 	sum := getSum("styles.css", func() [16]byte {
-		return md5.Sum([]byte(gsx.GetStyles(k)))
+		return md5.Sum([]byte(gsx.GetPageStyles(k)))
 	})
 	return fmt.Sprintf("/styles.css?key=%s&hash=%s", k, sum)
+}
+
+func GetComponentsStylesUrl() string {
+	sum := getSum("components.css", func() [16]byte {
+		return md5.Sum([]byte(gsx.GetComponentStyles()))
+	})
+	return fmt.Sprintf("/components.css?hash=%s", sum)
 }
