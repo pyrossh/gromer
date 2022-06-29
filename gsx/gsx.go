@@ -359,7 +359,7 @@ func populate(c *Context, n *html.Node) {
 					}
 				}
 			} else if at.Val != "" && strings.Contains(at.Val, "{") {
-				if at.Key == "class" || at.Key == "src" {
+				if at.Key == "class" {
 					classes := []string{}
 					kvstrings := strings.Split(strings.TrimSpace(removeBrackets(at.Val)), ",")
 					for _, kv := range kvstrings {

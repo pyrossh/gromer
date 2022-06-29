@@ -57,12 +57,15 @@ func GET(c *Context, params GetParams) (*Node, int, error) {
 				</header>
 				<main class="main">
 					<div class="input-box">
-						<button class="button">
-							<img src="/assets/icons/list.svg" width="24" height="24" />
-						</button>
+						<form hx-target="#todo-list" hx-post="/">
+							<input type="hidden" name="intent" value="select_all" />
+							<button id="check-all" class="button" hx-swap-oob="true">
+								<img src="/icons/check-all.svg?fill=gray-400" />
+							</button>
+						</form>
 						<form class="input-form" hx-post="/" hx-target="#todo-list" hx-swap="afterbegin" _="on htmx:afterOnLoad set #text.value to ''">
 							<input type="hidden" name="intent" value="create" />
-							<input id="text" name="text" class="input" placeholder="What needs to be done?" autofocus="false" autocomplete="off">
+							<input id="text" name="text" class="input" placeholder="What needs to be done?" autocomplete="off">
 						</form>
 					</div>
 					<TodoList id="todo-list" page="{params.Page}" filter="{params.Filter}"></TodoList>

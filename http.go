@@ -259,6 +259,27 @@ func StaticRoute(router *mux.Router, path string, fs embed.FS) {
 	router.PathPrefix(path).Methods("GET").Handler(http.StripPrefix(path, http.FileServer(http.FS(fs))))
 }
 
+func IconsRoute(router *mux.Router, path string, fs embed.FS) {
+	router.PathPrefix(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			RespondError(w, 400, err)
+			return
+		}
+		data, err := fs.ReadFile(strings.TrimPrefix(r.URL.Path, "/"))
+		if err != nil {
+			RespondError(w, 404, err)
+			return
+		}
+		fill := r.Form.Get("fill")
+		color := gsx.GetColor(fill)
+		svg := strings.ReplaceAll(string(data), "<svg", fmt.Sprintf(`<svg fill="%s" `, color))
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.WriteHeader(200)
+		w.Write([]byte(svg))
+	})
+}
+
 func PageStylesRoute(router *mux.Router, route string) {
 	router.Path(route).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()

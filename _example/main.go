@@ -35,6 +35,7 @@ func main() {
 	staticRouter.Use(gromer.CompressMiddleware)
 	gromer.StaticRoute(staticRouter, "/gromer/", gromer_assets.FS)
 	gromer.StaticRoute(staticRouter, "/assets/", assets.FS)
+	gromer.IconsRoute(staticRouter, "/icons/", assets.FS)
 	gromer.PageStylesRoute(staticRouter, "/styles.css")
 	gromer.ComponentStylesRoute(staticRouter, "/components.css")
 

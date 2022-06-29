@@ -13,7 +13,13 @@ func TodoCount(c *Context, filter string) *Node {
 	if err != nil {
 		return Error(c, err)
 	}
-	c.Set("count", len(todos))
+	count := 0
+	for _, t := range todos {
+		if !t.Completed {
+			count++
+		}
+	}
+	c.Set("count", count)
 	return c.Render(`
 		<span id="todo-count" class="todo-count" hx-swap-oob="true">
 			<strong>{count}</strong> item left

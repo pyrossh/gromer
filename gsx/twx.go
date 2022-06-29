@@ -514,6 +514,10 @@ func mapApply(obj KeyValues) {
 	}
 }
 
+func GetColor(k string) string {
+	return colors.Values[k]
+}
+
 func getClassName(parent, k string) string {
 	if parent != "" {
 		if k == "container" {
@@ -530,8 +534,8 @@ func computeCss(classMap M, parent string) string {
 	for k, v := range classMap {
 		switch it := v.(type) {
 		case string:
-			p += getClassName(parent, k)
-			p += " {\n"
+			className := getClassName(parent, k)
+			p += className + " {\n"
 			classes := strings.Split(it, " ")
 			for _, c := range classes {
 				if s, ok := twClassLookup[c]; ok {
@@ -542,9 +546,17 @@ func computeCss(classMap M, parent string) string {
 			for _, c := range classes {
 				if strings.Contains(c, ":") {
 					arr := strings.Split(c, ":")
-					if arr[0] == "placeholder" {
-						p += "\n" + getClassName(parent, k) + "::placeholder" + " {\n"
-						if s, ok := twClassLookup[arr[1]]; ok {
+					prefix := arr[0]
+					class := arr[1]
+					if prefix == "placeholder" {
+						p += "\n" + className + "::placeholder" + " {\n"
+						if s, ok := twClassLookup[class]; ok {
+							p += "  " + s + "\n"
+						}
+						p += "}\n"
+					} else if prefix == "group-hover" {
+						p += "\n" + className + ":hover" + " {\n"
+						if s, ok := twClassLookup[class]; ok {
 							p += "  " + s + "\n"
 						}
 						p += "}\n"
@@ -607,4 +619,8 @@ img, video { max-width: 100%; height: auto; }
 [hidden] { display: none; }
 *, ::before, ::after { --tw-border-opacity: 1; border-color: rgba(229, 231, 235, var(--tw-border-opacity)); }
 form { display: flex; }
+
+.group:hover .group-hover-opacity-100 {
+	opacity: 1;
+}
 `

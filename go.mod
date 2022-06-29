@@ -20,6 +20,7 @@ require (
 require (
 	cloud.google.com/go v0.94.0 // indirect
 	cloud.google.com/go/firestore v1.5.0 // indirect
+	github.com/JoshVarga/svgparser v0.0.0-20200804023048-5eaba627a7d1 // indirect
 	github.com/alecthomas/repr v0.1.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect

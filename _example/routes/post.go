@@ -15,7 +15,33 @@ type PostParams struct {
 }
 
 func POST(c *Context, params PostParams) (*Node, int, error) {
-	if params.Intent == "clear_completed" {
+	if params.Intent == "select_all" {
+		allTodos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
+			Filter: "all",
+			Limit:  1000,
+		})
+		if err != nil {
+			return nil, 500, err
+		}
+		for _, t := range allTodos {
+			_, err := todos.UpdateTodo(c, t.ID, todos.UpdateTodoParams{
+				Text:      t.Text,
+				Completed: true,
+			})
+			if err != nil {
+				return nil, 500, err
+			}
+		}
+		return c.Render(`
+			<div>
+				<TodoList id="todo-list" filter="all" page="1"></TodoList>
+				<TodoCount filter="all" page="1"></TodoCount>
+				<button id="check-all" class="button" hx-swap-oob="true">
+					<img src="/icons/check-all.svg?fill=green-500" />
+				</button>
+			</div>
+		`), 200, nil
+	} else if params.Intent == "clear_completed" {
 		allTodos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 			Filter: "all",
 			Limit:  1000,
@@ -44,8 +70,10 @@ func POST(c *Context, params PostParams) (*Node, int, error) {
 		}
 		c.Set("todo", todo)
 		return c.Render(`
-			<Todo />
-			<TodoCount filter="all" page="1" />
+			<div>
+				<Todo></Todo>
+				<TodoCount filter="all" page="1"></TodoCount>
+			</div>
 		`), 200, nil
 	} else if params.Intent == "delete" {
 		_, err := todos.DeleteTodo(c, params.ID)
@@ -67,7 +95,10 @@ func POST(c *Context, params PostParams) (*Node, int, error) {
 		}
 		c.Set("todo", todo)
 		return c.Render(`
-			<Todo />
+			<div>
+				<Todo></Todo>
+				<TodoCount filter="all" page="1"></TodoCount>
+			</div>
 		`), 200, nil
 	}
 	return nil, 404, fmt.Errorf("Intent not specified: %s", params.Intent)
