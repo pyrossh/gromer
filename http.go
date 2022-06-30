@@ -307,13 +307,25 @@ func Handle(router *mux.Router, method, route string, h interface{}, meta, style
 	gsx.SetClasses(key, styles)
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		newCtx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		c := gsx.NewContext(newCtx, r.Header.Get("HX-Request") == "true")
+		var hx *gsx.HX
+		if r.Header.Get("HX-Request") == "true" {
+			hx = &gsx.HX{
+				Boosted:     r.Header.Get("HX-Boosted") == "true",
+				CurrentUrl:  r.Header.Get("HX-Current-URL"),
+				Prompt:      r.Header.Get("HX-Prompt"),
+				Target:      r.Header.Get("HX-Target"),
+				TriggerName: r.Header.Get("HX-Trigger-Name"),
+				TriggerID:   r.Header.Get("HX-Trigger"),
+			}
+		}
+		c := gsx.NewContext(newCtx, hx)
+		c.Set("funcName", route)
 		c.Set("requestId", uuid.NewString())
 		c.Link("stylesheet", GetPageStylesUrl(key), "", "")
 		c.Link("stylesheet", GetComponentsStylesUrl(), "", "")
 		c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
 		c.Script("/gromer/js/htmx@1.7.0.js", false)
-		c.Script("/gromer/js/alpinejs@3.9.6.js", true)
+		// c.Script("/gromer/js/alpinejs@3.9.6.js", true)
 		c.Meta(meta)
 		PerformRequest(route, h, c, w, r)
 	}).Methods(method)
