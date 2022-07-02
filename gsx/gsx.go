@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 var (
@@ -62,7 +64,9 @@ func (comp ComponentFunc) Render(c *Context, tag *Tag) []*Tag {
 		if v, ok := c.data[arg]; ok {
 			args = append(args, reflect.ValueOf(v))
 		} else {
-			v := findAttribute(tag.Attributes, arg)
+			v, _ := lo.Find(tag.Attributes, func(a *Attribute) bool {
+				return a.Key == arg
+			})
 			t := funcType.In(i + 1)
 			switch t.Kind() {
 			case reflect.Int:

@@ -1,6 +1,7 @@
 package gsx
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -58,27 +59,38 @@ func TestComponent(t *testing.T) {
 		},
 	}
 	actual := renderString(h.Render(`
-		<div>
-			<Todo>
-				<div class="todo-panel">
-					<span>{todo.Text}</span>
-					<span>{todo.Completed}</span>
-				</div>
-			</Todo>
-			<Todo />
-		</div>
+		<Todo>
+			<div class="todo-panel">
+				<span>{todo.Text}</span>
+				<span>{todo.Completed}</span>
+			</div>
+		</Todo>
+		<Todo />
 	`))
-	expected := `
-		<div>
-			<todo>
-				<li id="todo-4" class="">
-					<div class="view"><span>My fourth todo</span><span>My fourth todo</span></div>
-					<div class="todo-panel"><span>My fourth todo</span><span>false</span></div>
-					<div class="count"><span>false</span><span>false</span></div>
-				</li>
-			</todo>
+	expected := strings.TrimLeft(`
+<Todo>
+  <li id="todo-{todo.ID}"class="{ completed: todo.Completed }">
+		<div class="upper">
+			<span>
+				{todo.Text}
+			</span>
+			<span>
+				{todo.Text}
+			</span>
 		</div>
-	`
+		{children}
+		<div class="bottom">
+			<span>
+				{todo.Completed}
+			</span>
+			<span>
+				{todo.Completed}
+			</span>
+		</div>
+	</li>
+</Todo>
+<Todo />
+`, "\n")
 	r.Equal(expected, actual)
 }
 

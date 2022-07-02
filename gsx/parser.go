@@ -103,24 +103,6 @@ func renderTagString(x *Tag, space string) string {
 	return s
 }
 
-func findAttribute(items []*Attribute, key string) *Attribute {
-	for _, a := range items {
-		if a.Key == key {
-			return a
-		}
-	}
-	return nil
-}
-
-func sliceContains(slice []string, s string) bool {
-	for _, v := range slice {
-		if s == v {
-			return true
-		}
-	}
-	return false
-}
-
 func processTree(module *Module) []*Tag {
 	tags := []*Tag{}
 	var prevTag *Tag
