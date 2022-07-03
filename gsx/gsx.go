@@ -151,6 +151,8 @@ func convert(ref string, i interface{}) interface{} {
 		return iv
 	case string:
 		return iv
+	case []*Tag:
+		return iv
 	default:
 		return iv
 	}
@@ -181,10 +183,18 @@ func getRefValue(c *Context, ref string) interface{} {
 	}
 }
 
+func removeBrackets(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, "{", ""), "}", "")
+}
+
+func removeQuotes(s string) string {
+	return strings.ReplaceAll(s, `"`, "")
+}
+
 func substituteString(c *Context, v string) string {
 	found := refRegex.FindString(v)
 	if found != "" {
-		varValue := fmt.Sprintf("%v", getRefValue(c, found))
+		varValue := fmt.Sprintf("%v", getRefValue(c, removeBrackets(found)))
 		return strings.ReplaceAll(v, found, varValue)
 	}
 	return v
@@ -199,8 +209,16 @@ func populate(c *Context, tags []*Tag) []*Tag {
 
 func populateTag(c *Context, tag *Tag) {
 	if tag.Name == "" {
-		if tag.Text.Ref != nil && *tag.Text.Ref != "children" {
-			*tag.Text.Ref = substituteString(c, *tag.Text.Ref)
+		if tag.Text.Ref != nil {
+			value := getRefValue(c, *tag.Text.Ref)
+			children, ok := value.([]*Tag)
+			if ok {
+				tag.Name = "fragment"
+				tag.Children = children
+			} else {
+				sValue := fmt.Sprintf("%+v", value)
+				tag.Text.Str = &sValue
+			}
 		}
 	} else {
 		for _, a := range tag.Attributes {
@@ -233,36 +251,40 @@ func populateTag(c *Context, tag *Tag) {
 						// }
 					}
 				}
-			} else if a.Value.Ref != nil {
-				if a.Key == "class" {
-					// 	classes := []string{}
-					// 	kvstrings := strings.Split(strings.TrimSpace(at.Val), ",")
-					// 	for _, kv := range kvstrings {
-					// 		kvarray := strings.Split(kv, ":")
-					// 		k := strings.TrimSpace(kvarray[0])
-					// 		v := strings.TrimSpace(kvarray[1])
-					// 		varValue := getRefValue(c, v)
-					// 		if varValue.(bool) {
-					// 			classes = append(classes, k)
-					// 		}
-					// 	}
-					// 	n.Attr[i] = html.Attribute{
-					// 		Namespace: at.Namespace,
-					// 		Key:       at.Key,
-					// 		Val:       strings.Join(classes, " "),
-					// 	}
-				} else {
-					subs := substituteString(c, *a.Value.Ref)
+			} else if a.Value.Str != nil {
+				if strings.Contains(*a.Value.Str, "{") {
+					subs := substituteString(c, removeQuotes(*a.Value.Str))
 					a.Value = &Literal{Str: &subs}
+				} else {
+					*a.Value.Str = removeQuotes(*a.Value.Str)
 				}
+			} else if a.Value.Ref != nil {
+				subs := substituteString(c, *a.Value.Ref)
+				a.Value = &Literal{Str: &subs}
+			} else if a.Key == "class" && a.Value.KV != nil {
+				classes := []string{}
+				for _, a := range a.Value.KV {
+					varValue := getRefValue(c, a.Value)
+					if varValue.(bool) {
+						classes = append(classes, removeQuotes(a.Key))
+					}
+				}
+				result := strings.Join(classes, " ")
+				a.Value.Str = &result
 			}
 		}
 		if comp, ok := compMap[tag.Name]; ok {
+			if tag.SelfClosing {
+				tag.SelfClosing = false
+			}
 			compContext := c.Clone(tag.Name)
 			nodes := comp.Render(compContext, tag)
-			// TODO: check if tag as Children already and {children} in defined in component
+			populate(compContext, tag.Children)
+			compContext.Set("children", tag.Children)
 			tag.Children = nodes
+			populate(compContext, tag.Children)
+		} else {
+			populate(c, tag.Children)
 		}
-		populate(c, tag.Children)
 	}
 }

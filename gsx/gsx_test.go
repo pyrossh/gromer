@@ -15,7 +15,7 @@ type TodoData struct {
 
 func Todo(c *Context, todo *TodoData) []*Tag {
 	return c.Render(`
-		<li id="todo-{todo.ID}" class="{ completed: todo.Completed }">
+		<li id="todo-{todo.ID}" class={"completed": todo.Completed }>
 			<div class="upper">
 				<span>{todo.Text}</span>
 				<span>{todo.Text}</span>
@@ -29,18 +29,18 @@ func Todo(c *Context, todo *TodoData) []*Tag {
 	`)
 }
 
-func TodoList(ctx Context, todos []*TodoData) []*Tag {
-	return ctx.Render(`
+func TodoList(c *Context, todos []*TodoData) []*Tag {
+	return c.Render(`
 		<ul id="todo-list" class="relative" x-for="todo in todos">
 			<Todo />
 		</ul>
 	`)
 }
 
-func TodoCount(ctx Context, count int) []*Tag {
-	return ctx.Render(`
+func TodoCount(c *Context, count int) []*Tag {
+	return c.Render(`
 		<span id="todo-count" class="todo-count" hx-swap-oob="true">
-			<strong>{count}</strong> item left
+			<strong>{count}</strong> "item left"
 		</span>
 	`)
 }
@@ -54,42 +54,116 @@ func TestComponent(t *testing.T) {
 	RegisterComponent(Todo, nil, "todo")
 	RegisterFunc(WebsiteName)
 	h := Context{
-		data: map[string]interface{}{
-			"todo": &TodoData{ID: "4", Text: "My fourth todo", Completed: false},
+		data: M{
+			"todo": &TodoData{ID: "4", Text: "My fourth todo", Completed: true},
 		},
 	}
-	actual := renderString(h.Render(`
+	nodes := h.Render(`
 		<Todo>
-			<div class="todo-panel">
-				<span>{todo.Text}</span>
-				<span>{todo.Completed}</span>
-			</div>
+			<span>{todo.Text}</span>
+			<span>{todo.Completed}</span>
 		</Todo>
 		<Todo />
-	`))
+	`)
+	actual := renderString(nodes)
 	expected := strings.TrimLeft(`
 <Todo>
-  <li id="todo-{todo.ID}"class="{ completed: todo.Completed }">
-		<div class="upper">
-			<span>
-				{todo.Text}
-			</span>
-			<span>
-				{todo.Text}
-			</span>
-		</div>
-		{children}
-		<div class="bottom">
-			<span>
-				{todo.Completed}
-			</span>
-			<span>
-				{todo.Completed}
-			</span>
-		</div>
-	</li>
+  <li id="todo-4" class="completed">
+    <div class="upper">
+      <span>
+        My fourth todo
+      </span>
+      <span>
+        My fourth todo
+      </span>
+    </div>
+    <span>
+      My fourth todo
+    </span>
+    <span>
+      true
+    </span>
+
+    <div class="bottom">
+      <span>
+        true
+      </span>
+      <span>
+        true
+      </span>
+    </div>
+  </li>
 </Todo>
-<Todo />
+<Todo>
+  <li id="todo-4" class="completed">
+    <div class="upper">
+      <span>
+        My fourth todo
+      </span>
+      <span>
+        My fourth todo
+      </span>
+    </div>
+
+    <div class="bottom">
+      <span>
+        true
+      </span>
+      <span>
+        true
+      </span>
+    </div>
+  </li>
+</Todo>
+`, "\n")
+	r.Equal(expected, actual)
+}
+
+func TestMultipleComponent(t *testing.T) {
+	r := require.New(t)
+	RegisterComponent(Todo, nil, "todo")
+	RegisterComponent(TodoCount, nil, "count")
+	h := Context{
+		data: M{
+			"todo":  &TodoData{ID: "4", Text: "My fourth todo", Completed: true},
+			"count": 10,
+		},
+	}
+	nodes := h.Render(`
+			<Todo />
+			<TodoCount />
+	`)
+	actual := renderString(nodes)
+	expected := strings.TrimLeft(`
+<Todo>
+  <li id="todo-4" class="completed">
+    <div class="upper">
+      <span>
+        My fourth todo
+      </span>
+      <span>
+        My fourth todo
+      </span>
+    </div>
+
+    <div class="bottom">
+      <span>
+        true
+      </span>
+      <span>
+        true
+      </span>
+    </div>
+  </li>
+</Todo>
+<TodoCount>
+  <span id="todo-count" class="todo-count" hx-swap-oob="true">
+    <strong>
+      10
+    </strong>
+    item left
+  </span>
+</TodoCount>
 `, "\n")
 	r.Equal(expected, actual)
 }
@@ -194,28 +268,6 @@ func TestComponent(t *testing.T) {
 // 				</li>
 // 			</ul>
 // 		</div>
-// 	`)
-// 	r.Equal(expected, actual)
-// }
-
-// func TestMultipleComonent(t *testing.T) {
-// 	r := require.New(t)
-// 	RegisterComponent(Todo, nil, "todo")
-// 	RegisterComponent(TodoCount, nil, "count")
-// 	h := Context{
-// 		data: map[string]interface{}{
-// 			"todo": &TodoData{
-// 				ID:        "3",
-// 				Text:      "My third todo",
-// 				Completed: false,
-// 			},
-// 		},
-// 	}
-// 	actual := h.Render(`
-// 			<Todo />
-// 			<TodoCount />
-// 	`).String()
-// 	expected := stripWhitespace(`
 // 	`)
 // 	r.Equal(expected, actual)
 // }
