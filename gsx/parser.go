@@ -6,7 +6,6 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/alecthomas/repr"
 	"github.com/goneric/stack"
 )
 
@@ -80,13 +79,17 @@ func renderTagString(x *Tag, space string) string {
 			return space + "{" + *x.Text.Ref + "}"
 		}
 	}
-	s := space + "<" + x.Name
-	if len(x.Attributes) > 0 {
-		s += " "
+	if x.Name == "fragment" {
+		s := ""
+		for _, c := range x.Children {
+			s += renderTagString(c, space) + "\n"
+		}
+		return s
 	}
+	s := space + "<" + x.Name
 	for _, a := range x.Attributes {
-		if a.Value.Str != nil {
-			s += a.Key + "=" + *a.Value.Str
+		if a.Value.Str != nil && *a.Value.Str != "" {
+			s += " " + a.Key + `="` + *a.Value.Str + `"`
 		}
 	}
 	if x.SelfClosing {
@@ -122,10 +125,11 @@ func processTree(module *Module) []*Tag {
 				}
 			} else {
 				tags = append(tags, newTag)
-				prevTag = newTag
+				if !newTag.SelfClosing {
+					prevTag = newTag
+				}
 			}
 		} else if n.Close != nil {
-			repr.Println("close", n.Close.Name, prevTag.Name)
 			if n.Close.Name == prevTag.Name {
 				prevTag, _ = stack.Pop()
 			} else {

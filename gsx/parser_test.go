@@ -25,13 +25,13 @@ func TestParse(t *testing.T) {
 	`))
 	println(actual)
 	expected := strings.TrimLeft(`
-<ul id="todo-list"class="relative">
-  <Todo >
+<ul id=""todo-list"" class=""relative"">
+  <Todo>
     <div>
       Todo123
     </div>
   </Todo>
-  <img src="123" />
+  <img src=""123"" />
   <span>
     {WebsiteName}
   </span>
@@ -41,6 +41,20 @@ func TestParse(t *testing.T) {
     Done
   </p>
 </div>
+`, "\n")
+	r.Equal(expected, actual)
+}
+
+func TestSelfClose(t *testing.T) {
+	r := require.New(t)
+	actual := renderString(parse("test", `
+		<Todo />
+		<TodoCount />
+	`))
+	println(actual)
+	expected := strings.TrimLeft(`
+<Todo />
+<TodoCount />
 `, "\n")
 	r.Equal(expected, actual)
 }

@@ -2,8 +2,6 @@ package gsx
 
 import (
 	"context"
-
-	"github.com/jinzhu/copier"
 )
 
 type HX struct {
@@ -74,11 +72,12 @@ func (c *Context) Render(tpl string) []*Tag {
 }
 
 func (c *Context) Clone(name string) *Context {
-	clone := NewContext(c.Context, c.hx)
-	err := copier.Copy(clone, c)
-	if err != nil {
-		panic("Failed to copy")
+	newCtx := &Context{
+		data: M{},
 	}
-	c.Set("funcName", name)
-	return clone
+	for k, v := range c.data {
+		newCtx.data[k] = v
+	}
+	newCtx.Set("funcName", name)
+	return newCtx
 }
