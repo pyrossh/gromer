@@ -10,7 +10,7 @@ var TodoListStyles = M{
 	"container": "list-none",
 }
 
-func TodoList(c *Context, page int, filter string) *Node {
+func TodoList(c *Context, page int, filter string) []*Tag {
 	index := Default(page, 1)
 	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 		Filter: filter,
@@ -21,8 +21,12 @@ func TodoList(c *Context, page int, filter string) *Node {
 	}
 	c.Set("todos", todos)
 	return c.Render(`
-		<ul id="todo-list" class="todolist" x-for="todo in todos">
-			<Todo />
+		<ul id="todo-list" class="TodoList">	
+			for i, v := range todos {
+				return (
+					<Todo todo={v} />
+				)
+			}
 		</ul>
 	`)
 }

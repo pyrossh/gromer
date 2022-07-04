@@ -11,7 +11,7 @@ var (
 	Styles = M{}
 )
 
-func GET(c *Context) (*Node, int, error) {
+func GET(c *Context) ([]*Tag, int, error) {
 	return c.Render(`
 		<main class="box center">
 			<h1>Page Not Found</h1>

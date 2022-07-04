@@ -12,7 +12,7 @@ var (
 	Styles = M{}
 )
 
-func GET(c *Context) (*Node, int, error) {
+func GET(c *Context) ([]*Tag, int, error) {
 	return c.Render(`
 		<div class="flex flex-col justify-center items-center">
 			A new link is here

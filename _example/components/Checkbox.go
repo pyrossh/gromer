@@ -6,7 +6,7 @@ import (
 
 // var CheckboxStyles = M{}
 
-func Checkbox(c *Context, value bool) *Node {
+func Checkbox(c *Context, value bool) []*Tag {
 	return c.Render(`
 		<input class="checkbox" type="checkbox" checked="{value}" />
 	`)

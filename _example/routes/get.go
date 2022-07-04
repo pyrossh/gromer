@@ -48,12 +48,25 @@ type GetParams struct {
 	Filter string `json:"filter"`
 }
 
-func GET(c *Context, params GetParams) (*Node, int, error) {
+func getActive(v bool) string {
+	if v {
+		return "active"
+	}
+	return ""
+}
+
+func GET(c *Context, params GetParams) ([]*Tag, int, error) {
+	allClass := getActive(params.Filter == "all")
+	activeClass := getActive(params.Filter == "active")
+	completedClass := getActive(params.Filter == "completed")
+	c.Set("allClass", allClass)
+	c.Set("activeClass", activeClass)
+	c.Set("completedClass", completedClass)
 	return c.Render(`
-		<div class="bg">
+		<div id="bg" class="bg">
 			<div class="container">
 				<header>
-					<h1 class="title">todos</h1>
+					<h1 class="title">"todos"</h1>
 				</header>
 				<main class="main">
 					<div class="input-box">
@@ -65,45 +78,45 @@ func GET(c *Context, params GetParams) (*Node, int, error) {
 						</form>
 						<form class="input-form" hx-post="/" hx-target="#todo-list" hx-swap="afterbegin" _="on htmx:afterOnLoad set #text.value to ''">
 							<input type="hidden" name="intent" value="create" />
-							<input id="text" name="text" class="input" placeholder="What needs to be done?" autocomplete="off">
+							<input id="text" name="text" class="input" placeholder="What needs to be done?" autocomplete="off" />
 						</form>
 					</div>
-					<TodoList id="todo-list" page="{params.Page}" filter="{params.Filter}"></TodoList>
+					<TodoList id="todo-list" page={params.Page} filter={params.Filter} />
 					<div class="bottom">
 						<div class="section-1">
-							<TodoCount filter="{params.Filter}"></TodoCount>
+							<TodoCount filter={params.Filter} />
 						</div>
-						<ul class="section-2">
+						<ul class="section-2" hx-boost="true">
 							<li>
-								<a href="?filter=all" class="link active">All</a>
+								<a href="?filter=all" class="link {allClass}">"All"</a>
 							</li>
 							<li>
-								<a href="?filter=active" class="link">Active</a>
+								<a href="?filter=active" class="link {activeClass}">"Active"</a>
 							</li>
 							<li>
-								<a href="?filter=completed" class="link">Completed</a>
+								<a href="?filter=completed" class="link {completedClass}">"Completed"</a>
 							</li>
 						</ul>
 						<div class="section-3">
 						<form hx-target="#todo-list" hx-post="/">
 							<input type="hidden" name="intent" value="clear_completed" />
-							<button type="submit" class="bottom-clear">Clear completed</button>
+							<button type="submit" class="bottom-clear">"Clear completed"</button>
 						</form>
 						</div>
 					</div>
 				</main>
 				<footer class="footer">
-					<span class="subtitle">Written by 
-						<a class="link" href="https://github.com/pyrossh/">pyrossh</a>
+					<span class="subtitle">"Written by "
+						<a class="link" href="https://github.com/pyrossh/">"pyrossh"</a>
 					</span>
-					<span class="subtitle">using 
-						<a class="link" href="https://github.com/pyrossh/gromer">Gromer</a>	
+					<span class="subtitle">"using " 
+						<a class="link" href="https://github.com/pyrossh/gromer">"Gromer"</a>	
 					</span>
-					<span class="subtitle">thanks to 
-						<a class="link" href="https://github.com/wishawa/">Wisha Wa</a>
+					<span class="subtitle">"thanks to" 
+						<a class="link" href="https://github.com/wishawa/">"Wisha Wa"</a>
 					</span>
-					<span class="subtitle">according to the spec 
-						<a class="link" href="https://todomvc.com/">TodoMVC</a>
+					<span class="subtitle">"according to the spec "
+						<a class="link" href="https://todomvc.com/">"TodoMVC"</a>
 					</span>	
 				</footer>
 			</div>

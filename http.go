@@ -196,7 +196,9 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 	w.Header().Set("Content-Type", "text/html")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
-	gsx.Write(c, w, response.([]*gsx.Tag))
+	if responseStatus != 204 {
+		gsx.Write(c, w, response.([]*gsx.Tag))
+	}
 }
 
 func LogMiddleware(next http.Handler) http.Handler {

@@ -14,7 +14,7 @@ type PostParams struct {
 	Text   string `json:"text"`
 }
 
-func POST(c *Context, params PostParams) (*Node, int, error) {
+func POST(c *Context, params PostParams) ([]*Tag, int, error) {
 	if params.Intent == "select_all" {
 		allTodos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 			Filter: "all",
@@ -33,13 +33,11 @@ func POST(c *Context, params PostParams) (*Node, int, error) {
 			}
 		}
 		return c.Render(`
-			<div>
-				<TodoList id="todo-list" filter="all" page="1"></TodoList>
-				<TodoCount filter="all" page="1"></TodoCount>
-				<button id="check-all" class="button" hx-swap-oob="true">
-					<img src="/icons/check-all.svg?fill=green-500" />
-				</button>
-			</div>
+			<TodoCount filter="all" page="1" />
+			<button id="check-all" class="button" hx-swap-oob="true">
+				<img src="/icons/check-all.svg?fill=green-500" />
+			</button>
+			<TodoList id="todo-list" filter="all" page="1" />
 		`), 200, nil
 	} else if params.Intent == "clear_completed" {
 		allTodos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
@@ -58,10 +56,8 @@ func POST(c *Context, params PostParams) (*Node, int, error) {
 			}
 		}
 		return c.Render(`
-			<div>
-				<TodoList id="todo-list" filter="all" page="1"></TodoList>
-				<TodoCount filter="all" page="1"></TodoCount>
-			</div>
+			<TodoCount filter="all" page="1" />
+			<TodoList id="todo-list" filter="all" page="1" />
 		`), 200, nil
 	} else if params.Intent == "create" {
 		todo, err := todos.CreateTodo(c, params.Text)
@@ -70,10 +66,8 @@ func POST(c *Context, params PostParams) (*Node, int, error) {
 		}
 		c.Set("todo", todo)
 		return c.Render(`
-			<div>
-				<Todo></Todo>
-				<TodoCount filter="all" page="1"></TodoCount>
-			</div>
+			<TodoCount filter="all" page="1" />
+			<Todo />
 		`), 200, nil
 	} else if params.Intent == "delete" {
 		_, err := todos.DeleteTodo(c, params.ID)
@@ -95,10 +89,8 @@ func POST(c *Context, params PostParams) (*Node, int, error) {
 		}
 		c.Set("todo", todo)
 		return c.Render(`
-			<div>
-				<Todo></Todo>
-				<TodoCount filter="all" page="1"></TodoCount>
-			</div>
+			<TodoCount filter="all" page="1" />
+			<Todo />
 		`), 200, nil
 	}
 	return nil, 404, fmt.Errorf("Intent not specified: %s", params.Intent)
