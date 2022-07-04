@@ -66,7 +66,10 @@ func (c *Context) Data(data M) {
 }
 
 func (c *Context) Render(tpl string) []*Tag {
-	name, _ := c.Get("funcName").(string)
+	name, ok := c.Get("funcName").(string)
+	if !ok {
+		panic("funcName is required")
+	}
 	tags := parse(name, tpl)
 	return populate(c, tags)
 }

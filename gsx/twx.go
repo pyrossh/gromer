@@ -554,7 +554,7 @@ func computeCss(classMap M, parent string) string {
 							p += "  " + s + "\n"
 						}
 						p += "}\n"
-					} else if prefix == "group-hover" {
+					} else if prefix == "hover" {
 						p += "\n" + className + ":hover" + " {\n"
 						if s, ok := twClassLookup[class]; ok {
 							p += "  " + s + "\n"

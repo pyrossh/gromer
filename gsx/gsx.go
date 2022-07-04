@@ -72,25 +72,35 @@ func (comp ComponentFunc) Render(c *Context, tag *Tag) []*Tag {
 			})
 			var data interface{}
 			if v.Value.Ref != nil {
-				data = c.data[*v.Value.Ref]
+				data = getRefValue(c, *v.Value.Ref)
 			} else if v.Value.Str != nil {
 				data = *v.Value.Str
 			}
 			switch t.Kind() {
 			case reflect.Int:
-				s, ok := data.(string)
-				if !ok {
-					panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+				var value int
+				if v, ok := data.(int); ok {
+					value = v
+				} else {
+					s, ok := data.(string)
+					if !ok {
+						panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+					}
+					value, _ = strconv.Atoi(s)
 				}
-				value, _ := strconv.Atoi(s)
 				c.Set(arg, value)
 				args = append(args, reflect.ValueOf(value))
 			case reflect.Bool:
-				s, ok := data.(string)
-				if !ok {
-					panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+				var value bool
+				if v, ok := data.(bool); ok {
+					value = v
+				} else {
+					s, ok := data.(string)
+					if !ok {
+						panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+					}
+					value, _ = strconv.ParseBool(s)
 				}
-				value, _ := strconv.ParseBool(s)
 				c.Set(arg, value)
 				args = append(args, reflect.ValueOf(value))
 			default:
@@ -240,7 +250,7 @@ func populateTag(c *Context, tag *Tag) {
 			}
 		} else if loop := tag.Text.For; loop != nil {
 			tag.Name = "fragment"
-			data := c.data[loop.Reference]
+			data := getRefValue(c, loop.Reference)
 			statement := loop.Statements[0].ReturnStatement
 			switch reflect.TypeOf(data).Kind() {
 			case reflect.Slice:
@@ -276,7 +286,8 @@ func populateTag(c *Context, tag *Tag) {
 						*a.Value.Str = removeQuotes(*a.Value.Str)
 					}
 				} else if a.Value.Ref != nil {
-					subs := substituteString(c, *a.Value.Ref)
+					value := getRefValue(c, *a.Value.Ref)
+					subs := fmt.Sprintf("%v", value)
 					a.Value = &Literal{Str: &subs}
 				} else if a.Key == "class" && a.Value.KV != nil {
 					classes := []string{}

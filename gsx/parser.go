@@ -66,7 +66,7 @@ type Literal struct {
 	Pos lexer.Position
 	Str *string       `@String`
 	Ref *string       `| "{" @Ident ( @"." @Ident )* "}"`
-	KV  []*KV         `| "{" @@* "}"`
+	KV  []*KV         `| "{" [ @@ { "," @@ } ] "}"`
 	For *ForStatement `| @@`
 }
 
@@ -232,6 +232,7 @@ func processTree(nodes []*AstNode) []*Tag {
 func parse(name, s string) []*Tag {
 	ast, err := htmlParser.ParseString(name, s)
 	if err != nil {
+		println("name", name)
 		panic(err)
 	}
 	return processTree(ast.Nodes)

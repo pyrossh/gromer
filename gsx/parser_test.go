@@ -10,7 +10,7 @@ import (
 func TestParse(t *testing.T) {
 	r := require.New(t)
 	actual := RenderString(parse("test", `
-<ul id="todo-list" class="relative">
+<ul id="todo-list" class={"relative": true, "completed": false }>
 	<Todo todo={v}>
 		<div>"Todo123"</div>
 	</Todo>
@@ -24,7 +24,7 @@ func TestParse(t *testing.T) {
 </div>
 	`))
 	expected := strings.TrimLeft(`
-<ul id=""todo-list"" class=""relative"">
+<ul id=""todo-list"">
   <Todo>
     <div>
       Todo123
