@@ -228,7 +228,7 @@ func populate(c *Context, tags []*Tag) []*Tag {
 
 func populateTag(c *Context, tag *Tag) {
 	if tag.Name == "" {
-		if tag.Text.Ref != nil {
+		if tag.Text.Str == nil && tag.Text.Ref != nil {
 			value := getRefValue(c, *tag.Text.Ref)
 			children, ok := value.([]*Tag)
 			if ok {
@@ -250,48 +250,47 @@ func populateTag(c *Context, tag *Tag) {
 					compContext.data[loop.Index] = i
 					compContext.data[loop.Key] = v.Index(i).Interface()
 					newTags := populate(compContext, cloneTags(statement.Tags))
-					for _, t := range newTags {
-						tag.Children = append(tag.Children, t)
-					}
+					tag.Children = append(tag.Children, newTags...)
 				}
 			}
 		}
 	} else {
 		if comp, ok := compMap[tag.Name]; ok {
+			tag.Name = "fragment"
 			if tag.SelfClosing {
 				tag.SelfClosing = false
 			}
-			compContext := c.Clone(tag.Name)
+			compContext := c.Clone(comp.Name)
 			nodes := comp.Render(compContext, tag)
 			populate(compContext, tag.Children)
 			compContext.Set("children", tag.Children)
+			populate(compContext, nodes)
 			tag.Children = nodes
-			populate(compContext, tag.Children)
 		} else {
-			populate(c, tag.Children)
-		}
-		for _, a := range tag.Attributes {
-			if a.Value.Str != nil {
-				if strings.Contains(*a.Value.Str, "{") {
-					subs := substituteString(c, removeQuotes(*a.Value.Str))
-					a.Value = &Literal{Str: &subs}
-				} else {
-					*a.Value.Str = removeQuotes(*a.Value.Str)
-				}
-			} else if a.Value.Ref != nil {
-				subs := substituteString(c, *a.Value.Ref)
-				a.Value = &Literal{Str: &subs}
-			} else if a.Key == "class" && a.Value.KV != nil {
-				classes := []string{}
-				for _, a := range a.Value.KV {
-					varValue := getRefValue(c, a.Value)
-					if varValue.(bool) {
-						classes = append(classes, removeQuotes(a.Key))
+			for _, a := range tag.Attributes {
+				if a.Value.Str != nil {
+					if strings.Contains(*a.Value.Str, "{") {
+						subs := substituteString(c, removeQuotes(*a.Value.Str))
+						a.Value = &Literal{Str: &subs}
+					} else {
+						*a.Value.Str = removeQuotes(*a.Value.Str)
 					}
+				} else if a.Value.Ref != nil {
+					subs := substituteString(c, *a.Value.Ref)
+					a.Value = &Literal{Str: &subs}
+				} else if a.Key == "class" && a.Value.KV != nil {
+					classes := []string{}
+					for _, a := range a.Value.KV {
+						varValue := getRefValue(c, a.Value)
+						if varValue.(bool) {
+							classes = append(classes, removeQuotes(a.Key))
+						}
+					}
+					result := strings.Join(classes, " ")
+					a.Value.Str = &result
 				}
-				result := strings.Join(classes, " ")
-				a.Value.Str = &result
 			}
+			populate(c, tag.Children)
 		}
 	}
 }

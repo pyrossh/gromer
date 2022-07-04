@@ -31,8 +31,12 @@ func Todo(c *Context, todo *TodoData) []*Tag {
 
 func TodoList(c *Context, todos []*TodoData) []*Tag {
 	return c.Render(`
-		<ul id="todo-list" class="relative" x-for="todo in todos">
-			<Todo />
+		<ul id="todo-list" class="relative">
+			for i, v := range todos {
+				return (
+					<Todo todo={v}>
+				)
+			}
 		</ul>
 	`)
 }
@@ -71,54 +75,46 @@ func TestComponent(t *testing.T) {
 	`)
 	actual := RenderString(nodes)
 	expected := trimLeft(`
-<Todo>
-  <li id="todo-4" class="completed">
-    <div class="upper">
-      <span>
-        My fourth todo
-      </span>
-      <span>
-        My fourth todo
-      </span>
-    </div>
+<li id="todo-4" class="completed">
+  <div class="upper">
     <span>
       My fourth todo
     </span>
     <span>
+      My fourth todo
+    </span>
+  </div>
+  <nil>
+  <div class="bottom">
+    <span>
       true
     </span>
+    <span>
+      true
+    </span>
+  </div>
+</li>
 
-    <div class="bottom">
-      <span>
-        true
-      </span>
-      <span>
-        true
-      </span>
-    </div>
-  </li>
-</Todo>
-<Todo>
-  <li id="todo-4" class="completed">
-    <div class="upper">
-      <span>
-        My fourth todo
-      </span>
-      <span>
-        My fourth todo
-      </span>
-    </div>
+<li id="todo-4" class="completed">
+  <div class="upper">
+    <span>
+      My fourth todo
+    </span>
+    <span>
+      My fourth todo
+    </span>
+  </div>
+  <nil>
+  <div class="bottom">
+    <span>
+      true
+    </span>
+    <span>
+      true
+    </span>
+  </div>
+</li>
 
-    <div class="bottom">
-      <span>
-        true
-      </span>
-      <span>
-        true
-      </span>
-    </div>
-  </li>
-</Todo>
 `)
 	r.Equal(expected, actual)
 }
@@ -139,35 +135,33 @@ func TestMultipleComponent(t *testing.T) {
 	`)
 	actual := RenderString(nodes)
 	expected := trimLeft(`
-<Todo>
-  <li id="todo-4" class="completed">
-    <div class="upper">
-      <span>
-        My fourth todo
-      </span>
-      <span>
-        My fourth todo
-      </span>
-    </div>
+<li id="todo-4" class="completed">
+  <div class="upper">
+    <span>
+      My fourth todo
+    </span>
+    <span>
+      My fourth todo
+    </span>
+  </div>
+  <nil>
+  <div class="bottom">
+    <span>
+      true
+    </span>
+    <span>
+      true
+    </span>
+  </div>
+</li>
 
-    <div class="bottom">
-      <span>
-        true
-      </span>
-      <span>
-        true
-      </span>
-    </div>
-  </li>
-</Todo>
-<TodoCount>
-  <span id="todo-count" class="todo-count" hx-swap-oob="true">
-    <strong>
-      10
-    </strong>
-    item left
-  </span>
-</TodoCount>
+<span id="todo-count" class="todo-count" hx-swap-oob="true">
+  <strong>
+    10
+  </strong>
+  item left
+</span>
+
 `)
 	r.Equal(expected, actual)
 }
@@ -252,7 +246,95 @@ func TestFor(t *testing.T) {
 
 </ul>
 <ol>
-  <Todo todo="v">
+  <li id="todo-1" class="completed">
+    <div class="upper">
+      <span>
+        My first todo
+      </span>
+      <span>
+        My first todo
+      </span>
+    </div>
+    <nil>
+    <div class="bottom">
+      <span>
+        true
+      </span>
+      <span>
+        true
+      </span>
+    </div>
+  </li>
+
+  <li id="todo-2">
+    <div class="upper">
+      <span>
+        My second todo
+      </span>
+      <span>
+        My second todo
+      </span>
+    </div>
+    <nil>
+    <div class="bottom">
+      <span>
+        false
+      </span>
+      <span>
+        false
+      </span>
+    </div>
+  </li>
+
+  <li id="todo-3">
+    <div class="upper">
+      <span>
+        My third todo
+      </span>
+      <span>
+        My third todo
+      </span>
+    </div>
+    <nil>
+    <div class="bottom">
+      <span>
+        false
+      </span>
+      <span>
+        false
+      </span>
+    </div>
+  </li>
+
+
+</ol>
+`)
+	r.Equal(expected, actual)
+}
+
+func TestForComponent(t *testing.T) {
+	r := require.New(t)
+	RegisterComponent(Todo, nil, "todo")
+	RegisterComponent(TodoList, nil, "todos")
+	RegisterFunc(WebsiteName)
+	h := Context{
+		data: map[string]interface{}{
+			"todos": []*TodoData{
+				{ID: "1", Text: "My first todo", Completed: true},
+				{ID: "2", Text: "My second todo", Completed: false},
+				{ID: "3", Text: "My third todo", Completed: false},
+			},
+		},
+	}
+	nodes := h.Render(`
+		<div>
+			<TodoList />
+		</div>
+	`)
+	actual := RenderString(nodes)
+	expected := trimLeft(`
+<div>
+  <ul id="todo-list" class="relative">
     <li id="todo-1" class="completed">
       <div class="upper">
         <span>
@@ -262,15 +344,7 @@ func TestFor(t *testing.T) {
           My first todo
         </span>
       </div>
-      <div class="todo-panel">
-        <span>
-          My first todo
-        </span>
-        <span>
-          true
-        </span>
-      </div>
-
+      <nil>
       <div class="bottom">
         <span>
           true
@@ -280,8 +354,7 @@ func TestFor(t *testing.T) {
         </span>
       </div>
     </li>
-  </Todo>
-  <Todo todo="v">
+
     <li id="todo-2">
       <div class="upper">
         <span>
@@ -291,15 +364,7 @@ func TestFor(t *testing.T) {
           My second todo
         </span>
       </div>
-      <div class="todo-panel">
-        <span>
-          My second todo
-        </span>
-        <span>
-          false
-        </span>
-      </div>
-
+      <nil>
       <div class="bottom">
         <span>
           false
@@ -309,8 +374,7 @@ func TestFor(t *testing.T) {
         </span>
       </div>
     </li>
-  </Todo>
-  <Todo todo="v">
+
     <li id="todo-3">
       <div class="upper">
         <span>
@@ -320,15 +384,7 @@ func TestFor(t *testing.T) {
           My third todo
         </span>
       </div>
-      <div class="todo-panel">
-        <span>
-          My third todo
-        </span>
-        <span>
-          false
-        </span>
-      </div>
-
+      <nil>
       <div class="bottom">
         <span>
           false
@@ -338,52 +394,11 @@ func TestFor(t *testing.T) {
         </span>
       </div>
     </li>
-  </Todo>
 
-</ol>
+
+  </ul>
+
+</div>
 `)
 	r.Equal(expected, actual)
 }
-
-// func TestForComponent(t *testing.T) {
-// 	r := require.New(t)
-// 	RegisterComponent(Todo, nil, "todo")
-// 	RegisterComponent(TodoList, nil, "todos")
-// 	RegisterFunc(WebsiteName)
-// 	h := Context{
-// 		data: map[string]interface{}{
-// 			"todos": []*TodoData{
-// 				{ID: "1", Text: "My first todo", Completed: true},
-// 				{ID: "2", Text: "My second todo", Completed: false},
-// 				{ID: "3", Text: "My third todo", Completed: false},
-// 			},
-// 		},
-// 	}
-// 	actual := h.Render(`
-// 		<div>
-// 			<TodoList />
-// 		</div>
-// 	`).String()
-// 	expected := stripWhitespace(`
-// 		<div>
-// 			<ul id="todo-list" class="relative" x-for="todo in todos">
-// 				<li id="todo-1" class="completed">
-// 					<div class="view"><span>My first todo</span><span>My first todo</span></div>
-// 					<div class="todo-panel"><span>My first todo</span><span>true</span></div>
-// 					<div class="count"><span>true</span><span>true</span></div>
-// 				</li>
-// 				<li id="todo-2" class="">
-// 					<div class="view"><span>My second todo</span><span>My second todo</span></div>
-// 					<div class="todo-panel"><span>My second todo</span><span>false</span></div>
-// 					<div class="count"><span>false</span><span>false</span></div>
-// 				</li>
-// 				<li id="todo-3" class="">
-// 					<div class="view"><span>My third todo</span><span>My third todo</span></div>
-// 					<div class="todo-panel"><span>My third todo</span><span>false</span></div>
-// 					<div class="count"><span>false</span><span>false</span></div>
-// 				</li>
-// 			</ul>
-// 		</div>
-// 	`)
-// 	r.Equal(expected, actual)
-// }
