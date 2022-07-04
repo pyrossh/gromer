@@ -196,7 +196,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 	w.Header().Set("Content-Type", "text/html")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
-	response.(*gsx.Node).Write(c, w)
+	gsx.Write(c, w, response.([]*gsx.Tag))
 }
 
 func LogMiddleware(next http.Handler) http.Handler {
@@ -238,7 +238,18 @@ func CacheMiddleware(next http.Handler) http.Handler {
 func StatusHandler(h interface{}) http.Handler {
 	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		renderContext := gsx.NewContext(ctx, r.Header.Get("HX-Request") == "true")
+		var hx *gsx.HX
+		if r.Header.Get("HX-Request") == "true" {
+			hx = &gsx.HX{
+				Boosted:     r.Header.Get("HX-Boosted") == "true",
+				CurrentUrl:  r.Header.Get("HX-Current-URL"),
+				Prompt:      r.Header.Get("HX-Prompt"),
+				Target:      r.Header.Get("HX-Target"),
+				TriggerName: r.Header.Get("HX-Trigger-Name"),
+				TriggerID:   r.Header.Get("HX-Trigger"),
+			}
+		}
+		renderContext := gsx.NewContext(ctx, hx)
 		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(renderContext)})
 		response := values[0].Interface()
 		responseStatus := values[1].Interface().(int)
@@ -251,7 +262,7 @@ func StatusHandler(h interface{}) http.Handler {
 
 		// This has to be at end always after headers are set
 		w.WriteHeader(responseStatus)
-		response.(*gsx.Node).Write(renderContext, w)
+		gsx.Write(renderContext, w, response.([]*gsx.Tag))
 	})).(http.Handler)
 }
 

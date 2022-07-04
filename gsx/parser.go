@@ -134,15 +134,15 @@ func cloneTags(tags []*Tag) []*Tag {
 	return newTags
 }
 
-func renderString(tags []*Tag) string {
+func RenderString(tags []*Tag) string {
 	s := ""
 	for _, t := range tags {
-		s += renderTagString(t, "") + "\n"
+		s += RenderTagString(t, "") + "\n"
 	}
 	return s
 }
 
-func renderTagString(x *Tag, space string) string {
+func RenderTagString(x *Tag, space string) string {
 	if x.Name == "" {
 		if x.Text != nil && x.Text.Str != nil {
 			return space + strings.ReplaceAll(*x.Text.Str, `"`, "")
@@ -154,7 +154,7 @@ func renderTagString(x *Tag, space string) string {
 	if x.Name == "fragment" {
 		s := ""
 		for _, c := range x.Children {
-			s += renderTagString(c, space) + "\n"
+			s += RenderTagString(c, space) + "\n"
 		}
 		return s
 	}
@@ -171,7 +171,7 @@ func renderTagString(x *Tag, space string) string {
 	}
 	if !x.SelfClosing {
 		for _, c := range x.Children {
-			s += renderTagString(c, space+"  ") + "\n"
+			s += RenderTagString(c, space+"  ") + "\n"
 		}
 		s += space + "</" + x.Name + ">"
 	}

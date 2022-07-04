@@ -69,7 +69,7 @@ func TestComponent(t *testing.T) {
 		</Todo>
 		<Todo />
 	`)
-	actual := renderString(nodes)
+	actual := RenderString(nodes)
 	expected := trimLeft(`
 <Todo>
   <li id="todo-4" class="completed">
@@ -137,7 +137,7 @@ func TestMultipleComponent(t *testing.T) {
 			<Todo />
 			<TodoCount />
 	`)
-	actual := renderString(nodes)
+	actual := RenderString(nodes)
 	expected := trimLeft(`
 <Todo>
   <li id="todo-4" class="completed">
@@ -210,7 +210,7 @@ func TestFor(t *testing.T) {
 			}
 		</ol>
 	`)
-	actual := renderString(nodes)
+	actual := RenderString(nodes)
 	expected := trimLeft(`
 <ul class="relative">
   <li>

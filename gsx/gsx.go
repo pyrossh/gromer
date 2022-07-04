@@ -133,7 +133,7 @@ func Write(c *Context, w io.Writer, tags []*Tag) {
 		}
 		w.Write([]byte(`</head><body>`))
 	}
-	out := renderString(tags)
+	out := RenderString(tags)
 	w.Write([]byte(out))
 	if c.hx == nil {
 		w.Write([]byte(`</body></html>`))

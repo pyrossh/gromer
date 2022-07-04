@@ -9,7 +9,7 @@ import (
 
 func TestParse(t *testing.T) {
 	r := require.New(t)
-	actual := renderString(parse("test", `
+	actual := RenderString(parse("test", `
 <ul id="todo-list" class="relative">
 	<Todo todo={v}>
 		<div>"Todo123"</div>
@@ -46,7 +46,7 @@ func TestParse(t *testing.T) {
 
 func TestSelfClose(t *testing.T) {
 	r := require.New(t)
-	actual := renderString(parse("test", `
+	actual := RenderString(parse("test", `
 		<Todo />
 		<TodoCount />
 	`))
@@ -59,7 +59,7 @@ func TestSelfClose(t *testing.T) {
 
 func TestForLoop(t *testing.T) {
 	r := require.New(t)
-	actual := renderString(parse("test", `
+	actual := RenderString(parse("test", `
 		<ul>
 		for k, v := range todos {
 			return (
