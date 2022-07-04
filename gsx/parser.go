@@ -10,8 +10,8 @@ import (
 )
 
 type Module struct {
-	Pos     lexer.Position
-	AstNode []*AstNode `@@*`
+	Pos   lexer.Position
+	Nodes []*AstNode `@@*`
 }
 
 type AstNode struct {
@@ -33,6 +33,23 @@ type Close struct {
 	Name string `"<""/"@Ident">"`
 }
 
+type ForStatement struct {
+	Pos        lexer.Position `"for"`
+	Index      string         `@Ident ","`
+	Key        string         `@Ident`
+	Reference  string         `":""=""range" @Ident`
+	Statements []*Statement   `"{" @@* "}"`
+}
+
+type Statement struct {
+	ReturnStatement *ReturnStatement `@@`
+}
+
+type ReturnStatement struct {
+	Nodes []*AstNode `"return" "(" @@* ")"`
+	Tags  []*Tag
+}
+
 type Attribute struct {
 	Pos   lexer.Position
 	Key   string   `@":"? @Ident ( @"-" @Ident )*`
@@ -47,9 +64,36 @@ type KV struct {
 
 type Literal struct {
 	Pos lexer.Position
-	Str *string `@String`
-	Ref *string `| "{" @Ident ( @"." @Ident )* "}"`
-	KV  []*KV   `| "{" @@* "}"`
+	Str *string       `@String`
+	Ref *string       `| "{" @Ident ( @"." @Ident )* "}"`
+	KV  []*KV         `| "{" @@* "}"`
+	For *ForStatement `| @@`
+}
+
+func (l *Literal) Clone() *Literal {
+	if l == nil {
+		return nil
+	}
+	newLiteral := &Literal{}
+	if l.Str != nil {
+		v := "" + *l.Str
+		newLiteral.Str = &v
+	}
+	if l.Ref != nil {
+		v := "" + *l.Ref
+		newLiteral.Ref = &v
+	}
+	if l.KV != nil {
+		newLiteral.KV = []*KV{}
+		for _, kv := range l.KV {
+			newLiteral.KV = append(newLiteral.KV, &KV{
+				Key:   "" + kv.Key,
+				Value: "" + kv.Value,
+			})
+		}
+	}
+	// TODO copy for
+	return newLiteral
 }
 
 var htmlParser = participle.MustBuild[Module]()
@@ -60,6 +104,34 @@ type Tag struct {
 	Attributes  []*Attribute
 	Children    []*Tag
 	SelfClosing bool
+}
+
+func (t *Tag) Clone() *Tag {
+	newTag := &Tag{
+		Name:        t.Name,
+		Text:        t.Text.Clone(),
+		Attributes:  []*Attribute{},
+		SelfClosing: t.SelfClosing,
+		Children:    []*Tag{},
+	}
+	for _, v := range t.Attributes {
+		newTag.Attributes = append(newTag.Attributes, &Attribute{
+			Key:   v.Key,
+			Value: v.Value.Clone(),
+		})
+	}
+	for _, child := range t.Children {
+		newTag.Children = append(newTag.Children, child.Clone())
+	}
+	return newTag
+}
+
+func cloneTags(tags []*Tag) []*Tag {
+	newTags := []*Tag{}
+	for _, v := range tags {
+		newTags = append(newTags, v.Clone())
+	}
+	return newTags
 }
 
 func renderString(tags []*Tag) string {
@@ -106,11 +178,11 @@ func renderTagString(x *Tag, space string) string {
 	return s
 }
 
-func processTree(module *Module) []*Tag {
+func processTree(nodes []*AstNode) []*Tag {
 	tags := []*Tag{}
 	var prevTag *Tag
 	stack := stack.New[*Tag]()
-	for _, n := range module.AstNode {
+	for _, n := range nodes {
 		if n.Open != nil {
 			newTag := &Tag{
 				Name:        n.Open.Name,
@@ -140,6 +212,13 @@ func processTree(module *Module) []*Tag {
 				Name: "",
 				Text: n.Content,
 			}
+			if n.Content.For != nil {
+				for _, s := range n.Content.For.Statements {
+					if s.ReturnStatement != nil {
+						s.ReturnStatement.Tags = processTree(s.ReturnStatement.Nodes)
+					}
+				}
+			}
 			if prevTag != nil {
 				prevTag.Children = append(prevTag.Children, newTag)
 			} else {
@@ -155,5 +234,5 @@ func parse(name, s string) []*Tag {
 	if err != nil {
 		panic(err)
 	}
-	return processTree(ast)
+	return processTree(ast.Nodes)
 }

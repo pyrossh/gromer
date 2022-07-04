@@ -26,6 +26,7 @@ type (
 	MS            map[string]string
 	Arr           []interface{}
 	ComponentFunc struct {
+		Name    string
 		Func    interface{}
 		Args    []string
 		Classes M
@@ -41,6 +42,7 @@ type (
 func RegisterComponent(f interface{}, classes M, args ...string) {
 	name := getFunctionName(f)
 	compMap[name] = ComponentFunc{
+		Name:    name,
 		Func:    f,
 		Args:    args,
 		Classes: classes,
@@ -64,19 +66,36 @@ func (comp ComponentFunc) Render(c *Context, tag *Tag) []*Tag {
 		if v, ok := c.data[arg]; ok {
 			args = append(args, reflect.ValueOf(v))
 		} else {
+			t := funcType.In(i + 1)
 			v, _ := lo.Find(tag.Attributes, func(a *Attribute) bool {
 				return a.Key == arg
 			})
-			t := funcType.In(i + 1)
+			var data interface{}
+			if v.Value.Ref != nil {
+				data = c.data[*v.Value.Ref]
+			} else if v.Value.Str != nil {
+				data = *v.Value.Str
+			}
 			switch t.Kind() {
 			case reflect.Int:
-				value, _ := strconv.Atoi(*v.Value.Str)
+				s, ok := data.(string)
+				if !ok {
+					panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+				}
+				value, _ := strconv.Atoi(s)
+				c.Set(arg, value)
 				args = append(args, reflect.ValueOf(value))
 			case reflect.Bool:
-				value, _ := strconv.ParseBool(*v.Value.Str)
+				s, ok := data.(string)
+				if !ok {
+					panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+				}
+				value, _ := strconv.ParseBool(s)
+				c.Set(arg, value)
 				args = append(args, reflect.ValueOf(value))
 			default:
-				args = append(args, reflect.ValueOf(v))
+				c.Set(arg, data)
+				args = append(args, reflect.ValueOf(data))
 			}
 		}
 	}
@@ -219,39 +238,40 @@ func populateTag(c *Context, tag *Tag) {
 				sValue := fmt.Sprintf("%+v", value)
 				tag.Text.Str = &sValue
 			}
-		}
-	} else {
-		for _, a := range tag.Attributes {
-			if a.Key == "x-for" {
-				arr := strings.Split(*a.Value.Str, " in ")
-				// ctxItemKey := arr[0]
-				ctxKey := arr[1]
-				data := c.data[ctxKey]
-				switch reflect.TypeOf(data).Kind() {
-				case reflect.Slice:
-					v := reflect.ValueOf(data)
-					for i := 0; i < v.Len(); i++ {
-						// ctx["_space"] = space + "  "
-						// ctx[ctxName] = v.Index(i).Interface()
-						// s += render(x.Children[0], ctx) + "\n"
-
-						// compCtx := &Context{
-						// 	Context: c.Context,
-						// 	data: map[string]interface{}{
-						// 		ctxItemKey: v.Index(i).Interface(),
-						// 	},
-						// }
-						// tag.Children
-						// if comp, ok := compMap[itemChild.Data]; ok {
-						// 	newNode := populateComponent(compCtx, comp, itemChild, false)
-						// 	n.AppendChild(newNode)
-						// } else {
-						// 	n.AppendChild(itemChild)
-						// 	populate(compCtx, itemChild)
-						// }
+		} else if loop := tag.Text.For; loop != nil {
+			tag.Name = "fragment"
+			data := c.data[loop.Reference]
+			statement := loop.Statements[0].ReturnStatement
+			switch reflect.TypeOf(data).Kind() {
+			case reflect.Slice:
+				v := reflect.ValueOf(data)
+				for i := 0; i < v.Len(); i++ {
+					compContext := c.Clone(tag.Name)
+					compContext.data[loop.Index] = i
+					compContext.data[loop.Key] = v.Index(i).Interface()
+					newTags := populate(compContext, cloneTags(statement.Tags))
+					for _, t := range newTags {
+						tag.Children = append(tag.Children, t)
 					}
 				}
-			} else if a.Value.Str != nil {
+			}
+		}
+	} else {
+		if comp, ok := compMap[tag.Name]; ok {
+			if tag.SelfClosing {
+				tag.SelfClosing = false
+			}
+			compContext := c.Clone(tag.Name)
+			nodes := comp.Render(compContext, tag)
+			populate(compContext, tag.Children)
+			compContext.Set("children", tag.Children)
+			tag.Children = nodes
+			populate(compContext, tag.Children)
+		} else {
+			populate(c, tag.Children)
+		}
+		for _, a := range tag.Attributes {
+			if a.Value.Str != nil {
 				if strings.Contains(*a.Value.Str, "{") {
 					subs := substituteString(c, removeQuotes(*a.Value.Str))
 					a.Value = &Literal{Str: &subs}
@@ -272,19 +292,6 @@ func populateTag(c *Context, tag *Tag) {
 				result := strings.Join(classes, " ")
 				a.Value.Str = &result
 			}
-		}
-		if comp, ok := compMap[tag.Name]; ok {
-			if tag.SelfClosing {
-				tag.SelfClosing = false
-			}
-			compContext := c.Clone(tag.Name)
-			nodes := comp.Render(compContext, tag)
-			populate(compContext, tag.Children)
-			compContext.Set("children", tag.Children)
-			tag.Children = nodes
-			populate(compContext, tag.Children)
-		} else {
-			populate(c, tag.Children)
 		}
 	}
 }

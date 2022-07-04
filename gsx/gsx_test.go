@@ -49,6 +49,10 @@ func WebsiteName() string {
 	return "My Website"
 }
 
+func trimLeft(s string) string {
+	return strings.TrimLeft(s, "\n")
+}
+
 func TestComponent(t *testing.T) {
 	r := require.New(t)
 	RegisterComponent(Todo, nil, "todo")
@@ -66,7 +70,7 @@ func TestComponent(t *testing.T) {
 		<Todo />
 	`)
 	actual := renderString(nodes)
-	expected := strings.TrimLeft(`
+	expected := trimLeft(`
 <Todo>
   <li id="todo-4" class="completed">
     <div class="upper">
@@ -115,7 +119,7 @@ func TestComponent(t *testing.T) {
     </div>
   </li>
 </Todo>
-`, "\n")
+`)
 	r.Equal(expected, actual)
 }
 
@@ -134,7 +138,7 @@ func TestMultipleComponent(t *testing.T) {
 			<TodoCount />
 	`)
 	actual := renderString(nodes)
-	expected := strings.TrimLeft(`
+	expected := trimLeft(`
 <Todo>
   <li id="todo-4" class="completed">
     <div class="upper">
@@ -164,70 +168,182 @@ func TestMultipleComponent(t *testing.T) {
     item left
   </span>
 </TodoCount>
-`, "\n")
+`)
 	r.Equal(expected, actual)
 }
 
-// func TestFor(t *testing.T) {
-// 	r := require.New(t)
-// 	RegisterComponent(Todo, nil, "todo")
-// 	RegisterFunc(WebsiteName)
-// 	h := Context{
-// 		data: map[string]interface{}{
-// 			"todos": []*TodoData{
-// 				{ID: "1", Text: "My first todo", Completed: true},
-// 				{ID: "2", Text: "My second todo", Completed: false},
-// 				{ID: "3", Text: "My third todo", Completed: false},
-// 			},
-// 		},
-// 	}
-// 	actual := h.Render(`
-// 		<div>
-// 			<ul x-for="todo in todos" class="relative">
-// 				<li>
-// 					<span>{todo.Text}</span>
-// 					<span>{todo.Completed}</span>
-// 					<a>link to {todo.ID}</a>
-// 				</li>
-// 			</ul>
-// 			<ol x-for="todo in todos">
-// 				<Todo>
-// 					<div class="todo-panel">
-// 						<span>{todo.Text}</span>
-// 						<span>{todo.Completed}</span>
-// 					</div>
-// 				</Todo>
-// 			</ol>
-// 		</div>
-// 	`).String()
-// 	expected := stripWhitespace(`
-// 		<div>
-// 			<ul x-for="todo in todos" class="relative">
-// 				<li><span>My first todo</span><span>true</span><a>link to 1</a></li>
-// 				<li><span>My second todo</span><span>false</span><a>link to 2</a></li>
-// 				<li><span>My third todo</span><span>false</span><a>link to 3</a></li>
-// 			</ul>
-// 			<ol x-for="todo in todos">
-// 				<li id="todo-1" class="completed">
-// 					<div class="view"><span>My first todo</span><span>My first todo</span></div>
-// 					<div class="todo-panel"><span>My first todo</span><span>true</span></div>
-// 					<div class="count"><span>true</span><span>true</span></div>
-// 				</li>
-// 				<li id="todo-2" class="">
-// 					<div class="view"><span>My second todo</span><span>My second todo</span></div>
-// 					<div class="todo-panel"><span>My second todo</span><span>false</span></div>
-// 					<div class="count"><span>false</span><span>false</span></div>
-// 				</li>
-// 				<li id="todo-3" class="">
-// 					<div class="view"><span>My third todo</span><span>My third todo</span></div>
-// 					<div class="todo-panel"><span>My third todo</span><span>false</span></div>
-// 					<div class="count"><span>false</span><span>false</span></div>
-// 				</li>
-// 			</ol>
-// 		</div>
-// 	`)
-// 	r.Equal(expected, actual)
-// }
+func TestFor(t *testing.T) {
+	r := require.New(t)
+	RegisterComponent(Todo, nil, "todo")
+	RegisterFunc(WebsiteName)
+	h := Context{
+		data: map[string]interface{}{
+			"todos": []*TodoData{
+				{ID: "1", Text: "My first todo", Completed: true},
+				{ID: "2", Text: "My second todo", Completed: false},
+				{ID: "3", Text: "My third todo", Completed: false},
+			},
+		},
+	}
+	nodes := h.Render(`
+		<ul class="relative">
+			for i, v := range todos {
+				return (
+					<li>
+						<span>{v.Text}</span>
+						<span>{v.Completed}</span>
+						<a>"link to" {v.ID}</a>
+					</li>
+				)
+			}
+		</ul>
+		<ol>
+			for i, v := range todos {
+				return (
+					<Todo todo={v}>
+						<div class="todo-panel">
+							<span>{v.Text}</span>
+							<span>{v.Completed}</span>
+						</div>
+					</Todo>
+				)
+			}
+		</ol>
+	`)
+	actual := renderString(nodes)
+	expected := trimLeft(`
+<ul class="relative">
+  <li>
+    <span>
+      My first todo
+    </span>
+    <span>
+      true
+    </span>
+    <a>
+      link to
+      1
+    </a>
+  </li>
+  <li>
+    <span>
+      My second todo
+    </span>
+    <span>
+      false
+    </span>
+    <a>
+      link to
+      2
+    </a>
+  </li>
+  <li>
+    <span>
+      My third todo
+    </span>
+    <span>
+      false
+    </span>
+    <a>
+      link to
+      3
+    </a>
+  </li>
+
+</ul>
+<ol>
+  <Todo todo="v">
+    <li id="todo-1" class="completed">
+      <div class="upper">
+        <span>
+          My first todo
+        </span>
+        <span>
+          My first todo
+        </span>
+      </div>
+      <div class="todo-panel">
+        <span>
+          My first todo
+        </span>
+        <span>
+          true
+        </span>
+      </div>
+
+      <div class="bottom">
+        <span>
+          true
+        </span>
+        <span>
+          true
+        </span>
+      </div>
+    </li>
+  </Todo>
+  <Todo todo="v">
+    <li id="todo-2">
+      <div class="upper">
+        <span>
+          My second todo
+        </span>
+        <span>
+          My second todo
+        </span>
+      </div>
+      <div class="todo-panel">
+        <span>
+          My second todo
+        </span>
+        <span>
+          false
+        </span>
+      </div>
+
+      <div class="bottom">
+        <span>
+          false
+        </span>
+        <span>
+          false
+        </span>
+      </div>
+    </li>
+  </Todo>
+  <Todo todo="v">
+    <li id="todo-3">
+      <div class="upper">
+        <span>
+          My third todo
+        </span>
+        <span>
+          My third todo
+        </span>
+      </div>
+      <div class="todo-panel">
+        <span>
+          My third todo
+        </span>
+        <span>
+          false
+        </span>
+      </div>
+
+      <div class="bottom">
+        <span>
+          false
+        </span>
+        <span>
+          false
+        </span>
+      </div>
+    </li>
+  </Todo>
+
+</ol>
+`)
+	r.Equal(expected, actual)
+}
 
 // func TestForComponent(t *testing.T) {
 // 	r := require.New(t)

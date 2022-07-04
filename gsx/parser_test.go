@@ -23,7 +23,6 @@ func TestParse(t *testing.T) {
 	</p>
 </div>
 	`))
-	println(actual)
 	expected := strings.TrimLeft(`
 <ul id=""todo-list"" class=""relative"">
   <Todo>
@@ -51,10 +50,36 @@ func TestSelfClose(t *testing.T) {
 		<Todo />
 		<TodoCount />
 	`))
-	println(actual)
 	expected := strings.TrimLeft(`
 <Todo />
 <TodoCount />
+`, "\n")
+	r.Equal(expected, actual)
+}
+
+func TestForLoop(t *testing.T) {
+	r := require.New(t)
+	actual := renderString(parse("test", `
+		<ul>
+		for k, v := range todos {
+			return (
+				<li>
+					"data"
+				</li>
+				<div>
+					<span>
+					{name}
+					</span>
+				</div>
+			)
+		}
+		</ul>
+	`))
+	expected := strings.TrimLeft(`
+<ul>
+  <>
+  </>
+</ul>
 `, "\n")
 	r.Equal(expected, actual)
 }
