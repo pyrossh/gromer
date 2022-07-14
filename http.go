@@ -338,6 +338,7 @@ func Handle(router *mux.Router, method, route string, h interface{}, meta, style
 		c.Link("stylesheet", GetComponentsStylesUrl(), "", "")
 		c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
 		c.Script("/gromer/js/htmx@1.7.0.js", false)
+		c.Script("/gromer/js/hyperscript@0.9.6.js", false)
 		// c.Script("/gromer/js/alpinejs@3.9.6.js", true)
 		c.Meta(meta)
 		PerformRequest(route, h, c, w, r)
