@@ -1,12 +1,12 @@
 package gsx
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/goneric/stack"
+	"github.com/rotisserie/eris"
 )
 
 type Module struct {
@@ -205,7 +205,7 @@ func processTree(nodes []*AstNode) []*Tag {
 			if n.Close.Name == prevTag.Name {
 				prevTag, _ = stack.Pop()
 			} else {
-				panic(fmt.Errorf("Brackets not matching for tag %s in line %d:%d, prevTag: %s", n.Close.Name, n.Close.Pos.Line, n.Close.Pos.Column, prevTag.Name))
+				panic(eris.Errorf("Brackets not matching for tag %s in line %d:%d, prevTag: %s", n.Close.Name, n.Close.Pos.Line, n.Close.Pos.Column, prevTag.Name))
 			}
 		} else if n.Content != nil {
 			newTag := &Tag{

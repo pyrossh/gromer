@@ -1,6 +1,8 @@
 setup:
 	go install github.com/mitranim/gow@latest
 	go install github.com/pyros2097/gromer/cmd/gromer@latest
+	go install github.com/playwright-community/playwright-go/cmd/playwright@latest
+	playwright install --with-deps
 
 update:
 	gromer -pkg github.com/pyros2097/gromer/_example

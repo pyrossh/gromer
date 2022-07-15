@@ -6,6 +6,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/rotisserie/eris"
 	"github.com/rs/zerolog/log"
 	"gocloud.dev/docstore"
 	_ "gocloud.dev/docstore/gcpfirestore"
@@ -44,7 +45,7 @@ func (q *Query[S]) One(ctx context.Context) (S, int, error) {
 	}
 	arr := reflect.ValueOf(results)
 	if arr.Len() == 0 {
-		return *new(S), 404, fmt.Errorf("%s not found", q.Parent.Type.Name())
+		return *new(S), 404, eris.Errorf("%s not found", q.Parent.Type.Name())
 	}
 	return arr.Index(0).Interface().(S), 200, nil
 }

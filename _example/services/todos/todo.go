@@ -2,10 +2,10 @@ package todos
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rotisserie/eris"
 )
 
 type Todo struct {
@@ -48,7 +48,7 @@ func UpdateTodo(ctx context.Context, id string, params UpdateTodoParams) (*Todo,
 		globalTodos[updateIndex].UpdatedAt = time.Now()
 		return globalTodos[updateIndex], nil
 	}
-	return nil, errors.New("Todo not found")
+	return nil, eris.New("Todo not found")
 }
 
 func DeleteTodo(ctx context.Context, id string) (string, error) {
@@ -62,7 +62,7 @@ func DeleteTodo(ctx context.Context, id string) (string, error) {
 		globalTodos = append(globalTodos[:deleteIndex], globalTodos[deleteIndex+1:]...)
 		return id, nil
 	}
-	return "", errors.New("Todo not found")
+	return "", eris.New("Todo not found")
 }
 
 func GetTodo(ctx context.Context, id string) (*Todo, error) {
@@ -71,7 +71,7 @@ func GetTodo(ctx context.Context, id string) (*Todo, error) {
 			return todo, nil
 		}
 	}
-	return nil, errors.New("Todo not found")
+	return nil, eris.New("Todo not found")
 }
 
 type GetAllTodoParams struct {

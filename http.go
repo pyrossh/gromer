@@ -19,15 +19,14 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
-	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer/gsx"
+	"github.com/rotisserie/eris"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/rs/zerolog/pkgerrors"
 	"github.com/segmentio/go-camelcase"
 	"xojoc.pw/useragent"
 )
@@ -57,7 +56,9 @@ type RouteDefinition struct {
 func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
 	info, _ = debug.ReadBuildInfo()
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+	zerolog.ErrorStackMarshaler = func(err error) interface{} {
+		return eris.ToJSON(err, true)
+	}
 	if IsCloundRun {
 		zerolog.LevelFieldName = "severity"
 		zerolog.TimestampFieldName = "timestamp"
@@ -79,22 +80,39 @@ func getFunctionName(temp interface{}) string {
 }
 
 func RespondError(w http.ResponseWriter, status int, err error) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(status) // always write status last
 	merror := map[string]interface{}{
 		"error": err.Error(),
 	}
 	if status >= 500 {
 		merror["error"] = "Internal Server Error"
-		sterr, _ := err.(*errors.Error)
-		log.Error().Msg(err.Error() + "\n" + sterr.ErrorStack())
+		formattedStr := eris.ToCustomString(err, eris.StringFormat{
+			Options: eris.FormatOptions{
+				WithTrace:    true,
+				InvertOutput: true,
+				InvertTrace:  true,
+			},
+			MsgStackSep:  "\n",
+			PreStackSep:  "\t",
+			StackElemSep: " | ",
+			ErrorSep:     "\n",
+		})
+		log.Error().Msg(err.Error() + "\n" + formattedStr)
 	}
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if ok {
 		merror["error"] = GetValidationError(validationErrors)
 	}
-	data, _ := json.Marshal(merror)
-	w.Write(data)
+	c := gsx.NewContext(context.TODO(), &gsx.HX{})
+	c.Set("funcName", "error")
+	c.Set("error", err.Error())
+	tags := c.Render(`
+		<div style="color: red;">
+			<h1>{error}</h1>
+		</div>
+	`)
+	gsx.Write(c, w, tags)
 }
 
 func GetRouteParams(route string) []string {
@@ -179,7 +197,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 				return
 			}
 		} else {
-			RespondError(w, 400, fmt.Errorf("Illegal Content-Type tag found %s", contentType))
+			RespondError(w, 400, eris.Errorf("Illegal Content-Type tag found %s", contentType))
 			return
 		}
 		c.Set("params", instance.Elem().Interface())
@@ -190,7 +208,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 	responseStatus := values[1].Interface().(int)
 	responseError := values[2].Interface()
 	if responseError != nil {
-		RespondError(w, responseStatus, responseError.(error))
+		RespondError(w, responseStatus, eris.Wrap(responseError.(error), "Render failed"))
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
@@ -215,7 +233,7 @@ func LogMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Error().Msgf("%s 599 %s %s", r.Method, ua, url)
-				RespondError(w, 599, errors.Errorf(fmt.Sprintf("%+v", err)))
+				RespondError(w, 599, eris.Errorf("%+v", err))
 			}
 		}()
 		m := httpsnoop.CaptureMetrics(next, w, r)
@@ -235,37 +253,6 @@ func CacheMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Cache-Control", "public, max-age=2592000") // perma cache for 1 month
 		next.ServeHTTP(w, r)
 	})
-}
-
-func StatusHandler(h interface{}) http.Handler {
-	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		var hx *gsx.HX
-		if r.Header.Get("HX-Request") == "true" {
-			hx = &gsx.HX{
-				Boosted:     r.Header.Get("HX-Boosted") == "true",
-				CurrentUrl:  r.Header.Get("HX-Current-URL"),
-				Prompt:      r.Header.Get("HX-Prompt"),
-				Target:      r.Header.Get("HX-Target"),
-				TriggerName: r.Header.Get("HX-Trigger-Name"),
-				TriggerID:   r.Header.Get("HX-Trigger"),
-			}
-		}
-		renderContext := gsx.NewContext(ctx, hx)
-		values := reflect.ValueOf(h).Call([]reflect.Value{reflect.ValueOf(renderContext)})
-		response := values[0].Interface()
-		responseStatus := values[1].Interface().(int)
-		responseError := values[2].Interface()
-		if responseError != nil {
-			RespondError(w, responseStatus, responseError.(error))
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-
-		// This has to be at end always after headers are set
-		w.WriteHeader(responseStatus)
-		gsx.Write(renderContext, w, response.([]*gsx.Tag))
-	})).(http.Handler)
 }
 
 func StaticRoute(router *mux.Router, path string, fs embed.FS) {
@@ -315,32 +302,46 @@ func ComponentStylesRoute(router *mux.Router, route string) {
 	})
 }
 
+func createCtx(r *http.Request, route, key string, meta, styles gsx.M) *gsx.Context {
+	newCtx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
+	var hx *gsx.HX
+	if r.Header.Get("HX-Request") == "true" {
+		hx = &gsx.HX{
+			Boosted:     r.Header.Get("HX-Boosted") == "true",
+			CurrentUrl:  r.Header.Get("HX-Current-URL"),
+			Prompt:      r.Header.Get("HX-Prompt"),
+			Target:      r.Header.Get("HX-Target"),
+			TriggerName: r.Header.Get("HX-Trigger-Name"),
+			TriggerID:   r.Header.Get("HX-Trigger"),
+		}
+	}
+	c := gsx.NewContext(newCtx, hx)
+	c.Set("funcName", route)
+	c.Set("requestId", uuid.NewString())
+	c.Link("stylesheet", GetPageStylesUrl(key), "", "")
+	c.Link("stylesheet", GetComponentsStylesUrl(), "", "")
+	c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
+	c.Script("/gromer/js/htmx@1.7.0.js", false)
+	c.Script("/gromer/js/hyperscript@0.9.6.js", false)
+	// c.Script("/gromer/js/alpinejs@3.9.6.js", true)
+	c.Meta(meta)
+	return c
+}
+
+func StatusHandler(status int, h interface{}, meta, styles gsx.M) http.Handler {
+	route := fmt.Sprintf("%d", status)
+	gsx.SetClasses(route, styles)
+	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := createCtx(r, route, route, meta, styles)
+		PerformRequest(route, h, c, w, r)
+	})).(http.Handler)
+}
+
 func Handle(router *mux.Router, method, route string, h interface{}, meta, styles gsx.M) {
 	key := camelcase.Camelcase(route)
 	gsx.SetClasses(key, styles)
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		newCtx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		var hx *gsx.HX
-		if r.Header.Get("HX-Request") == "true" {
-			hx = &gsx.HX{
-				Boosted:     r.Header.Get("HX-Boosted") == "true",
-				CurrentUrl:  r.Header.Get("HX-Current-URL"),
-				Prompt:      r.Header.Get("HX-Prompt"),
-				Target:      r.Header.Get("HX-Target"),
-				TriggerName: r.Header.Get("HX-Trigger-Name"),
-				TriggerID:   r.Header.Get("HX-Trigger"),
-			}
-		}
-		c := gsx.NewContext(newCtx, hx)
-		c.Set("funcName", route)
-		c.Set("requestId", uuid.NewString())
-		c.Link("stylesheet", GetPageStylesUrl(key), "", "")
-		c.Link("stylesheet", GetComponentsStylesUrl(), "", "")
-		c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
-		c.Script("/gromer/js/htmx@1.7.0.js", false)
-		c.Script("/gromer/js/hyperscript@0.9.6.js", false)
-		// c.Script("/gromer/js/alpinejs@3.9.6.js", true)
-		c.Meta(meta)
+		c := createCtx(r, route, key, meta, styles)
 		PerformRequest(route, h, c, w, r)
 	}).Methods(method)
 }

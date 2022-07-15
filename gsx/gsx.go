@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rotisserie/eris"
 	"github.com/samber/lo"
 )
 
@@ -84,7 +85,7 @@ func (comp ComponentFunc) Render(c *Context, tag *Tag) []*Tag {
 				} else {
 					s, ok := data.(string)
 					if !ok {
-						panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+						panic(eris.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
 					}
 					value, _ = strconv.Atoi(s)
 				}
@@ -97,7 +98,7 @@ func (comp ComponentFunc) Render(c *Context, tag *Tag) []*Tag {
 				} else {
 					s, ok := data.(string)
 					if !ok {
-						panic(fmt.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
+						panic(eris.Errorf("expected component %s: prop %s to be of type string but got %+v ", comp.Name, arg, data))
 					}
 					value, _ = strconv.ParseBool(s)
 				}
@@ -141,7 +142,7 @@ func Write(c *Context, w io.Writer, tags []*Tag) {
 				w.Write([]byte(fmt.Sprintf(`<script src="%s"></script>`, src)))
 			}
 		}
-		w.Write([]byte(`</head><body>`))
+		w.Write([]byte(`</head><body _="on htmx:error(errorInfo) put errorInfo.xhr.response into #error">`))
 	}
 	out := RenderString(tags)
 	w.Write([]byte(out))

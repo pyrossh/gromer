@@ -1,6 +1,6 @@
 # Example
 
-This example demonstrates gromer with a simple web app.
+This example demonstrates gromer with a simple todo web app.
 
 # Requirements
 

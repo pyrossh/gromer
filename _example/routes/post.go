@@ -1,11 +1,10 @@
 package routes
 
 import (
-	"fmt"
-
 	_ "github.com/pyros2097/gromer/_example/components"
 	"github.com/pyros2097/gromer/_example/services/todos"
 	. "github.com/pyros2097/gromer/gsx"
+	"github.com/rotisserie/eris"
 )
 
 type PostParams struct {
@@ -93,5 +92,5 @@ func POST(c *Context, params PostParams) ([]*Tag, int, error) {
 			<Todo />
 		`), 200, nil
 	}
-	return nil, 404, fmt.Errorf("Intent not specified: %s", params.Intent)
+	return nil, 404, eris.Errorf("Intent not specified: %s", params.Intent)
 }

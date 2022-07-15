@@ -105,6 +105,8 @@ func GET(c *Context, params GetParams) ([]*Tag, int, error) {
 						</div>
 					</div>
 				</main>
+				<div id="error">
+				</div>
 				<footer class="footer">
 					<span class="subtitle">"Written by "
 						<a class="link" href="https://github.com/pyrossh/">"pyrossh"</a>

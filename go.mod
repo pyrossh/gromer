@@ -4,9 +4,7 @@ go 1.18
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.3
-	github.com/alecthomas/repr v0.1.0
 	github.com/felixge/httpsnoop v1.0.1
-	github.com/go-errors/errors v1.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f
 	github.com/goneric/stack v0.0.0-20220131052059-5990ae324dbd
@@ -14,8 +12,9 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/imdario/mergo v0.3.12
-	github.com/jinzhu/copier v0.3.5
+	github.com/rotisserie/eris v0.5.4
 	github.com/rs/zerolog v1.26.1
+	github.com/samber/lo v1.21.0
 	github.com/segmentio/go-camelcase v0.0.0-20160726192923-7085f1e3c734
 	github.com/stretchr/testify v1.7.0
 	gocloud.dev v0.24.0
@@ -46,7 +45,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
-	github.com/samber/lo v1.21.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shurcooL/github_flavored_markdown v0.0.0-20210228213109-c3a9aa474629 // indirect
 	github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636 // indirect

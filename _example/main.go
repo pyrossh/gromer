@@ -12,7 +12,6 @@ import (
 	"github.com/pyros2097/gromer/_example/assets"
 	"github.com/pyros2097/gromer/_example/components"
 	"github.com/pyros2097/gromer/_example/containers"
-	"github.com/pyros2097/gromer/_example/routes/404"
 	"github.com/pyros2097/gromer/_example/routes"
 	"github.com/pyros2097/gromer/_example/routes/about"
 	
@@ -28,7 +27,7 @@ func init() {
 func main() {
 	baseRouter := mux.NewRouter()
 	baseRouter.Use(gromer.LogMiddleware)
-	baseRouter.NotFoundHandler = gromer.StatusHandler(not_found_404.GET)
+	// baseRouter.NotFoundHandler = gromer.StatusHandler(404, not_found_404.GET, not_found_404.Meta, not_found_404.Styles)
 	
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
