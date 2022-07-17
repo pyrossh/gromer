@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,7 +20,6 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -38,11 +38,14 @@ const (
 )
 
 var (
-	info            *debug.BuildInfo
-	IsCloundRun     bool
-	routeDefs       []RouteDefinition
-	pathParamsRegex = regexp.MustCompile(`{(.*?)}`)
+	info                  *debug.BuildInfo
+	IsCloundRun           bool
+	routeDefs             []RouteDefinition
+	pathParamsRegex                       = regexp.MustCompile(`{(.*?)}`)
+	globalStatusComponent StatusComponent = nil
 )
+
+type StatusComponent func(c *gsx.Context, status int, err error) []*gsx.Tag
 
 type RouteDefinition struct {
 	Pkg        string      `json:"pkg"`
@@ -79,14 +82,10 @@ func getFunctionName(temp interface{}) string {
 	return strs[len(strs)-1]
 }
 
-func RespondError(w http.ResponseWriter, status int, err error) {
+func RespondError(w http.ResponseWriter, r *http.Request, status int, err error) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(status) // always write status last
-	merror := map[string]interface{}{
-		"error": err.Error(),
-	}
 	if status >= 500 {
-		merror["error"] = "Internal Server Error"
 		formattedStr := eris.ToCustomString(err, eris.StringFormat{
 			Options: eris.FormatOptions{
 				WithTrace:    true,
@@ -100,18 +99,19 @@ func RespondError(w http.ResponseWriter, status int, err error) {
 		})
 		log.Error().Msg(err.Error() + "\n" + formattedStr)
 	}
-	validationErrors, ok := err.(validator.ValidationErrors)
-	if ok {
-		merror["error"] = GetValidationError(validationErrors)
-	}
-	c := gsx.NewContext(context.TODO(), &gsx.HX{})
+	c := createCtx(r, "Status", "Status", gsx.M{}, gsx.M{})
 	c.Set("funcName", "error")
 	c.Set("error", err.Error())
-	tags := c.Render(`
-		<div style="color: red;">
-			<h1>{error}</h1>
-		</div>
-	`)
+	if r.Header.Get("HX-Request") == "true" || globalStatusComponent == nil {
+		tags := c.Render(`
+			<div style="color: red;">
+				<h1>{error}</h1>
+			</div>
+		`)
+		gsx.Write(c, w, tags)
+		return
+	}
+	tags := globalStatusComponent(c, status, err)
 	gsx.Write(c, w, tags)
 }
 
@@ -144,7 +144,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 		if method == "GET" || ((method == "POST" || method == "PUT" || method == "PATCH") && contentType == "application/x-www-form-urlencoded") {
 			err := r.ParseForm()
 			if err != nil {
-				RespondError(w, 400, err)
+				RespondError(w, r, 400, err)
 				return
 			}
 			rv := instance.Elem()
@@ -169,7 +169,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 						} else {
 							v, err := strconv.ParseInt(jsonValue, 10, base)
 							if err != nil {
-								RespondError(w, 400, err)
+								RespondError(w, r, 400, err)
 								return
 							}
 							f.SetInt(v)
@@ -180,7 +180,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 						} else {
 							v, err := time.Parse(time.RFC3339, jsonValue)
 							if err != nil {
-								RespondError(w, 400, err)
+								RespondError(w, r, 400, err)
 								return
 							}
 							f.Set(reflect.ValueOf(v))
@@ -193,11 +193,11 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 		} else if (method == "POST" || method == "PUT" || method == "PATCH") && contentType == "application/json" {
 			err := json.NewDecoder(r.Body).Decode(instance.Interface())
 			if err != nil {
-				RespondError(w, 400, err)
+				RespondError(w, r, 400, err)
 				return
 			}
 		} else {
-			RespondError(w, 400, eris.Errorf("Illegal Content-Type tag found %s", contentType))
+			RespondError(w, r, 400, eris.Errorf("Illegal Content-Type tag found %s", contentType))
 			return
 		}
 		c.Set("params", instance.Elem().Interface())
@@ -208,7 +208,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 	responseStatus := values[1].Interface().(int)
 	responseError := values[2].Interface()
 	if responseError != nil {
-		RespondError(w, responseStatus, eris.Wrap(responseError.(error), "Render failed"))
+		RespondError(w, r, responseStatus, eris.Wrap(responseError.(error), "Render failed"))
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
@@ -225,15 +225,15 @@ func LogMiddleware(next http.Handler) http.Handler {
 		if r.URL.RawQuery != "" {
 			url += "?" + r.URL.RawQuery
 		}
-		// ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		// if len(ip) > 0 && ip[0] == '[' {
-		// 	ip = ip[1 : len(ip)-1]
-		// }
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if len(ip) > 0 && ip[0] == '[' {
+			ip = ip[1 : len(ip)-1]
+		}
 		ua := useragent.Parse(r.UserAgent()).Name
 		defer func() {
 			if err := recover(); err != nil {
 				log.Error().Msgf("%s 599 %s %s", r.Method, ua, url)
-				RespondError(w, 599, eris.Errorf("%+v", err))
+				RespondError(w, r, 599, eris.Errorf("%+v", err))
 			}
 		}()
 		m := httpsnoop.CaptureMetrics(next, w, r)
@@ -263,12 +263,12 @@ func IconsRoute(router *mux.Router, path string, fs embed.FS) {
 	router.PathPrefix(path).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			RespondError(w, 400, err)
+			RespondError(w, r, 400, err)
 			return
 		}
 		data, err := fs.ReadFile(strings.TrimPrefix(r.URL.Path, "/"))
 		if err != nil {
-			RespondError(w, 404, err)
+			RespondError(w, r, 404, err)
 			return
 		}
 		fill := r.Form.Get("fill")
@@ -284,7 +284,7 @@ func PageStylesRoute(router *mux.Router, route string) {
 	router.Path(route).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			RespondError(w, 400, err)
+			RespondError(w, r, 400, err)
 			return
 		}
 		key := r.Form.Get("key")
@@ -328,13 +328,17 @@ func createCtx(r *http.Request, route, key string, meta, styles gsx.M) *gsx.Cont
 	return c
 }
 
-func StatusHandler(status int, h interface{}, meta, styles gsx.M) http.Handler {
-	route := fmt.Sprintf("%d", status)
-	gsx.SetClasses(route, styles)
-	return LogMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c := createCtx(r, route, route, meta, styles)
-		PerformRequest(route, h, c, w, r)
-	})).(http.Handler)
+func RegisterStatusHandler(router *mux.Router, comp StatusComponent, styles gsx.M) {
+	key := "Status"
+	gsx.SetClasses(key, styles)
+	globalStatusComponent = comp
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := createCtx(r, key, key, gsx.M{}, styles)
+		tags := comp(c, 404, nil)
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(404)
+		gsx.Write(c, w, tags)
+	})
 }
 
 func Handle(router *mux.Router, method, route string, h interface{}, meta, styles gsx.M) {

@@ -42,6 +42,6 @@ func Todo(c *Context, todo *todos.Todo) []*Tag {
 					</button>
 				</form>
 			</div>
-		</div>	
+		</div>
 	`)
 }

@@ -20,6 +20,7 @@ import (
 func init() {
 	gsx.RegisterComponent(components.Todo, components.TodoStyles, "todo")
 	gsx.RegisterComponent(components.Checkbox, nil, "value")
+	gsx.RegisterComponent(components.Status, components.StatusStyles, "status", "error")
 	gsx.RegisterComponent(containers.TodoCount, nil, "filter")
 	gsx.RegisterComponent(containers.TodoList, containers.TodoListStyles, "page", "filter")
 }
@@ -27,7 +28,7 @@ func init() {
 func main() {
 	baseRouter := mux.NewRouter()
 	baseRouter.Use(gromer.LogMiddleware)
-	// baseRouter.NotFoundHandler = gromer.StatusHandler(404, not_found_404.GET, not_found_404.Meta, not_found_404.Styles)
+	gromer.RegisterStatusHandler(baseRouter, components.Status, components.StatusStyles)
 	
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(gromer.CacheMiddleware)
