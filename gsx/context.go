@@ -20,6 +20,7 @@ type Context struct {
 	meta    M
 	links   map[string]link
 	scripts map[string]bool
+	styles  M
 }
 
 func NewContext(c context.Context, hx *HX) *Context {
@@ -30,6 +31,7 @@ func NewContext(c context.Context, hx *HX) *Context {
 		meta:    M{},
 		links:   map[string]link{},
 		scripts: map[string]bool{},
+		styles:  M{},
 	}
 }
 
@@ -63,6 +65,10 @@ func (c *Context) Script(src string, sdefer bool) {
 
 func (c *Context) Data(data M) {
 	c.data = data
+}
+
+func (c *Context) Styles(s M) {
+	c.styles = s
 }
 
 func (c *Context) Render(tpl string) []*Tag {

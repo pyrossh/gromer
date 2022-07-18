@@ -6,11 +6,10 @@ import (
 	. "github.com/pyros2097/gromer/gsx"
 )
 
-var TodoListStyles = M{
-	"container": "list-none",
-}
-
 func TodoList(c *Context, page int, filter string) []*Tag {
+	// c.Styles(M{
+	// 	"container": "list-none",
+	// })
 	index := Default(page, 1)
 	todos, err := todos.GetAllTodo(c, todos.GetAllTodoParams{
 		Filter: filter,

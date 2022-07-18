@@ -18,7 +18,6 @@ var (
 	voidElements = []string{"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 	compMap      = map[string]ComponentFunc{}
 	funcMap      = map[string]interface{}{}
-	classesMap   = map[string]M{}
 	refRegex     = regexp.MustCompile(`{(.*?)}`)
 )
 
@@ -27,10 +26,10 @@ type (
 	MS            map[string]string
 	Arr           []interface{}
 	ComponentFunc struct {
-		Name    string
-		Func    interface{}
-		Args    []string
-		Classes M
+		Name   string
+		Func   interface{}
+		Args   []string
+		Styles M
 	}
 	link struct {
 		Rel  string
@@ -40,13 +39,13 @@ type (
 	}
 )
 
-func RegisterComponent(f interface{}, classes M, args ...string) {
+func RegisterComponent(f interface{}, styles M, args ...string) {
 	name := getFunctionName(f)
 	compMap[name] = ComponentFunc{
-		Name:    name,
-		Func:    f,
-		Args:    args,
-		Classes: classes,
+		Name:   name,
+		Func:   f,
+		Args:   args,
+		Styles: styles,
 	}
 }
 
@@ -117,53 +116,50 @@ func (comp ComponentFunc) Render(c *Context, tag *Tag) []*Tag {
 
 func Write(c *Context, w io.Writer, tags []*Tag) {
 	if c.hx == nil {
-		w.Write([]byte(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">`))
-		w.Write([]byte(`<meta http-equiv="Content-Type" content="text/html;charset=utf-8"><meta content="utf-8" http-equiv="encoding">`))
-		w.Write([]byte(`<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">`))
+		w.Write([]byte("<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n"))
+		w.Write([]byte("    <meta http-equiv='Content-Type' content='text/html;charset=utf-8'><meta content='utf-8' http-equiv='encoding'>\n"))
+		w.Write([]byte("    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover'>\n"))
 		for k, v := range c.meta {
-			w.Write([]byte(fmt.Sprintf(`<meta name="%s" content="%s">`, k, v)))
+			w.Write([]byte(fmt.Sprintf("    <meta name='%s' content='%s'>\n", k, v)))
 		}
 		for k, v := range c.meta {
 			if k == "title" {
-				w.Write([]byte(fmt.Sprintf(`<title>%s</title>`, v)))
+				w.Write([]byte(fmt.Sprintf("    <title>%s</title>\n", v)))
 			}
 		}
+
 		for _, v := range c.links {
 			if v.Type != "" || v.As != "" {
-				w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s" type="%s" as="%s">`, v.Rel, v.Href, v.Type, v.As)))
+				w.Write([]byte(fmt.Sprintf("    <link rel='%s' href='%s' type='%s' as='%s'>\n", v.Rel, v.Href, v.Type, v.As)))
 			} else {
-				w.Write([]byte(fmt.Sprintf(`<link rel="%s" href="%s">`, v.Rel, v.Href)))
+				w.Write([]byte(fmt.Sprintf("    <link rel='%s' href='%s'>\n", v.Rel, v.Href)))
 			}
 		}
+		funcName := c.Get("funcName").(string)
+		styles := computeCss(c.styles, funcName)
+		w.Write([]byte(fmt.Sprintf("    <style>%s</style>\n", styles)))
+
 		for src, sdefer := range c.scripts {
 			if sdefer {
-				w.Write([]byte(fmt.Sprintf(`<script src="%s" defer="true"></script>`, src)))
+				w.Write([]byte(fmt.Sprintf("    <script src='%s' defer='true'></script>\n", src)))
 			} else {
-				w.Write([]byte(fmt.Sprintf(`<script src="%s"></script>`, src)))
+				w.Write([]byte(fmt.Sprintf("    <script src='%s'></script>\n", src)))
 			}
 		}
-		w.Write([]byte(`</head><body _="on htmx:error(errorInfo) put errorInfo.xhr.response into #error">`))
+		w.Write([]byte("</head>\n  <body _='on htmx:error(errorInfo) put errorInfo.xhr.response into #error'>\n"))
 	}
 	out := RenderString(tags)
 	w.Write([]byte(out))
 	if c.hx == nil {
-		w.Write([]byte(`</body></html>`))
+		w.Write([]byte("  </body>\n</html>"))
 	}
-}
-
-func SetClasses(k string, m M) {
-	classesMap[k] = m
-}
-
-func GetPageStyles(k string) string {
-	return normalizeCss + "\n" + computeCss(classesMap[k], k)
 }
 
 func GetComponentStyles() string {
 	css := ""
 	for k, v := range compMap {
-		if v.Classes != nil {
-			css += computeCss(v.Classes, k)
+		if v.Styles != nil {
+			css += computeCss(v.Styles, k)
 		}
 	}
 	return css

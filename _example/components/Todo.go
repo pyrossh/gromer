@@ -21,6 +21,7 @@ func Todo(c *Context, todo *todos.Todo) []*Tag {
 		checked = "/icons/checked.svg?fill=green-500"
 	}
 	c.Set("checked", checked)
+	c.Styles(TodoStyles)
 	return c.Render(`
 		<div id="todo-{todo.ID}" class="Todo">
 			<div class="row">

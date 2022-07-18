@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.3
+	github.com/alecthomas/repr v0.1.0
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gobuffalo/velvet v0.0.0-20170320144106-d97471bf5d8f

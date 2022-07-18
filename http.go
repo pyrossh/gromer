@@ -99,7 +99,7 @@ func RespondError(w http.ResponseWriter, r *http.Request, status int, err error)
 		})
 		log.Error().Msg(err.Error() + "\n" + formattedStr)
 	}
-	c := createCtx(r, "Status", "Status", gsx.M{}, gsx.M{})
+	c := createCtx(r, "Status")
 	c.Set("funcName", "error")
 	c.Set("error", err.Error())
 	if r.Header.Get("HX-Request") == "true" || globalStatusComponent == nil {
@@ -124,7 +124,7 @@ func GetRouteParams(route string) []string {
 	return params
 }
 
-func PerformRequest(route string, h interface{}, c *gsx.Context, w http.ResponseWriter, r *http.Request) {
+func PerformRequest(route string, h interface{}, c *gsx.Context, w http.ResponseWriter, r *http.Request, isJson bool) {
 	params := GetRouteParams(route)
 	args := []reflect.Value{reflect.ValueOf(c)}
 	funcType := reflect.TypeOf(h)
@@ -211,6 +211,17 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 		RespondError(w, r, responseStatus, eris.Wrap(responseError.(error), "Render failed"))
 		return
 	}
+	if isJson {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(responseStatus)
+		data, err := json.Marshal(response)
+		if err != nil {
+			RespondError(w, r, responseStatus, eris.Wrap(responseError.(error), "Marshals failed"))
+			return
+		}
+		w.Write(data)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html")
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
@@ -280,20 +291,6 @@ func IconsRoute(router *mux.Router, path string, fs embed.FS) {
 	})
 }
 
-func PageStylesRoute(router *mux.Router, route string) {
-	router.Path(route).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			RespondError(w, r, 400, err)
-			return
-		}
-		key := r.Form.Get("key")
-		w.Header().Set("Content-Type", "text/css")
-		w.WriteHeader(200)
-		w.Write([]byte(gsx.GetPageStyles(key)))
-	})
-}
-
 func ComponentStylesRoute(router *mux.Router, route string) {
 	router.Path(route).Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css")
@@ -302,7 +299,7 @@ func ComponentStylesRoute(router *mux.Router, route string) {
 	})
 }
 
-func createCtx(r *http.Request, route, key string, meta, styles gsx.M) *gsx.Context {
+func createCtx(r *http.Request, route string) *gsx.Context {
 	newCtx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 	var hx *gsx.HX
 	if r.Header.Get("HX-Request") == "true" {
@@ -316,24 +313,21 @@ func createCtx(r *http.Request, route, key string, meta, styles gsx.M) *gsx.Cont
 		}
 	}
 	c := gsx.NewContext(newCtx, hx)
-	c.Set("funcName", route)
+	c.Set("funcName", camelcase.Camelcase(route))
 	c.Set("requestId", uuid.NewString())
-	c.Link("stylesheet", GetPageStylesUrl(key), "", "")
+	c.Link("stylesheet", "/gromer/css/normalize@3.0.0.css", "", "")
 	c.Link("stylesheet", GetComponentsStylesUrl(), "", "")
 	c.Link("icon", "/assets/favicon.ico", "image/x-icon", "image")
 	c.Script("/gromer/js/htmx@1.7.0.js", false)
 	c.Script("/gromer/js/hyperscript@0.9.6.js", false)
 	// c.Script("/gromer/js/alpinejs@3.9.6.js", true)
-	c.Meta(meta)
 	return c
 }
 
-func RegisterStatusHandler(router *mux.Router, comp StatusComponent, styles gsx.M) {
-	key := "Status"
-	gsx.SetClasses(key, styles)
+func RegisterStatusHandler(router *mux.Router, comp StatusComponent) {
 	globalStatusComponent = comp
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c := createCtx(r, key, key, gsx.M{}, styles)
+		c := createCtx(r, "Status")
 		tags := comp(c, 404, nil)
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(404)
@@ -341,12 +335,21 @@ func RegisterStatusHandler(router *mux.Router, comp StatusComponent, styles gsx.
 	})
 }
 
-func Handle(router *mux.Router, method, route string, h interface{}, meta, styles gsx.M) {
-	key := camelcase.Camelcase(route)
-	gsx.SetClasses(key, styles)
+func PageRoute(router *mux.Router, route string, page, action interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		c := createCtx(r, route, key, meta, styles)
-		PerformRequest(route, h, c, w, r)
+		c := createCtx(r, route)
+		if r.Method == "GET" {
+			PerformRequest(route, page, c, w, r, false)
+		} else {
+			PerformRequest(route, action, c, w, r, false)
+		}
+	}).Methods("GET", "POST")
+}
+
+func ApiRoute(router *mux.Router, method, route string, h interface{}) {
+	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+		c := createCtx(r, route)
+		PerformRequest(route, h, c, w, r, true)
 	}).Methods(method)
 }
 
@@ -378,13 +381,6 @@ func GetAssetUrl(fs embed.FS, path string) string {
 		return md5.Sum(data)
 	})
 	return fmt.Sprintf("/assets/%s?hash=%s", path, sum)
-}
-
-func GetPageStylesUrl(k string) string {
-	sum := getSum("styles.css", func() [16]byte {
-		return md5.Sum([]byte(gsx.GetPageStyles(k)))
-	})
-	return fmt.Sprintf("/styles.css?key=%s&hash=%s", k, sum)
 }
 
 func GetComponentsStylesUrl() string {
