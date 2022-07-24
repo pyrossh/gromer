@@ -31,30 +31,14 @@ import (
 	"xojoc.pw/useragent"
 )
 
-const (
-	gzipEncoding   = "gzip"
-	flateEncoding  = "deflate"
-	acceptEncoding = "Accept-Encoding"
-)
-
 var (
 	info                  *debug.BuildInfo
 	IsCloundRun           bool
-	routeDefs             []RouteDefinition
 	pathParamsRegex                       = regexp.MustCompile(`{(.*?)}`)
 	globalStatusComponent StatusComponent = nil
 )
 
 type StatusComponent func(c *gsx.Context, status int, err error) []*gsx.Tag
-
-type RouteDefinition struct {
-	Pkg        string      `json:"pkg"`
-	PkgPath    string      `json:"pkgPath"`
-	Method     string      `json:"method"`
-	Path       string      `json:"path"`
-	PathParams []string    `json:"pathParams"`
-	Params     interface{} `json:"params"`
-}
 
 func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
@@ -124,7 +108,7 @@ func GetRouteParams(route string) []string {
 	return params
 }
 
-func PerformRequest(route string, h interface{}, c *gsx.Context, w http.ResponseWriter, r *http.Request, isJson bool) {
+func PerformRequest(route string, h interface{}, c interface{}, w http.ResponseWriter, r *http.Request, isJson bool) {
 	params := GetRouteParams(route)
 	args := []reflect.Value{reflect.ValueOf(c)}
 	funcType := reflect.TypeOf(h)
@@ -200,7 +184,9 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 			RespondError(w, r, 400, eris.Errorf("Illegal Content-Type tag found %s", contentType))
 			return
 		}
-		c.Set("params", instance.Elem().Interface())
+		if !isJson {
+			c.(*gsx.Context).Set("params", instance.Elem().Interface())
+		}
 		args = append(args, instance.Elem())
 	}
 	values := reflect.ValueOf(h).Call(args)
@@ -216,7 +202,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 		w.WriteHeader(responseStatus)
 		data, err := json.Marshal(response)
 		if err != nil {
-			RespondError(w, r, responseStatus, eris.Wrap(responseError.(error), "Marshals failed"))
+			RespondError(w, r, responseStatus, eris.Wrap(responseError.(error), "Json Marshal failed"))
 			return
 		}
 		w.Write(data)
@@ -226,7 +212,7 @@ func PerformRequest(route string, h interface{}, c *gsx.Context, w http.Response
 	// This has to be at end always
 	w.WriteHeader(responseStatus)
 	if responseStatus != 204 {
-		gsx.Write(c, w, response.([]*gsx.Tag))
+		gsx.Write(c.(*gsx.Context), w, response.([]*gsx.Tag))
 	}
 }
 
@@ -252,6 +238,19 @@ func LogMiddleware(next http.Handler) http.Handler {
 			ua,
 			url,
 		)
+	})
+}
+
+func CorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(200)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -348,8 +347,8 @@ func PageRoute(router *mux.Router, route string, page, action interface{}) {
 
 func ApiRoute(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		c := createCtx(r, route)
-		PerformRequest(route, h, c, w, r, true)
+		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
+		PerformRequest(route, h, ctx, w, r, true)
 	}).Methods(method)
 }
 
