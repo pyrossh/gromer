@@ -181,7 +181,7 @@ func PerformRequest(route string, h interface{}, c interface{}, w http.ResponseW
 				return
 			}
 		} else {
-			RespondError(w, r, 400, eris.Errorf("Illegal Content-Type tag found %s", contentType))
+			RespondError(w, r, 400, eris.Errorf("Illegal Content-Type found %s", contentType))
 			return
 		}
 		if !isJson {
@@ -349,7 +349,7 @@ func ApiRoute(router *mux.Router, method, route string, h interface{}) {
 	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
 		PerformRequest(route, h, ctx, w, r, true)
-	}).Methods(method)
+	}).Methods(method, "OPTIONS")
 }
 
 func GetUrl(ctx context.Context) *url.URL {
