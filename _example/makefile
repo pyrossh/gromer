@@ -1,7 +1,6 @@
 setup:
 	go install github.com/mitranim/gow@latest
-	go install github.com/playwright-community/playwright-go/cmd/playwright@latest
-	playwright install --with-deps
+	go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps
 
 dev:
 	gow run main.go

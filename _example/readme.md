@@ -11,7 +11,6 @@ This example demonstrates gromer with a simple todo web app.
 
 ```sh
 make setup
-make update
 make dev
 make build
 make run

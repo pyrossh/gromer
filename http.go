@@ -23,11 +23,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
 	"github.com/rotisserie/eris"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/go-camelcase"
+	"gocloud.dev/server"
 	"xojoc.pw/useragent"
 )
 
@@ -36,6 +38,8 @@ var (
 	IsCloundRun           bool
 	pathParamsRegex                       = regexp.MustCompile(`{(.*?)}`)
 	globalStatusComponent StatusComponent = nil
+	baseRouter                            = &mux.Router{}
+	pageRouter                            = &mux.Router{}
 )
 
 type StatusComponent func(c *gsx.Context, status int, err error) []*gsx.Tag
@@ -334,8 +338,8 @@ func RegisterStatusHandler(router *mux.Router, comp StatusComponent) {
 	})
 }
 
-func PageRoute(router *mux.Router, route string, page, action interface{}) {
-	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+func PageRoute(route string, page, action interface{}) {
+	pageRouter.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		c := createCtx(r, route)
 		if r.Method == "GET" {
 			PerformRequest(route, page, c, w, r, false)
@@ -387,4 +391,31 @@ func GetComponentsStylesUrl() string {
 		return md5.Sum([]byte(gsx.GetComponentStyles()))
 	})
 	return fmt.Sprintf("/components.css?hash=%s", sum)
+}
+
+func Init(status StatusComponent, appAssets embed.FS) {
+	baseRouter = mux.NewRouter()
+	baseRouter.Use(LogMiddleware)
+	RegisterStatusHandler(baseRouter, status)
+
+	staticRouter := baseRouter.NewRoute().Subrouter()
+	staticRouter.Use(CacheMiddleware)
+	staticRouter.Use(CompressMiddleware)
+	StaticRoute(staticRouter, "/gromer/", assets.FS)
+	StaticRoute(staticRouter, "/assets/", appAssets)
+	IconsRoute(staticRouter, "/icons/", appAssets)
+	ComponentStylesRoute(staticRouter, "/components.css")
+	pageRouter = baseRouter.NewRoute().Subrouter()
+}
+
+func GetRouter() *mux.Router {
+	return baseRouter
+}
+
+func Run(port string) {
+	log.Info().Msg("http server listening on http://localhost:" + port)
+	srv := server.New(baseRouter, nil)
+	if err := srv.ListenAndServe(":" + port); err != nil {
+		log.Fatal().Stack().Err(err).Msg("failed to listen")
+	}
 }

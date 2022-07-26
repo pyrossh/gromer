@@ -1,4 +1,4 @@
-package gromer_assets
+package assets
 
 import (
 	"embed"
