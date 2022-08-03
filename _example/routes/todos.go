@@ -7,6 +7,13 @@ import (
 	"github.com/rotisserie/eris"
 )
 
+var TodoMeta = M{
+	"title":       "Gromer Todos",
+	"description": "Gromer Todos",
+	"author":      "gromer",
+	"keywords":    "gromer",
+}
+
 var TodoStyles = M{
 	"bg":        "bg-gray-50 min-h-screen font-sans",
 	"container": "container mx-auto flex flex-col items-center",
@@ -55,12 +62,7 @@ func TodosPage(c *Context, params TodosPageParams) ([]*Tag, int, error) {
 	c.Set("allClass", allClass)
 	c.Set("activeClass", activeClass)
 	c.Set("completedClass", completedClass)
-	c.Meta(M{
-		"title":       "Gromer Todos",
-		"description": "Gromer Todos",
-		"author":      "gromer",
-		"keywords":    "gromer",
-	})
+	c.Meta(TodoMeta)
 	c.Styles(TodoStyles)
 	return c.Render(`
 		<div id="bg" class="bg">

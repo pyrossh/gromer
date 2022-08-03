@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	_ "github.com/alecthomas/repr"
 	"github.com/rotisserie/eris"
 	"github.com/samber/lo"
 )
