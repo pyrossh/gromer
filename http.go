@@ -72,15 +72,17 @@ func getFunctionName(temp interface{}) string {
 }
 
 func RespondError(w http.ResponseWriter, r *http.Request, status int, err error) {
-	validationErrors, ok := err.(validator.ValidationErrors)
-	if ok {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		data, _ := json.Marshal(gsx.M{
-			"error": GetValidationError(validationErrors),
-		})
-		w.Write(data)
-		return
+	if r.Header.Get("Content-Type") == "application/json" {
+		validationErrors, ok := eris.Cause(err).(validator.ValidationErrors)
+		if ok {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			data, _ := json.Marshal(gsx.M{
+				"error": GetValidationError(validationErrors),
+			})
+			w.Write(data)
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(status) // always write status last
