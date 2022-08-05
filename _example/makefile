@@ -5,6 +5,9 @@ setup:
 dev:
 	gow run main.go
 
+test:
+	go test -v ./...
+
 build:
 	podman build -f ../_example/Containerfile  -t example-app:develop ../
 

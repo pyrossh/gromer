@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -71,6 +72,16 @@ func getFunctionName(temp interface{}) string {
 }
 
 func RespondError(w http.ResponseWriter, r *http.Request, status int, err error) {
+	validationErrors, ok := err.(validator.ValidationErrors)
+	if ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		data, _ := json.Marshal(gsx.M{
+			"error": GetValidationError(validationErrors),
+		})
+		w.Write(data)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(status) // always write status last
 	if status >= 500 {
