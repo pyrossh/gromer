@@ -12,7 +12,6 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -22,7 +21,6 @@ import (
 	"github.com/felixge/httpsnoop"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
@@ -66,23 +64,20 @@ func init() {
 	gsx.RegisterFunc(GetAssetUrl)
 }
 
-func getFunctionName(temp interface{}) string {
-	strs := strings.Split((runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name()), ".")
-	return strs[len(strs)-1]
-}
-
 func RespondError(w http.ResponseWriter, r *http.Request, status int, err error) {
 	if r.Header.Get("Content-Type") == "application/json" {
 		validationErrors, ok := eris.Cause(err).(validator.ValidationErrors)
-		if ok {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(status)
-			data, _ := json.Marshal(gsx.M{
-				"error": GetValidationError(validationErrors),
-			})
-			w.Write(data)
-			return
+		errorMap := gsx.M{
+			"error": err.Error(),
 		}
+		if ok {
+			errorMap["error"] = GetValidationError(validationErrors)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		data, _ := json.Marshal(errorMap)
+		w.Write(data)
+		return
 	}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(status) // always write status last
@@ -116,17 +111,12 @@ func RespondError(w http.ResponseWriter, r *http.Request, status int, err error)
 	gsx.Write(c, w, tags)
 }
 
-func GetRouteParams(route string) []string {
+func PerformRequest(route string, h interface{}, c interface{}, w http.ResponseWriter, r *http.Request, isJson bool) {
 	params := []string{}
 	found := pathParamsRegex.FindAllString(route, -1)
 	for _, v := range found {
 		params = append(params, strings.Replace(strings.Replace(v, "}", "", 1), "{", "", 1))
 	}
-	return params
-}
-
-func PerformRequest(route string, h interface{}, c interface{}, w http.ResponseWriter, r *http.Request, isJson bool) {
-	params := GetRouteParams(route)
 	args := []reflect.Value{reflect.ValueOf(c)}
 	funcType := reflect.TypeOf(h)
 	icount := funcType.NumIn()
@@ -258,23 +248,6 @@ func LogMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func CorsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(200)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func CompressMiddleware(next http.Handler) http.Handler {
-	return handlers.CompressHandler(next)
-}
-
 func CacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=2592000") // perma cache for 1 month
@@ -362,13 +335,6 @@ func PageRoute(route string, page, action interface{}) {
 	}).Methods("GET", "POST")
 }
 
-func ApiRoute(router *mux.Router, method, route string, h interface{}) {
-	router.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(context.WithValue(r.Context(), "url", r.URL), "header", r.Header)
-		PerformRequest(route, h, ctx, w, r, true)
-	}).Methods(method, "OPTIONS")
-}
-
 func GetUrl(ctx context.Context) *url.URL {
 	return ctx.Value("url").(*url.URL)
 }
@@ -413,7 +379,6 @@ func Init(status StatusComponent, appAssets embed.FS) {
 
 	staticRouter := baseRouter.NewRoute().Subrouter()
 	staticRouter.Use(CacheMiddleware)
-	staticRouter.Use(CompressMiddleware)
 	StaticRoute(staticRouter, "/gromer/", assets.FS)
 	StaticRoute(staticRouter, "/assets/", appAssets)
 	IconsRoute(staticRouter, "/icons/", appAssets)
