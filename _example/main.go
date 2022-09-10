@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/pyros2097/gromer"
+	"github.com/pyros2097/gromer/_example/assets"
 	"github.com/pyros2097/gromer/_example/components"
 	"github.com/pyros2097/gromer/_example/containers"
 	"github.com/pyros2097/gromer/_example/routes"
-	"github.com/pyros2097/gromer/assets"
 	"github.com/pyros2097/gromer/gsx"
 )
 
