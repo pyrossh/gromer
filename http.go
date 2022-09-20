@@ -1,6 +1,7 @@
 package gromer
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"embed"
@@ -42,6 +43,11 @@ var (
 )
 
 type StatusComponent func(c *gsx.Context, status int, err error) []*gsx.Tag
+
+type File struct {
+	Name string
+	Data *bytes.Buffer
+}
 
 func init() {
 	IsCloundRun = os.Getenv("K_REVISION") != ""
@@ -202,6 +208,13 @@ func PerformRequest(route string, h interface{}, c interface{}, w http.ResponseW
 	responseError := values[2].Interface()
 	if responseError != nil {
 		RespondError(w, r, responseStatus, eris.Wrap(responseError.(error), "Render failed"))
+		return
+	}
+	if file, ok := response.(*File); ok {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename=%s`, file.Name))
+		w.WriteHeader(responseStatus)
+		w.Write(file.Data.Bytes())
 		return
 	}
 	if isJson {
