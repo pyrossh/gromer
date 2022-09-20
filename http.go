@@ -45,8 +45,9 @@ var (
 type StatusComponent func(c *gsx.Context, status int, err error) []*gsx.Tag
 
 type File struct {
-	Name string
-	Data *bytes.Buffer
+	Name        string
+	ContentType string
+	Data        *bytes.Buffer
 }
 
 func init() {
@@ -211,9 +212,9 @@ func PerformRequest(route string, h interface{}, c interface{}, w http.ResponseW
 		return
 	}
 	if file, ok := response.(*File); ok {
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename=%s`, file.Name))
-		w.WriteHeader(responseStatus)
+		w.Header().Set("Content-Type", file.ContentType)
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", file.Data.Len()))
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.Name))
 		w.Write(file.Data.Bytes())
 		return
 	}
